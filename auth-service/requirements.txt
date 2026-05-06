@@ -1,0 +1,13 @@
+django
+psycopg2-binary
+gunicorn
+dj-database-url>=2.1.0
+whitenoise>=6.6.0
+django-rest-framework
+markdown
+django-filter
+djangorestframework-simplejwt
+dj-rest-auth[with-social]
+django-allauth
+requests
+django-cors-headers

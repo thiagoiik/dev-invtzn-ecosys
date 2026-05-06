@@ -1,0 +1,4 @@
+2026/04/26 05:34:37 [error] 201#201: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 172.18.0.1, server: nginxproxymanager, request: "GET /api/ HTTP/1.1", upstream: "http://127.0.0.1:3000/", host: "localhost:81", referrer: "http://localhost:81/"
+2026/04/26 05:34:41 [error] 201#201: *1 connect() failed (111: Connection refused) while connecting to upstream, client: 172.18.0.1, server: nginxproxymanager, request: "GET /api/ HTTP/1.1", upstream: "http://127.0.0.1:3000/", host: "localhost:81", referrer: "http://localhost:81/"
+2026/05/05 06:48:41 [error] 236#236: wrong ident 51304 in DNS response for invtzn-service-api, expect 19269
+2026/05/05 06:48:41 [error] 236#236: wrong ident 43468 in DNS response for invtzn-service-api, expect 52915

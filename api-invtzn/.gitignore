@@ -1,0 +1,23 @@
+# Dependencias
+node_modules/
+venv/
+env/
+.env
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+
+# Build y salida
+dist/
+build/
+*.log
+*.sqlite3
+
+# Archivos de entorno y secretos
+*.env
+.vscode/
+.idea/
+
+# Herramientas
+scanner.py

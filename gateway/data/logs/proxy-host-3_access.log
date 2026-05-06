@@ -1,0 +1,2 @@
+[26/Apr/2026:05:43:00 +0000] - 200 200 - GET http api.pos.local "/" [Client 172.18.0.1] [Length 4863] [Gzip 2.49] [Sent-to pos-service-api] "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "-"
+[26/Apr/2026:05:43:00 +0000] - 404 404 - GET http api.pos.local "/favicon.ico" [Client 172.18.0.1] [Length 1049] [Gzip 2.13] [Sent-to pos-service-api] "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36" "http://api.pos.local/"

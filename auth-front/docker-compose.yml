@@ -1,0 +1,21 @@
+services:
+  auth-front:
+    build: 
+      context: .
+      dockerfile: Dockerfile  # Usa el multi-stage que vimos antes
+    volumes:
+    #- vue_data:/app # Esto es un volumen gestionado por Docker, no por Windows
+    - .:/app # Esto es solo para desarrollo
+    #- /app/node_modules # <-- ESTA LÍNEA ES EL "SEGURO"
+
+    networks:
+      - red_publica # Solo necesita estar en la red pública
+    restart: unless-stopped
+
+
+networks:
+  red_publica:
+    external: true
+ 
+
+

@@ -1,0 +1,23 @@
+# Ignorar dependencias (se instalarán dentro del contenedor)
+node_modules/
+venv/
+env/
+
+# No copiar el código fuente que ya está en el repo si no es necesario
+.git/
+.gitignore
+
+# Archivos locales de desarrollo o sistema
+db.sqlite3
+.env
+Dockerfile
+docker-compose.yml
+dist/
+npm-debug.log
+CONTEXTO.json
+map.js
+sync.js
+vite
+vite.config.js
+vitest.setup.js
+scanner.py

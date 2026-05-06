@@ -1,0 +1,36 @@
+# --- Git ---
+.git
+.gitignore
+
+# --- Python / Django ---
+__pycache__
+*.pyc
+db.sqlite3
+media
+static
+staticfiles
+
+# --- Entornos Virtuales (CRÍTICO: No copies tu venv local al contenedor) ---
+.venv
+venv
+env
+
+# --- Docker ---
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# --- Documentación y Pruebas ---
+README.md
+docs/
+tests/
+.pytest_cache
+.coverage
+
+# --- Secretos ---
+.env
+
+# --- Otros ---
+.vscode
+.idea
+.DS_Store

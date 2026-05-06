@@ -1,0 +1,19 @@
+services:
+  auth-service-api:
+    build: .  # Requiere que tengas tu Dockerfile aquí
+    restart: unless-stopped
+    volumes:
+      - .:/app
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000
+    
+    environment:
+      - DATABASE_URL=postgres://auth_service_user:auth_password_secure@db_central:5432/auth_db_service
+    networks:
+      - red_publica # Para que el Proxy lo vea
+      - red_datos   # Para que pueda hablar con la Base de Datos
+
+networks:
+  red_publica:
+    external: true
+  red_datos:
+    external: true

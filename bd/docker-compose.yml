@@ -1,0 +1,19 @@
+services:
+  db_central:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin_global
+      POSTGRES_PASSWORD: tu_password_seguro
+      # Aquí crearás las bases lógicas por separado después
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    networks:
+      - red_datos
+
+volumes:
+  pg_data: # Este volumen persistirá aunque borres el contenedor
+
+networks:
+  red_datos:
+    external: true

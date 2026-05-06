@@ -1,0 +1,15 @@
+# Ignorar dependencias (se instalarán dentro del contenedor)
+node_modules/
+venv/
+env/
+
+# No copiar el código fuente que ya está en el repo si no es necesario
+.git/
+.gitignore
+
+# Archivos locales de desarrollo o sistema
+.env
+Dockerfile
+docker-compose.yml
+dist/
+npm-debug.log

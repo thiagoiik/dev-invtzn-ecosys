@@ -1,0 +1,13 @@
+services:
+  landing-estatica:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      # Mapeas tus archivos HTML/CSS/JS directamente al contenedor
+      - ./src:/usr/share/nginx/html:ro 
+    networks:
+      - red_publica
+
+networks:
+  red_publica:
+    external: true
