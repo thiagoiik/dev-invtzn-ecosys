@@ -1,0 +1,31 @@
+# --- Git ---
+.git
+
+# --- Backend ---
+**/__pycache__
+**/*.pyc
+backend/db.sqlite3
+backend/media
+backend/static
+backend/staticfiles
+
+# --- Frontend ---
+# Esto es vital: las librerías se deben instalar DENTRO del contenedor
+**/node_modules
+frontend/dist
+frontend/build
+
+# --- Virtual Envs ---
+**/venv
+**/.venv
+
+# --- Logs y Datos ---
+*.log
+**/pgdata
+**/data
+
+# --- Docker ---
+# No necesitas que el contenedor tenga una copia de sí mismo
+Dockerfile
+docker-compose.yml
+.dockerignore

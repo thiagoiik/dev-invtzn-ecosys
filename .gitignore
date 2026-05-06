@@ -1,0 +1,46 @@
+# --- Sistema y Editores ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Entornos Virtuales y Dependencias (¡No subir librerías!) ---
+**/venv/
+**/.venv/
+**/env/
+**/node_modules/
+**/__pycache__/
+**/*.py[cod]
+
+# --- Base de Datos Local ---
+# Ignoramos el archivo de SQLite y carpetas de datos de Postgres/MySQL
+*.sqlite3
+*.sqlite3-journal
+**/pgdata/
+**/data/db/
+
+# --- Archivos Estáticos y Media de Desarrollo ---
+# No queremos subir las fotos de prueba que subes mientras programas
+backend/media/
+backend/staticfiles/
+backend/static/
+# Excepto si tienes archivos estáticos base que sí deben persistir
+!backend/static/.gitkeep
+
+# --- Frontend ---
+frontend/dist/
+frontend/build/
+frontend/.next/
+
+# --- Variables de Entorno (Secretos) ---
+.env
+*.env
+!*.env.example
+
+*.pem
+*.key
+
+.tmp.driveupload
+.tmp.drivedownload
