@@ -23,7 +23,6 @@ Thumbs.db
 /data/db/
 /data/logs/
 *.log
-*/data/
 
 
 # --- Archivos Estáticos y Media de Desarrollo ---
