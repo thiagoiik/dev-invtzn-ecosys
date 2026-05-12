@@ -1,2 +1,0 @@
-2026/05/05 01:25:50 [error] 222#222: *284 inventory-api could not be resolved (3: Host not found), client: 172.18.0.1, server: api.invitazyon.local, request: "GET / HTTP/1.1", host: "api.invitazyon.local"
-2026/05/05 01:25:54 [error] 222#222: *284 inventory-api could not be resolved (3: Host not found), client: 172.18.0.1, server: api.invitazyon.local, request: "GET /favicon.ico HTTP/1.1", host: "api.invitazyon.local", referrer: "http://api.invitazyon.local/"

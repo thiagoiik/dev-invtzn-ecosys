@@ -1,1 +1,0 @@
-2026/04/26 18:22:01 [error] 197#197: *9 pos-front could not be resolved (2: Server failure), client: 172.18.0.1, server: doop.local, request: "GET / HTTP/1.1", host: "doop.local"

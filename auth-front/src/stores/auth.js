@@ -27,7 +27,7 @@ export const useAuthStore = defineStore('auth', {
       this.user = response.data;
     },
 
-    // CAMBIO 5: Se elimina la lógica de llamar a authService.tokenRefresh()[cite: 1]
+    // CAMBIO 5: Se elimina la lógica de llamar a authService.tokenRefresh()
     // El interceptor se encarga del flujo de red. Si necesitas actualizar el token
     // manualmente, puedes dejar esta acción solo para asignar el valor.
     setNewToken(newToken) {

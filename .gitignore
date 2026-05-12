@@ -16,10 +16,15 @@ Thumbs.db
 
 # --- Base de Datos Local ---
 # Ignoramos el archivo de SQLite y carpetas de datos de Postgres/MySQL
+*.sqlite
 *.sqlite3
 *.sqlite3-journal
 **/pgdata/
-**/data/db/
+/data/db/
+/data/logs/
+*.log
+*/data/
+
 
 # --- Archivos Estáticos y Media de Desarrollo ---
 # No queremos subir las fotos de prueba que subes mientras programas

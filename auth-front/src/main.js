@@ -5,7 +5,7 @@ import Toast from "vue-toastification"; // Importación nueva
 import "vue-toastification/dist/index.css"; // Estilos de la librería
 
 import App from './App.vue';
-import router from './router'; // <-- 1. IMPORTAR EL ROUTER
+import router from './router'; // <-- 1. Importamos el router
 
 // 1. Inicializamos la aplicación
 const app = createApp(App);

@@ -1,4 +1,0 @@
-2026/04/29 00:41:32 [error] 221#221: *456 auth-front could not be resolved (2: Server failure), client: 172.18.0.1, server: front.auth.local, request: "GET /auth/registration/ HTTP/1.1", host: "front.auth.local"
-2026/04/29 00:55:06 [error] 220#220: *478 auth-front could not be resolved (3: Host not found), client: 172.18.0.1, server: front.auth.local, request: "GET /auth/registration/ HTTP/1.1", host: "front.auth.local"
-2026/04/29 01:06:24 [error] 221#221: *502 connect() failed (111: Connection refused) while connecting to upstream, client: 172.18.0.1, server: front.auth.local, request: "GET /auth/test HTTP/1.1", upstream: "http://172.18.0.4:80/auth/test", host: "front.auth.local"
-2026/04/29 01:20:06 [error] 222#222: *578 auth-front could not be resolved (2: Server failure), client: 172.18.0.1, server: front.auth.local, request: "GET /auth/test HTTP/1.1", host: "front.auth.local"
