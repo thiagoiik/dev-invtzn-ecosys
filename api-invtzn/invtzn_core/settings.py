@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     'profiles',
     'events',
     'inventory',
+    'deployments',
+    'sales',
 ]
 
 MIDDLEWARE = [
