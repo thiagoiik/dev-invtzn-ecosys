@@ -33,9 +33,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { catalogService } from '@/modules/ecommerce/services/catalogService';
+import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
+import { catalogService } from '@/modules/ecommerce/services/catalogService';
 
+const router = useRouter();
 const toast = useToast();
 const products = ref([]);
 const loading = ref(true);
@@ -67,7 +69,7 @@ const translateType = (type) => {
 };
 
 const handleBuy = (product) => {
-  toast.info(`Pronto podrás comprar: ${product.name}`);
+  router.push({ name: 'product-detail', params: { id: product.id } });
 };
 </script>
 
