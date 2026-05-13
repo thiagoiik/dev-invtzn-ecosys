@@ -7,7 +7,7 @@ class CustomAccountAdapter(DefaultAccountAdapter):
     def get_email_confirmation_url(self, request, emailconfirmation):
         # Aquí se construye la URL que apunta a  VUE APP.
         # Cambia 'http://localhost:5173' por el dominio real del frontend.
-        frontend_url = "http://localhost:5173/verify-email" 
+        frontend_url = "http://front.auth.local/verify-email" 
         return f"{frontend_url}/{emailconfirmation.key}/"
 
 
@@ -18,7 +18,7 @@ class CustomAccountAdapter(DefaultAccountAdapter):
             # Sacamos la URL que allauth generó hacia el backend
             url_backend = context['password_reset_url']
             # La reemplazamos a la fuerza por la de Vue
-            url_frontend = url_backend.replace('api.auth.local', 'localhost:5173')
+            url_frontend = url_backend.replace('api.auth.local', 'front.auth.local')
             # La guardamos de vuelta en el correo
             context['password_reset_url'] = url_frontend
 
