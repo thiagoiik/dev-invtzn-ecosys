@@ -1,10 +1,10 @@
 import { setActivePinia, createPinia } from 'pinia';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useAuthStore } from '../auth';
-import { authService } from '@/services/authService';
+import { authService } from '@/modules/auth/services/authService';
 
 // Mockeamos el servicio para no hacer peticiones reales a la API
-vi.mock('@/services/authService', () => ({
+vi.mock('@/modules/auth/services/authService', () => ({
   authService: {
     login: vi.fn(),
     getUserDetails: vi.fn(),

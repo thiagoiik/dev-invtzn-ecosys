@@ -1,4 +1,4 @@
-import httpClient from '@/api/httpClient';
+import httpClient from '@/core/api/httpClient';
 
 export const authService = {
   // --- Sesión ---

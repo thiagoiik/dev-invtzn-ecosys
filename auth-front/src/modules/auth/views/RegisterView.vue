@@ -29,7 +29,7 @@
 
 <script setup>
 import { reactive, ref } from 'vue';
-import { authService } from '@/services/authService';
+import { authService } from '@/modules/auth/services/authService';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 

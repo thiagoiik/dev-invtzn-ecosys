@@ -16,7 +16,7 @@
 
 <script setup>
 import { ref } from 'vue';
-import { authService } from '@/services/authService';
+import { authService } from '@/modules/auth/services/authService';
 import { useToast } from 'vue-toastification';
 
 const email = ref('');

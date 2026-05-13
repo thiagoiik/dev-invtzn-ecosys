@@ -20,7 +20,7 @@ vi.mock('vue-toastification', () => ({
 
 // IMPORTANTE: Importar el httpClient DESPUÉS de hacer el mock
 import httpClient from '../httpClient';
-import { useAuthStore } from '@/stores/auth';
+import { useAuthStore } from '@/modules/auth/store/auth';
 
 describe('HTTP Client - Interceptores', () => {
   beforeEach(() => {

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useAuthStore } from '@/stores/auth';
+import { useAuthStore } from '@/modules/auth/store/auth';
 import { useToast } from "vue-toastification"; 
 
 const httpClient = axios.create({

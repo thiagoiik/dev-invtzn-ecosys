@@ -16,7 +16,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { authService } from '@/services/authService';
+import { authService } from '@/modules/auth/services/authService';
 import { useToast } from 'vue-toastification';
 
 const route = useRoute();

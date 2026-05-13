@@ -49,8 +49,8 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useAuthStore } from '@/stores/auth';
-import { authService } from '@/services/authService';
+import { useAuthStore } from '@/modules/auth/store/auth';
+import { authService } from '@/modules/auth/services/authService';
 import { useToast } from 'vue-toastification';
 
 const authStore = useAuthStore();
