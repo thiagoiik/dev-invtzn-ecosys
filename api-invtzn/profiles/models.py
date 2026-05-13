@@ -31,6 +31,22 @@ class UserProfile(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def is_authenticated(self):
+        """
+        Propiedad necesaria para que DRF (Django Rest Framework) pase la validación 
+        del permiso IsAuthenticated, ya que este modelo no hereda de AbstractBaseUser.
+        """
+        return True
+
+    @property
+    def id(self):
+        """
+        Alias para la primary key (remote_auth_id). 
+        DRF y las vistas de Django suelen esperar que el usuario tenga un atributo .id
+        """
+        return self.remote_auth_id
+
     def __str__(self):
         return f"Perfil {self.remote_auth_id} - {self.get_custom_role_display()}"
 

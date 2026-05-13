@@ -88,12 +88,21 @@ WSGI_APPLICATION = 'invtzn_core.wsgi.application'
 import dj_database_url
 import os
 
+import sys
+
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('DATABASE_URL'),
         conn_max_age=600  # Opcional: mantiene la conexión abierta para mayor velocidad
     )
 }
+
+# Si estamos ejecutando tests (ya sea con manage.py test o con pytest), forzamos SQLite
+if 'test' in sys.argv or 'pytest' in sys.modules:
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'test_db.sqlite3',
+    }
 
 
 # Password validation
@@ -160,3 +169,6 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ]
 }
+
+# Configuración Swagger para silenciar el warning de renderers
+SWAGGER_USE_COMPAT_RENDERERS = False
