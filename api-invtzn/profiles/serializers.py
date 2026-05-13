@@ -8,9 +8,6 @@ class WalletLogSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class UserProfileSerializer(serializers.ModelSerializer):
-    # Campo dinámico para el saldo actual
-    current_balance = serializers.SerializerMethodField()
-
     class Meta:
         model = UserProfile
         fields = [
@@ -19,7 +16,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'phone_number', 
             'customer_type', 
             'base_commission_rate', 
-            'current_balance', # Campo calculado
+            'current_balance',
             'internal_notes', 
             'created_at', 
             'updated_at'
@@ -32,11 +29,3 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'current_balance', 
             'internal_notes'
         ]
-
-    def get_current_balance(self, obj):
-        """
-        Suma todos los 'amount' de los WalletLogs asociados a este usuario.
-        """
-        # Accedemos a través del related_name 'wallet_logs' definido en el modelo
-        total = obj.wallet_logs.aggregate(total=Sum('amount'))['total']
-        return total if total is not None else 0.00
