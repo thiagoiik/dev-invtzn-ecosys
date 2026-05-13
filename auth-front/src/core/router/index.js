@@ -4,12 +4,14 @@ import { jwtDecode } from 'jwt-decode';
 
 import authRoutes from '@/modules/auth/router/routes';
 import dashboardRoutes from '@/modules/dashboard/router/routes';
+import eventsRoutes from '@/modules/events/router/routes';
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     ...authRoutes,
     ...dashboardRoutes,
+    ...eventsRoutes,
     // Ruta "Catch-All" para capturar URLs que no existen (404)
     { 
       path: '/:pathMatch(.*)*', 
