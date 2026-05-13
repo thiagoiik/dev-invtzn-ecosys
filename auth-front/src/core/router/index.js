@@ -10,6 +10,12 @@ const router = createRouter({
   routes: [
     ...authRoutes,
     ...dashboardRoutes,
+    // Ruta "Catch-All" para capturar URLs que no existen (404)
+    { 
+      path: '/:pathMatch(.*)*', 
+      name: 'NotFound', 
+      redirect: '/dashboard' 
+    }
   ]
 });
 
@@ -28,6 +34,7 @@ router.beforeEach((to, from, next) => {
   
   const isAuthenticated = token && isTokenValid(token);
 
+  // 2. Navigation Guards
   if (to.meta.requiresAuth) {
     if (isAuthenticated) {
       next(); 
