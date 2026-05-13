@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     # Terceros
     'rest_framework',
     'corsheaders',
+    'drf_yasg',
 
     # Propias
     'profiles',

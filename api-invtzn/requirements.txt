@@ -9,3 +9,4 @@ requests
 django-cors-headers
 markdown
 PyJWT
+drf-yasg
