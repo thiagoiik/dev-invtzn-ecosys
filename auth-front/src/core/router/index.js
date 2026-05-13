@@ -6,6 +6,7 @@ import authRoutes from '@/modules/auth/router/routes';
 import dashboardRoutes from '@/modules/dashboard/router/routes';
 import eventsRoutes from '@/modules/events/router/routes';
 import ecommerceRoutes from '@/modules/ecommerce/router/routes';
+import engineRoutes from '@/modules/engine/router/routes';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -14,6 +15,7 @@ const router = createRouter({
     ...dashboardRoutes,
     ...eventsRoutes,
     ...ecommerceRoutes,
+    ...engineRoutes,
     // Ruta "Catch-All" para capturar URLs que no existen (404)
     { 
       path: '/:pathMatch(.*)*', 
