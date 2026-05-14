@@ -40,3 +40,24 @@ class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewset
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
+
+    @action(detail=True, methods=['patch'], url_path='change-role')
+    def change_role(self, request, pk=None):
+        # Solo administradores pueden cambiar roles
+        try:
+            admin_profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            if admin_profile.custom_role != UserProfile.Role.ADMIN:
+                return Response({'error': 'No tienes permisos de administrador.'}, status=403)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'No tienes perfil asignado.'}, status=403)
+
+        user_to_promote = self.get_object()
+        new_role = request.data.get('custom_role')
+        
+        if new_role not in dict(UserProfile.Role.choices):
+            return Response({'error': 'Rol inválido.'}, status=400)
+            
+        user_to_promote.custom_role = new_role
+        user_to_promote.save()
+        
+        return Response({'success': f'Rol cambiado a {new_role}'})

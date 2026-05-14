@@ -28,8 +28,30 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useToast } from 'vue-toastification';
 import { useAuthStore } from '@/modules/auth/store/auth';
+import { profileService } from '@/modules/dashboard/services/profileService';
+
 const authStore = useAuthStore();
+const router = useRouter();
+const toast = useToast();
+
+onMounted(async () => {
+  try {
+    const res = await profileService.fetchMyProfile();
+    // Si el usuario es un CLIENTE normal, lo sacamos del Workspace
+    if (res.data.custom_role === 'CLIENT') {
+      toast.error('Acceso denegado. Área exclusiva para personal B2B.');
+      router.push('/dashboard');
+    }
+  } catch (error) {
+    // Si hay error de red o no existe el perfil aún, por seguridad lo sacamos
+    toast.error('Error de autenticación B2B.');
+    router.push('/dashboard');
+  }
+});
 </script>
 
 <style scoped>

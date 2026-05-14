@@ -11,7 +11,7 @@ class Order(models.Model):
         COMPLETED = 'COMPLETED', 'Completado'
         REFUNDED = 'REFUNDED', 'Reembolsado'
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
+    user = models.IntegerField(db_index=True, help_text="ID del usuario en api-auth")
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     deployment = models.ForeignKey(Deployment, on_delete=models.SET_NULL, null=True, blank=True)
     
@@ -22,7 +22,7 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Orden #{self.id} - {self.user.username} ({self.status})"
+        return f"Orden #{self.id} - User {self.user} ({self.status})"
 
 class PaymentTransaction(models.Model):
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='payment')

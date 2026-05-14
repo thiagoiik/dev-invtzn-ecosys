@@ -13,7 +13,7 @@
 
     <!-- Área de trabajo -->
     <main class="workspace">
-      <router-view></router-view>
+      <slot></slot>
     </main>
   </div>
 </template>

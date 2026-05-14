@@ -10,7 +10,7 @@ class Deployment(models.Model):
         LIVE = 'LIVE', 'Publicado'
         EXPIRED = 'EXPIRED', 'Expirado / Inactivo'
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='deployments')
+    user = models.IntegerField(db_index=True, help_text="ID del usuario en api-auth")
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='deployments')
     
     slug = models.SlugField(max_length=100, unique=True, blank=True, null=True, help_text="URL única para acceso público")
@@ -20,6 +20,12 @@ class Deployment(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            import uuid
+            self.slug = str(uuid.uuid4())[:8]
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.slug or 'Draft'} - {self.user.username} ({self.status})"
+        return f"{self.slug or 'Draft'} - User {self.user} ({self.status})"

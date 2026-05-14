@@ -31,6 +31,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import { catalogService } from '@/modules/ecommerce/services/catalogService';
 import { orderService } from '@/modules/ecommerce/services/orderService';
+import { deploymentService } from '@/modules/ecommerce/services/deploymentService';
 
 const route = useRoute();
 const router = useRouter();
@@ -58,6 +59,10 @@ const processPayment = async () => {
   loading.value = true;
   try {
     await orderService.createOrder(product.value.id, product.value.base_price);
+    
+    // Crear el borrador (sandbox) del diseño para el usuario
+    await deploymentService.createSandbox(product.value.id);
+    
     toast.success('¡Pago exitoso! Tu orden ha sido creada.');
     router.push('/dashboard'); // Redirigir al portal privado post-compra
   } catch (error) {

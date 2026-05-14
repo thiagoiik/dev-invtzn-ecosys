@@ -23,6 +23,7 @@
           <div class="card-actions">
             <router-link :to="'/builder/' + dep.id" class="btn btn-secondary">✏️ Editar Diseño</router-link>
             <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="btn btn-link">👁️ Ver Previa</a>
+            <button @click="onDelete(dep.id)" class="btn btn-danger-sm">🗑️</button>
           </div>
         </div>
       </div>
@@ -44,7 +45,8 @@ const toast = useToast();
 const deployments = ref([]);
 const loading = ref(true);
 
-onMounted(async () => {
+const fetchDeployments = async () => {
+  loading.value = true;
   try {
     const res = await deploymentService.fetchMyDeployments();
     deployments.value = res.data;
@@ -53,6 +55,22 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+};
+
+const onDelete = async (id) => {
+  if (confirm(`¿Estás seguro de que quieres eliminar el diseño #${id}? Esta acción es irreversible.`)) {
+    try {
+      await deploymentService.deleteDeployment(id);
+      toast.success(`Diseño #${id} eliminado`);
+      fetchDeployments(); // Recargar la lista
+    } catch (error) {
+      toast.error('No se pudo eliminar el diseño.');
+    }
+  }
+};
+
+onMounted(() => {
+  fetchDeployments();
 });
 
 const onLogout = () => {
@@ -78,4 +96,6 @@ const onLogout = () => {
 .btn-secondary:hover { background: #f1f5f9; }
 .btn-link { color: #3b82f6; border: 1px solid #bfdbfe; background: transparent; flex: 1; }
 .btn-link:hover { background: #eff6ff; }
+.btn-danger-sm { background: #ef4444; color: white; border: none; padding: 0.5rem; border-radius: 6px; cursor: pointer; }
+.btn-danger-sm:hover { background: #dc2626; }
 </style>

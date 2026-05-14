@@ -21,7 +21,7 @@ class DeploymentViewSet(viewsets.ModelViewSet):
             pass
             
         # Usuarios normales solo ven las suyas
-        return Deployment.objects.filter(user=self.request.user)
+        return Deployment.objects.filter(user=self.request.user.id)
 
     def check_object_permissions(self, request, obj):
         super().check_object_permissions(request, obj)
@@ -30,8 +30,8 @@ class DeploymentViewSet(viewsets.ModelViewSet):
         if request.method in ['GET', 'HEAD', 'OPTIONS']:
             return
 
-        # Si el usuario es dueño, puede editar
-        if obj.user == request.user:
+        # Si el usuario es dueño, puede editar (cast a str para evitar errores de tipo int vs str)
+        if str(obj.user) == str(request.user.id):
             return
 
         # Si no es dueño, revisamos si es ADMIN o DESIGNER
@@ -48,7 +48,7 @@ class DeploymentViewSet(viewsets.ModelViewSet):
         raise PermissionDenied("No tienes permisos de diseñador para modificar esta invitación.")
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        serializer.save(user=self.request.user.id)
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny], url_path='slug/(?P<slug>[^/.]+)')
     def public_by_slug(self, request, slug=None):

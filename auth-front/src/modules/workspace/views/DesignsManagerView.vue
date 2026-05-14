@@ -38,6 +38,10 @@
             <router-link :to="'/builder/' + dep.id" class="btn btn-sm btn-primary">
               🛠️ Editor
             </router-link>
+            
+            <button @click="onDelete(dep.id)" class="btn btn-sm btn-danger" style="margin-left: 0.5rem;">
+              🗑️
+            </button>
           </td>
         </tr>
       </tbody>
@@ -63,6 +67,20 @@ const loadDeployments = async () => {
     toast.error('Error al cargar diseños globales.');
   } finally {
     loading.value = false;
+  }
+};
+
+const onDelete = async (id) => {
+  if (confirm(`¿Estás seguro de que quieres eliminar el diseño #${id}? Esta acción es irreversible.`)) {
+    try {
+      import('@/modules/ecommerce/services/deploymentService').then(async ({ deploymentService }) => {
+        await deploymentService.deleteDeployment(id);
+        toast.success(`Diseño #${id} eliminado`);
+        loadDeployments(); // Recargar la tabla
+      });
+    } catch (error) {
+      toast.error('No se pudo eliminar el diseño.');
+    }
   }
 };
 
@@ -96,6 +114,7 @@ onMounted(() => {
 .btn-sm { font-size: 0.85rem; padding: 0.35rem 0.75rem; margin-right: 0.5rem; }
 .btn-outline { border: 1px solid #cbd5e1; background: white; color: #475569; }
 .btn-primary { background: #3b82f6; color: white; }
+.btn-danger { background: #ef4444; color: white; }
 
 .data-grid { width: 100%; border-collapse: collapse; }
 .data-grid th, .data-grid td { padding: 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
