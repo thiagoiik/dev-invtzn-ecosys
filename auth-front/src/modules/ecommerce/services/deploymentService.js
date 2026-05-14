@@ -11,5 +11,9 @@ export const deploymentService = {
         theme: "light"
       }
     });
+  },
+  
+  fetchMyDeployments() {
+    return invtznClient.get('deployments/');
   }
 };
