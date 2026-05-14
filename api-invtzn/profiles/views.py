@@ -4,9 +4,19 @@ from rest_framework.decorators import action
 from .models import UserProfile
 from .serializers import UserProfileSerializer
 
-class UserProfileViewSet(viewsets.GenericViewSet):
-    queryset = UserProfile.objects.all()
+class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
     serializer_class = UserProfileSerializer
+
+    def get_queryset(self):
+        # Si el usuario es ADMIN o VENDOR, puede ver a todos los usuarios
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
+            if profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR]:
+                return UserProfile.objects.all()
+        except UserProfile.DoesNotExist:
+            pass
+        # Si no, solo puede verse a sí mismo
+        return UserProfile.objects.filter(remote_auth_id=self.request.user.id)
 
     # Creamos un endpoint personalizado: /api/v1/profiles/me/
     @action(detail=False, methods=['get', 'patch'])
