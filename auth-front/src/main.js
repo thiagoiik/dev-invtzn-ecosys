@@ -4,6 +4,8 @@ import piniaPluginPersistedstate from 'pinia-plugin-persistedstate';
 import Toast from "vue-toastification"; // Importación nueva
 import "vue-toastification/dist/index.css"; // Estilos de la librería
 
+import './assets/style.css'; // Estilos globales Tailwind + DaisyUI
+
 import App from './App.vue';
 import router from './core/router'; // <-- 1. Importamos el router
 
