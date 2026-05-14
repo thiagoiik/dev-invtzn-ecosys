@@ -5,6 +5,7 @@
       <div class="logo">ECOSYS ADMIN</div>
       <nav class="nav-menu">
         <router-link to="/workspace/crm" class="nav-item">👥 CRM & Clientes</router-link>
+        <router-link to="/workspace/designs" class="nav-item">🎨 Gestión de Diseños</router-link>
         <router-link to="/workspace/pos" class="nav-item">🛒 POS / Ventas</router-link>
         <router-link to="/dashboard" class="nav-item back-btn">⬅️ Volver a B2C</router-link>
       </nav>

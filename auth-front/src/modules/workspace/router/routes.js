@@ -14,6 +14,11 @@ export default [
         component: () => import('@/modules/workspace/views/CrmDashboardView.vue')
       },
       {
+        path: 'designs',
+        name: 'workspace-designs',
+        component: () => import('@/modules/workspace/views/DesignsManagerView.vue')
+      },
+      {
         path: 'pos',
         name: 'workspace-pos',
         component: () => import('@/modules/workspace/views/CrmDashboardView.vue') // Placeholder temporal

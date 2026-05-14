@@ -11,8 +11,41 @@ class DeploymentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Cada usuario solo puede ver y editar sus propios deployments
+        # Permitir que ADMIN, VENDOR y DESIGNER vean todas las invitaciones
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
+            if profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR, UserProfile.Role.DESIGNER]:
+                return Deployment.objects.all()
+        except Exception:
+            pass
+            
+        # Usuarios normales solo ven las suyas
         return Deployment.objects.filter(user=self.request.user)
+
+    def check_object_permissions(self, request, obj):
+        super().check_object_permissions(request, obj)
+        
+        # Si es una petición segura (GET, HEAD, OPTIONS), ya lo filtró get_queryset
+        if request.method in ['GET', 'HEAD', 'OPTIONS']:
+            return
+
+        # Si el usuario es dueño, puede editar
+        if obj.user == request.user:
+            return
+
+        # Si no es dueño, revisamos si es ADMIN o DESIGNER
+        from profiles.models import UserProfile
+        from rest_framework.exceptions import PermissionDenied
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            # VENDEDORES no pueden editar diseño, solo ver.
+            if profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]:
+                return
+        except Exception:
+            pass
+            
+        raise PermissionDenied("No tienes permisos de diseñador para modificar esta invitación.")
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

@@ -7,5 +7,9 @@ export const crmService = {
   
   updateProfileRole(profileId, newRole) {
     return invtznClient.patch(`profiles/${profileId}/`, { custom_role: newRole });
+  },
+  
+  fetchAllDeployments() {
+    return invtznClient.get('deployments/');
   }
 };
