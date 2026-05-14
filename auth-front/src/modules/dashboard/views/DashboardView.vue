@@ -86,6 +86,8 @@ onMounted(() => {
   fetchDeployments();
 });
 
+</script>
+
 <style scoped>
 /* Eliminated old manual CSS. Handled by Tailwind. */
 </style>

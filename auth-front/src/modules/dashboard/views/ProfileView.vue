@@ -1,63 +1,118 @@
 <template>
-  <div class="profile-container" v-if="authStore.user">
-    <h2>Mi Perfil</h2>
+  <div class="max-w-4xl mx-auto space-y-8" v-if="authStore.user">
+    <div>
+      <h2 class="text-3xl font-extrabold text-slate-800">Mi Perfil</h2>
+      <p class="text-slate-500 mt-1">Gestiona tu información personal y credenciales de acceso.</p>
+    </div>
     
-    <section class="user-info">
-      <p><strong>Email:</strong> {{ authStore.user.email }} <small>(No editable)</small></p>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       
-      <!-- Nuevos campos traídos de api-invtzn -->
-      <div v-if="invtznProfile" class="business-profile">
-        <p><strong>Rol en la plataforma:</strong> {{ invtznProfile.custom_role }}</p>
-        <p><strong>Tipo de Cliente:</strong> {{ invtznProfile.customer_type }}</p>
-        <p><strong>Saldo en Billetera:</strong> ${{ invtznProfile.current_balance }}</p>
-      </div>
-      <div v-else-if="loadingInvtzn">
-        <p><em>Cargando perfil de negocio...</em></p>
-      </div>
-    </section>
+      <!-- Columna Izquierda: Info General -->
+      <div class="space-y-6 lg:col-span-1">
+        <div class="card bg-white shadow-xl border border-slate-100">
+          <div class="card-body">
+            <h3 class="card-title text-lg border-b border-slate-100 pb-2">Información de Cuenta</h3>
+            
+            <div class="mt-4">
+              <p class="text-sm text-slate-500 font-medium">Email Registrado</p>
+              <p class="font-bold text-slate-800">{{ authStore.user.email }}</p>
+              <span class="badge badge-sm badge-ghost mt-1">No editable</span>
+            </div>
 
-    <hr />
+            <!-- Nuevos campos traídos de api-invtzn -->
+            <div v-if="invtznProfile" class="mt-4 space-y-4">
+              <div>
+                <p class="text-sm text-slate-500 font-medium">Rol en la Plataforma</p>
+                <div class="badge badge-primary mt-1">{{ invtznProfile.custom_role }}</div>
+              </div>
+              <div>
+                <p class="text-sm text-slate-500 font-medium">Tipo de Cliente</p>
+                <p class="font-bold text-slate-800">{{ invtznProfile.customer_type }}</p>
+              </div>
+              <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 mt-4">
+                <p class="text-sm text-slate-500 font-medium">Saldo en Billetera</p>
+                <p class="text-2xl font-black text-green-600">${{ invtznProfile.current_balance }} <span class="text-xs text-slate-400 font-normal">MXN</span></p>
+              </div>
+            </div>
+            <div v-else-if="loadingInvtzn" class="mt-6 flex justify-center">
+              <span class="loading loading-spinner text-primary"></span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-    <h3>Editar Datos Personales</h3>
-    <form @submit.prevent="handleUpdateProfile">
-      <div class="form-group">
-        <label>Usuario:</label>
-        <input v-model="editForm.username" type="text" required :disabled="loadingProfile" />
-      </div>
-      <div class="form-group">
-        <label>Nombre:</label>
-        <input v-model="editForm.first_name" type="text" :disabled="loadingProfile" />
-      </div>
-      <div class="form-group">
-        <label>Apellidos:</label>
-        <input v-model="editForm.last_name" type="text" :disabled="loadingProfile" />
-      </div>
-      <div class="form-group">
-        <label>Teléfono (WhatsApp):</label>
-        <input v-model="editForm.phone_number" type="text" :disabled="loadingProfile" />
-      </div>
-      <button type="submit" :disabled="loadingProfile">
-        {{ loadingProfile ? 'Guardando...' : 'Guardar Cambios' }}
-      </button>
-    </form>
+      <!-- Columna Derecha: Formularios -->
+      <div class="space-y-8 lg:col-span-2">
+        
+        <!-- Formulario Datos Personales -->
+        <div class="card bg-white shadow-xl border border-slate-100">
+          <div class="card-body">
+            <h3 class="card-title text-lg border-b border-slate-100 pb-2">Editar Datos Personales</h3>
+            <form @submit.prevent="handleUpdateProfile" class="space-y-4 mt-4">
+              <div class="form-control w-full">
+                <label class="label"><span class="label-text font-medium">Usuario</span></label>
+                <input v-model="editForm.username" type="text" class="input input-bordered w-full" required :disabled="loadingProfile" />
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-control w-full">
+                  <label class="label"><span class="label-text font-medium">Nombre</span></label>
+                  <input v-model="editForm.first_name" type="text" class="input input-bordered w-full" :disabled="loadingProfile" />
+                </div>
+                <div class="form-control w-full">
+                  <label class="label"><span class="label-text font-medium">Apellidos</span></label>
+                  <input v-model="editForm.last_name" type="text" class="input input-bordered w-full" :disabled="loadingProfile" />
+                </div>
+              </div>
+              
+              <div class="form-control w-full">
+                <label class="label"><span class="label-text font-medium">Teléfono (WhatsApp)</span></label>
+                <input v-model="editForm.phone_number" type="text" class="input input-bordered w-full" :disabled="loadingProfile" />
+              </div>
+              
+              <div class="card-actions justify-end mt-6">
+                <button type="submit" class="btn btn-primary" :disabled="loadingProfile">
+                  <span v-if="loadingProfile" class="loading loading-spinner loading-sm"></span>
+                  {{ loadingProfile ? 'Guardando...' : 'Guardar Cambios' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
 
-    <hr />
+        <!-- Formulario Cambiar Contraseña -->
+        <div class="card bg-white shadow-xl border border-slate-100">
+          <div class="card-body">
+            <h3 class="card-title text-lg border-b border-slate-100 pb-2 text-error">Seguridad</h3>
+            <form @submit.prevent="handleChangePassword" class="space-y-4 mt-4">
+              <div class="form-control w-full">
+                <label class="label"><span class="label-text font-medium">Contraseña Actual</span></label>
+                <input v-model="pwForm.old_password" type="password" class="input input-bordered w-full" required :disabled="loadingPassword" />
+              </div>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-control w-full">
+                  <label class="label"><span class="label-text font-medium">Nueva Contraseña</span></label>
+                  <input v-model="pwForm.new_password1" type="password" class="input input-bordered w-full" required :disabled="loadingPassword" />
+                </div>
+                <div class="form-control w-full">
+                  <label class="label"><span class="label-text font-medium">Confirmar Nueva Contraseña</span></label>
+                  <input v-model="pwForm.new_password2" type="password" class="input input-bordered w-full" required :disabled="loadingPassword" />
+                </div>
+              </div>
+              
+              <div class="card-actions justify-end mt-6">
+                <button type="submit" class="btn btn-error btn-outline" :disabled="loadingPassword">
+                  <span v-if="loadingPassword" class="loading loading-spinner loading-sm"></span>
+                  {{ loadingPassword ? 'Actualizando...' : 'Cambiar Contraseña' }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
 
-    <h3>Cambiar Contraseña</h3>
-    <form @submit.prevent="handleChangePassword">
-      <div class="form-group">
-        <input v-model="pwForm.old_password" type="password" placeholder="Contraseña actual" required :disabled="loadingPassword" />
       </div>
-      <div class="form-group">
-        <input v-model="pwForm.new_password1" type="password" placeholder="Nueva contraseña" required :disabled="loadingPassword" />
-      </div>
-      <div class="form-group">
-        <input v-model="pwForm.new_password2" type="password" placeholder="Confirmar nueva contraseña" required :disabled="loadingPassword" />
-      </div>
-      <button type="submit" :disabled="loadingPassword">
-        {{ loadingPassword ? 'Actualizando...' : 'Actualizar Contraseña' }}
-      </button>
-    </form>
+    </div>
   </div>
 </template>
 

@@ -1,30 +1,51 @@
 <template>
-  <div class="product-detail">
-    <div class="header-banner">
-      <h2>{{ product?.name || 'Cargando producto...' }}</h2>
-      <p v-if="product?.has_template" class="badge template-badge">★ Diseño Interactivo Incluido</p>
+  <div class="max-w-6xl mx-auto space-y-8">
+    
+    <div class="text-center">
+      <h2 class="text-4xl font-extrabold text-slate-800">{{ product?.name || 'Cargando...' }}</h2>
+      <div v-if="product?.has_template" class="badge badge-accent badge-lg mt-4 font-bold border-none bg-amber-100 text-amber-700">★ Diseño Interactivo Incluido</div>
     </div>
 
-    <div class="detail-grid">
-      <div class="image-placeholder">
-        <span>Previsualización del Diseño</span>
+    <div v-if="!product" class="flex justify-center py-20">
+      <span class="loading loading-spinner loading-lg text-primary"></span>
+    </div>
+
+    <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-8">
+      
+      <!-- Visualización del producto -->
+      <div class="bg-slate-100 rounded-3xl min-h-[500px] flex items-center justify-center relative overflow-hidden border-2 border-dashed border-slate-300">
+        <div class="absolute inset-0 bg-gradient-to-tr from-primary/5 to-transparent"></div>
+        <span class="text-slate-400 font-medium z-10 flex flex-col items-center gap-4">
+          <span class="text-6xl">🖼️</span>
+          Previsualización del Diseño
+        </span>
       </div>
 
-      <div class="info-card">
-        <h3>Detalles</h3>
-        <p class="desc">{{ product?.description || 'Sin descripción.' }}</p>
-        <p class="price">Precio: ${{ product?.base_price }} MXN</p>
-        
-        <div class="actions">
-          <button v-if="product?.has_template" class="btn btn-secondary" @click="trySandbox" :disabled="loadingSandbox">
-            {{ loadingSandbox ? 'Preparando...' : '🛠️ Probar Gratis' }}
-          </button>
+      <!-- Información y Acciones -->
+      <div class="card bg-white shadow-xl border border-slate-100 h-fit">
+        <div class="card-body p-8 lg:p-10">
+          <h3 class="text-2xl font-bold text-slate-800 border-b border-slate-100 pb-4 mb-4">Detalles del Producto</h3>
           
-          <button class="btn btn-primary" @click="buyNow">
-            💳 Comprar Ahora
-          </button>
+          <p class="text-slate-600 leading-relaxed text-lg mb-8">{{ product?.description || 'Sin descripción detallada.' }}</p>
+          
+          <div class="bg-slate-50 p-6 rounded-2xl border border-slate-100 mb-8 flex justify-between items-center">
+            <span class="text-slate-500 font-medium uppercase tracking-wider text-sm">Inversión</span>
+            <span class="text-4xl font-black text-slate-800">${{ product?.base_price }} <span class="text-lg text-slate-400 font-normal">MXN</span></span>
+          </div>
+          
+          <div class="card-actions flex-col gap-4">
+            <button class="btn btn-primary btn-lg w-full text-lg h-16 shadow-lg shadow-primary/30" @click="buyNow">
+              💳 Comprar Ahora
+            </button>
+            
+            <button v-if="product?.has_template" class="btn btn-outline btn-lg w-full text-lg h-16 border-slate-300 text-slate-600 hover:bg-slate-50 hover:text-slate-800 hover:border-slate-400" @click="trySandbox" :disabled="loadingSandbox">
+              <span v-if="loadingSandbox" class="loading loading-spinner"></span>
+              {{ loadingSandbox ? 'Preparando...' : '🛠️ Probar Gratis en Sandbox' }}
+            </button>
+          </div>
         </div>
       </div>
+
     </div>
   </div>
 </template>
@@ -80,79 +101,5 @@ const buyNow = () => {
 </script>
 
 <style scoped>
-.product-detail {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-.header-banner {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-.template-badge {
-  background: #fef3c7;
-  color: #d97706;
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  font-weight: bold;
-  display: inline-block;
-  margin-top: 1rem;
-}
-.detail-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-}
-.image-placeholder {
-  background: #f1f5f9;
-  border-radius: 12px;
-  min-height: 400px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #94a3b8;
-  font-size: 1.2rem;
-  border: 2px dashed #cbd5e1;
-}
-.info-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-}
-.desc {
-  color: #64748b;
-  line-height: 1.6;
-  margin-bottom: 1.5rem;
-}
-.price {
-  font-size: 2rem;
-  font-weight: 800;
-  color: #0f172a;
-  margin-bottom: 2rem;
-}
-.actions {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.btn {
-  padding: 1rem;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  font-size: 1.1rem;
-}
-.btn-primary {
-  background: #3b82f6;
-  color: white;
-}
-.btn-primary:hover { background: #2563eb; }
-.btn-secondary {
-  background: #f8fafc;
-  color: #475569;
-  border: 1px solid #cbd5e1;
-}
-.btn-secondary:hover { background: #f1f5f9; }
+/* Estilos manuales eliminados. Tailwind se encarga de todo. */
 </style>
