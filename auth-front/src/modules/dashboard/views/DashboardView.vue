@@ -1,29 +1,42 @@
 <template>
-  <div v-if="authStore.user" class="dashboard-container">
-    <div class="header">
-      <h1>Panel B2C</h1>
-      <button class="btn-logout" @click="onLogout">Cerrar Sesión</button>
+  <div v-if="authStore.user" class="space-y-8">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-extrabold text-slate-800">Panel B2C</h1>
+        <p class="text-slate-500 mt-1">Bienvenido de vuelta, <strong class="text-slate-700">{{ authStore.user.username }}</strong></p>
+      </div>
+      <router-link to="/catalog" class="btn btn-primary">Explorar Catálogo</router-link>
     </div>
-    <p>Bienvenido, <strong>{{ authStore.user.username }}</strong></p>
 
-    <div class="deployments-section">
-      <h2>Tus Diseños (Deployments)</h2>
+    <div>
+      <h2 class="text-xl font-bold text-slate-800 border-b border-slate-200 pb-2 mb-6">Tus Diseños (Deployments)</h2>
       
-      <div v-if="loading">Cargando tus invitaciones...</div>
-      <div v-else-if="deployments.length === 0">
-        <p>Aún no tienes invitaciones.</p>
-        <router-link to="/catalog" class="btn btn-primary">Ver Catálogo</router-link>
+      <div v-if="loading" class="flex justify-center py-12">
+        <span class="loading loading-spinner loading-lg text-primary"></span>
       </div>
       
-      <div v-else class="cards">
-        <div class="card" v-for="dep in deployments" :key="dep.id">
-          <span class="badge">{{ dep.status }}</span>
-          <h3>Diseño #{{ dep.id }}</h3>
-          <p>Producto ID: {{ dep.product }}</p>
-          <div class="card-actions">
-            <router-link :to="'/builder/' + dep.id" class="btn btn-secondary">✏️ Editar Diseño</router-link>
-            <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="btn btn-link">👁️ Ver Previa</a>
-            <button @click="onDelete(dep.id)" class="btn btn-danger-sm">🗑️</button>
+      <div v-else-if="deployments.length === 0" class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center">
+        <div class="text-4xl mb-4">🎨</div>
+        <h3 class="text-lg font-bold text-slate-800">Aún no tienes diseños</h3>
+        <p class="text-slate-500 mt-2 mb-6">Visita el catálogo para empezar a crear tus invitaciones.</p>
+        <router-link to="/catalog" class="btn btn-primary">Ir al Catálogo</router-link>
+      </div>
+      
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="card bg-white shadow-xl border border-slate-100 transition-all hover:-translate-y-1 hover:shadow-2xl" v-for="dep in deployments" :key="dep.id">
+          <div class="card-body">
+            <div class="flex justify-between items-start mb-2">
+              <h3 class="card-title text-lg">Diseño #{{ dep.id }}</h3>
+              <div class="badge badge-warning badge-sm font-bold">{{ dep.status }}</div>
+            </div>
+            
+            <p class="text-sm text-slate-500">Producto Base ID: {{ dep.product }}</p>
+            
+            <div class="card-actions justify-end mt-6 pt-4 border-t border-slate-100 flex-nowrap">
+              <router-link :to="'/builder/' + dep.id" class="btn btn-sm btn-outline btn-primary flex-1">✏️ Editar</router-link>
+              <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="btn btn-sm btn-outline flex-1">👁️ Previa</a>
+              <button @click="onDelete(dep.id)" class="btn btn-sm btn-error btn-square text-white tooltip tooltip-top" data-tip="Eliminar">🗑️</button>
+            </div>
           </div>
         </div>
       </div>
@@ -73,29 +86,6 @@ onMounted(() => {
   fetchDeployments();
 });
 
-const onLogout = () => {
-  authStore.logout();
-  router.push({ name: 'login' });
-};
-</script>
-
 <style scoped>
-.dashboard-container { padding: 2rem; max-width: 1000px; margin: 0 auto; }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-.btn-logout { background: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; }
-.btn-logout:hover { background: #fee2e2; }
-
-.deployments-section { margin-top: 3rem; }
-.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
-.card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); position: relative; border: 1px solid #e2e8f0; }
-.badge { position: absolute; top: 1rem; right: 1rem; background: #fef3c7; color: #d97706; padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.75rem; font-weight: bold; }
-.card-actions { margin-top: 1.5rem; display: flex; gap: 0.5rem; }
-.btn { padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; font-size: 0.9rem; text-align: center; }
-.btn-primary { background: #3b82f6; color: white; }
-.btn-secondary { background: #f8fafc; color: #475569; border: 1px solid #cbd5e1; flex: 1; }
-.btn-secondary:hover { background: #f1f5f9; }
-.btn-link { color: #3b82f6; border: 1px solid #bfdbfe; background: transparent; flex: 1; }
-.btn-link:hover { background: #eff6ff; }
-.btn-danger-sm { background: #ef4444; color: white; border: none; padding: 0.5rem; border-radius: 6px; cursor: pointer; }
-.btn-danger-sm:hover { background: #dc2626; }
+/* Eliminated old manual CSS. Handled by Tailwind. */
 </style>

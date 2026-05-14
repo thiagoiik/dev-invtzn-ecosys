@@ -1,25 +1,29 @@
 <template>
-  <div class="checkout-container">
-    <div class="checkout-card">
-      <h2>Finalizar Compra</h2>
-      <p class="subtitle">Estás a un paso de obtener tu diseño.</p>
+  <div class="flex justify-center py-12 px-4">
+    <div class="card w-full max-w-lg bg-white shadow-2xl border border-slate-100">
+      <div class="card-body">
+        <h2 class="card-title text-2xl font-bold text-slate-800">Finalizar Compra</h2>
+        <p class="text-slate-500 mb-6">Estás a un paso de obtener tu diseño.</p>
 
-      <div class="order-summary" v-if="product">
-        <div class="row">
-          <span>Producto:</span>
-          <strong>{{ product.name }}</strong>
+        <div v-if="product" class="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <span class="text-slate-600 font-medium">Producto:</span>
+            <strong class="text-slate-800 text-right">{{ product.name }}</strong>
+          </div>
+          <div class="divider my-2"></div>
+          <div class="flex justify-between items-center mt-4">
+            <span class="text-slate-600 font-medium">Total a Pagar:</span>
+            <strong class="text-2xl text-slate-800">${{ product.base_price }} <span class="text-sm font-normal text-slate-500">MXN</span></strong>
+          </div>
         </div>
-        <div class="row total">
-          <span>Total a Pagar:</span>
-          <strong>${{ product.base_price }} MXN</strong>
-        </div>
-      </div>
 
-      <div class="payment-box">
-        <p class="mock-text">Simulador de Pago Seguro 🔒</p>
-        <button class="btn btn-pay" @click="processPayment" :disabled="loading">
-          {{ loading ? 'Procesando Tarjeta...' : 'Pagar Ahora' }}
-        </button>
+        <div class="mt-4 text-center">
+          <p class="text-xs text-slate-400 mb-3 uppercase tracking-widest font-bold">🔒 Pago Seguro Encriptado</p>
+          <button class="btn btn-success w-full h-16 text-lg" @click="processPayment" :disabled="loading">
+            <span v-if="loading" class="loading loading-spinner"></span>
+            {{ loading ? 'Procesando Tarjeta...' : 'Pagar Ahora' }}
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -79,65 +83,5 @@ const processPayment = async () => {
 </script>
 
 <style scoped>
-.checkout-container {
-  display: flex;
-  justify-content: center;
-  padding: 4rem 1rem;
-}
-.checkout-card {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  width: 100%;
-  max-width: 500px;
-  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-}
-.subtitle {
-  color: #64748b;
-  margin-bottom: 2rem;
-}
-.order-summary {
-  background: #f8fafc;
-  padding: 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
-}
-.row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-.row.total {
-  border-top: 1px solid #e2e8f0;
-  padding-top: 1rem;
-  font-size: 1.25rem;
-  margin-bottom: 0;
-}
-.payment-box {
-  text-align: center;
-}
-.mock-text {
-  color: #94a3b8;
-  font-size: 0.85rem;
-  margin-bottom: 1rem;
-}
-.btn-pay {
-  width: 100%;
-  background: #10b981;
-  color: white;
-  border: none;
-  padding: 1rem;
-  border-radius: 8px;
-  font-size: 1.2rem;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.btn-pay:hover:not(:disabled) {
-  background: #059669;
-}
-.btn-pay:disabled {
-  background: #94a3b8;
-  cursor: not-allowed;
-}
+/* Tailwind maneja los estilos */
 </style>

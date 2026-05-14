@@ -1,29 +1,38 @@
 <template>
-  <div class="register-container">
-    <h2>Crear Cuenta</h2>
-    <form @submit.prevent="handleRegister">
-      <div class="form-group">
-        <label>Usuario:</label>
-        <input v-model="form.username" type="text" required maxlength="150" />
-      </div>
-      <div class="form-group">
-        <label>Email (Opcional):</label>
-        <input v-model="form.email" type="email" />
-      </div>
-      <div class="form-group">
-        <label>Contraseña:</label>
-        <input v-model="form.password1" type="password" required />
-      </div>
-      <div class="form-group">
-        <label>Confirmar Contraseña:</label>
-        <input v-model="form.password2" type="password" required />
+  <div>
+    <h3 class="text-2xl font-bold text-center mb-6 text-slate-800">Crear Cuenta</h3>
+    <form @submit.prevent="handleRegister" class="space-y-4">
+      <div class="form-control w-full">
+        <label class="label"><span class="label-text font-semibold">Usuario</span></label>
+        <input v-model="form.username" type="text" class="input input-bordered w-full" required maxlength="150" />
       </div>
       
-      <button type="submit" :disabled="loading">
-        {{ loading ? 'Registrando...' : 'Registrarse' }}
-      </button>
+      <div class="form-control w-full">
+        <label class="label"><span class="label-text font-semibold">Email (Opcional)</span></label>
+        <input v-model="form.email" type="email" class="input input-bordered w-full" />
+      </div>
+      
+      <div class="form-control w-full">
+        <label class="label"><span class="label-text font-semibold">Contraseña</span></label>
+        <input v-model="form.password1" type="password" class="input input-bordered w-full" required />
+      </div>
+      
+      <div class="form-control w-full">
+        <label class="label"><span class="label-text font-semibold">Confirmar Contraseña</span></label>
+        <input v-model="form.password2" type="password" class="input input-bordered w-full" required />
+      </div>
+      
+      <div class="mt-6">
+        <button type="submit" class="btn btn-primary w-full" :disabled="loading">
+          <span v-if="loading" class="loading loading-spinner"></span>
+          {{ loading ? 'Registrando...' : 'Registrarse' }}
+        </button>
+      </div>
     </form>
-    <router-link to="/login">¿Ya tienes cuenta? Inicia sesión</router-link>
+    
+    <div class="mt-6 text-center text-sm">
+      <router-link to="/login" class="link link-primary">¿Ya tienes cuenta? Inicia sesión</router-link>
+    </div>
   </div>
 </template>
 

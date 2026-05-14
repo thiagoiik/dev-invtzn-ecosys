@@ -1,30 +1,42 @@
 <template>
-  <div class="catalog-container">
-    <h2>Catálogo de Invitaciones y Servicios</h2>
-    <p class="subtitle">Explora nuestras plantillas y productos disponibles para tu próximo evento.</p>
+  <div class="space-y-8">
+    <div class="text-center max-w-2xl mx-auto">
+      <h2 class="text-3xl font-extrabold text-slate-800">Catálogo de Productos</h2>
+      <p class="text-slate-500 mt-2">Explora nuestras plantillas e invitaciones premium disponibles para tu próximo evento.</p>
+    </div>
 
-    <div v-if="loading" class="loading-state">
-      <p>Cargando catálogo...</p>
+    <div v-if="loading" class="flex justify-center py-12">
+      <span class="loading loading-spinner loading-lg text-primary"></span>
     </div>
     
-    <div v-else-if="products.length === 0" class="empty-state">
-      <p>Aún no hay productos disponibles en el catálogo.</p>
+    <div v-else-if="products.length === 0" class="bg-white p-12 rounded-2xl shadow-sm border border-slate-200 text-center">
+      <div class="text-5xl mb-4">🛍️</div>
+      <h3 class="text-xl font-bold text-slate-800">Próximamente</h3>
+      <p class="text-slate-500 mt-2">Aún no hay productos disponibles en el catálogo.</p>
     </div>
 
-    <div v-else class="products-grid">
-      <div v-for="product in products" :key="product.id" class="product-card">
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div v-for="product in products" :key="product.id" class="card bg-white shadow-lg border border-slate-100 transition-all hover:-translate-y-2 hover:shadow-2xl overflow-hidden group">
         
-        <div class="product-badges">
-          <span class="badge type-badge">{{ translateType(product.product_type) }}</span>
-          <span v-if="product.has_template" class="badge template-badge">★ Diseño Interactivo</span>
-        </div>
+        <!-- Imagen de placeholder por ahora, como decoración -->
+        <figure class="h-48 bg-slate-100 flex items-center justify-center relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent"></div>
+          <span class="text-5xl group-hover:scale-110 transition-transform duration-300">🎟️</span>
+        </figure>
 
-        <h3 class="product-name">{{ product.name }}</h3>
-        <p class="product-description">{{ product.description || 'Sin descripción disponible.' }}</p>
-        
-        <div class="product-footer">
-          <span class="product-price">${{ product.base_price }} MXN</span>
-          <button class="btn-buy" @click="handleBuy(product)">Ver Detalles</button>
+        <div class="card-body">
+          <div class="flex gap-2 flex-wrap mb-2">
+            <span class="badge badge-primary badge-outline">{{ translateType(product.product_type) }}</span>
+            <span v-if="product.has_template" class="badge badge-accent badge-outline">★ Diseño Interactivo</span>
+          </div>
+
+          <h3 class="card-title text-xl text-slate-800">{{ product.name }}</h3>
+          <p class="text-slate-500 text-sm flex-grow line-clamp-3">{{ product.description || 'Sin descripción disponible.' }}</p>
+          
+          <div class="card-actions justify-between items-center mt-6 pt-4 border-t border-slate-100">
+            <span class="text-2xl font-black text-slate-800">${{ product.base_price }} <span class="text-xs text-slate-400 font-normal">MXN</span></span>
+            <button class="btn btn-primary" @click="handleBuy(product)">Ver Detalles</button>
+          </div>
         </div>
       </div>
     </div>
@@ -74,88 +86,5 @@ const handleBuy = (product) => {
 </script>
 
 <style scoped>
-.catalog-container {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-.subtitle {
-  color: #666;
-  margin-bottom: 2rem;
-}
-.products-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
-}
-.product-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  display: flex;
-  flex-direction: column;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  border: 1px solid #eee;
-}
-.product-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 15px rgba(0,0,0,0.1);
-}
-.product-badges {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-.badge {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 999px;
-  font-weight: bold;
-}
-.type-badge {
-  background: #e2e8f0;
-  color: #475569;
-}
-.template-badge {
-  background: #fef3c7;
-  color: #d97706;
-}
-.product-name {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.25rem;
-  color: #1e293b;
-}
-.product-description {
-  color: #64748b;
-  font-size: 0.9rem;
-  flex-grow: 1;
-  margin-bottom: 1.5rem;
-}
-.product-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: auto;
-  border-top: 1px solid #f1f5f9;
-  padding-top: 1rem;
-}
-.product-price {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #0f172a;
-}
-.btn-buy {
-  background: #3b82f6;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.btn-buy:hover {
-  background: #2563eb;
-}
+/* Estilos manuales eliminados. Tailwind se encarga. */
 </style>

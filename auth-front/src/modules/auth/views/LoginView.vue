@@ -1,16 +1,31 @@
 <template>
-  <div class="login-container">
-    <form @submit.prevent="handleLogin">
-      <input v-model="usernameOrEmail" type="text" placeholder="Usuario o Email" :disabled="loading" required />
-      <input v-model="password" type="password" placeholder="Contraseña" :disabled="loading" required />
+  <div>
+    <h3 class="text-2xl font-bold text-center mb-6 text-slate-800">Iniciar Sesión</h3>
+    <form @submit.prevent="handleLogin" class="space-y-4">
+      <div class="form-control w-full">
+        <label class="label"><span class="label-text font-semibold">Usuario o Email</span></label>
+        <input v-model="usernameOrEmail" type="text" placeholder="Ej. juanperez" class="input input-bordered w-full" :disabled="loading" required />
+      </div>
       
-      <button type="submit" :disabled="loading">
-        {{ loading ? 'Entrando...' : 'Ingresar' }}
-      </button>
+      <div class="form-control w-full">
+        <label class="label"><span class="label-text font-semibold">Contraseña</span></label>
+        <input v-model="password" type="password" placeholder="••••••••" class="input input-bordered w-full" :disabled="loading" required />
+      </div>
       
-      <p v-if="error" style="color: red;">{{ error }}</p>
+      <div class="mt-6">
+        <button type="submit" class="btn btn-primary w-full" :disabled="loading">
+          <span v-if="loading" class="loading loading-spinner"></span>
+          {{ loading ? 'Entrando...' : 'Ingresar' }}
+        </button>
+      </div>
+      
+      <p v-if="error" class="text-error text-sm text-center mt-2">{{ error }}</p>
     </form>
-    <router-link to="/password-reset">¿Olvidaste tu contraseña?</router-link>
+    
+    <div class="mt-6 flex flex-col gap-2 text-center text-sm">
+      <router-link to="/auth/registration" class="link link-primary">¿No tienes cuenta? Regístrate aquí</router-link>
+      <router-link to="/password-reset" class="link link-hover text-slate-500">¿Olvidaste tu contraseña?</router-link>
+    </div>
   </div>
 </template>
 
