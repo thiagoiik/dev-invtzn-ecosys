@@ -60,3 +60,27 @@ class DeploymentViewSet(viewsets.ModelViewSet):
             'slug': deployment.slug,
             'product_type': deployment.product.product_type
         })
+
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='slug/(?P<slug>[^/.]+)/rsvp')
+    def public_rsvp_by_slug(self, request, slug=None):
+        deployment = get_object_or_404(Deployment, slug=slug)
+        
+        full_name = request.data.get('full_name')
+        attending = request.data.get('attending')
+        
+        if not full_name:
+            return Response({'error': 'El nombre completo es requerido'}, status=400)
+            
+        # Convert attending to boolean if it's a string
+        is_attending = True
+        if str(attending).lower() in ['false', 'no', '0']:
+            is_attending = False
+
+        from .models import Guest
+        guest = Guest.objects.create(
+            deployment=deployment,
+            full_name=full_name,
+            attending=is_attending
+        )
+        
+        return Response({'success': 'Confirmación recibida', 'guest_id': guest.id})

@@ -1,80 +1,99 @@
 <template>
-  <div class="engine-rsvp" :style="{ backgroundColor: config.bgColor || '#f8fafc' }">
-    <div class="rsvp-card">
-      <h2>Confirma tu Asistencia</h2>
-      <p>Nos encantaría contar con tu presencia.</p>
-      
-      <form @submit.prevent="submitRSVP" class="rsvp-form">
-        <input type="text" placeholder="Nombre completo" required />
-        <select required>
-          <option value="">¿Asistirás?</option>
-          <option value="yes">¡Sí, ahí estaré!</option>
-          <option value="no">Lo siento, no podré asistir</option>
-        </select>
-        <button type="submit" :style="{ backgroundColor: config.btnColor || '#3b82f6' }">
-          Enviar Confirmación
-        </button>
-      </form>
+  <div class="py-24 px-4 min-h-[60vh] flex items-center justify-center" :style="{ backgroundColor: config.bgColor || '#f8fafc' }">
+    <div class="card w-full max-w-md bg-base-100 shadow-xl">
+      <div class="card-body items-center text-center">
+        <h2 class="card-title text-3xl font-bold text-slate-800 mb-2">Confirma tu Asistencia</h2>
+        <p class="text-slate-500 mb-6">Nos encantaría contar con tu presencia.</p>
+        
+        <div v-if="successMsg" class="alert alert-success shadow-sm mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <span>{{ successMsg }}</span>
+        </div>
+
+        <form v-else @submit.prevent="submitRSVP" class="w-full flex flex-col gap-4">
+          <div class="form-control w-full">
+            <input 
+              v-model="form.full_name" 
+              type="text" 
+              placeholder="Nombre completo" 
+              class="input input-bordered w-full" 
+              required 
+            />
+          </div>
+          
+          <div class="form-control w-full">
+            <select v-model="form.attending" class="select select-bordered w-full" required>
+              <option value="" disabled selected>¿Asistirás?</option>
+              <option value="yes">¡Sí, ahí estaré!</option>
+              <option value="no">Lo siento, no podré asistir</option>
+            </select>
+          </div>
+          
+          <div class="card-actions w-full mt-4">
+            <button 
+              type="submit" 
+              class="btn w-full text-white border-none shadow-md"
+              :class="{ 'loading': loading }"
+              :style="{ backgroundColor: config.btnColor || '#3b82f6' }"
+              :disabled="loading"
+            >
+              {{ loading ? 'Enviando...' : 'Enviar Confirmación' }}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { defineProps } from 'vue';
+import { ref, defineProps } from 'vue';
+import { engineService } from '@/modules/engine/services/engineService';
+import { useToast } from 'vue-toastification';
 
 const props = defineProps({
+  slug: {
+    type: String,
+    required: true
+  },
   config: {
     type: Object,
     default: () => ({})
   }
 });
 
-const submitRSVP = () => {
-  alert('Esto es un componente de prueba del Engine. En el futuro esto hará POST a /rsvp/');
+const toast = useToast();
+const loading = ref(false);
+const successMsg = ref('');
+const form = ref({
+  full_name: '',
+  attending: ''
+});
+
+const submitRSVP = async () => {
+  if (!form.value.full_name || !form.value.attending) {
+    return toast.warning('Por favor completa todos los campos.');
+  }
+
+  loading.value = true;
+  try {
+    await engineService.submitRSVP(props.slug, {
+      full_name: form.value.full_name,
+      attending: form.value.attending === 'yes'
+    });
+    
+    successMsg.value = form.value.attending === 'yes' 
+      ? '¡Genial! Hemos registrado tu asistencia.' 
+      : 'Entendido. Lamentamos que no puedas venir.';
+      
+  } catch (error) {
+    toast.error('Hubo un error al enviar tu respuesta. Intenta de nuevo.');
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 
 <style scoped>
-.engine-rsvp {
-  padding: 4rem 1rem;
-  display: flex;
-  justify-content: center;
-}
-.rsvp-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  text-align: center;
-  max-width: 400px;
-  width: 100%;
-}
-.rsvp-card h2 {
-  color: #1e293b;
-  margin-bottom: 0.5rem;
-}
-.rsvp-card p {
-  color: #64748b;
-  margin-bottom: 1.5rem;
-}
-.rsvp-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-input, select {
-  padding: 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-  font-size: 1rem;
-}
-button {
-  color: white;
-  padding: 0.75rem;
-  border: none;
-  border-radius: 6px;
-  font-weight: bold;
-  cursor: pointer;
-  font-size: 1rem;
-}
+/* Tailwind maneja los estilos */
 </style>

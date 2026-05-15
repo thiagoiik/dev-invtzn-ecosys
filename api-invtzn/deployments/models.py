@@ -29,3 +29,12 @@ class Deployment(models.Model):
 
     def __str__(self):
         return f"{self.slug or 'Draft'} - User {self.user} ({self.status})"
+
+class Guest(models.Model):
+    deployment = models.ForeignKey(Deployment, on_delete=models.CASCADE, related_name='guests')
+    full_name = models.CharField(max_length=150)
+    attending = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.full_name} - {'Asiste' if self.attending else 'No asiste'} ({self.deployment.slug})"

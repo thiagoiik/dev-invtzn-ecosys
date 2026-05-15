@@ -6,5 +6,9 @@ export const engineService = {
   // pero nuestro backend ya permite peticiones públicas a este endpoint específico.
   fetchDeploymentBySlug(slug) {
     return invtznClient.get(`deployments/slug/${slug}/`);
+  },
+  
+  submitRSVP(slug, data) {
+    return invtznClient.post(`deployments/slug/${slug}/rsvp/`, data);
   }
 };
