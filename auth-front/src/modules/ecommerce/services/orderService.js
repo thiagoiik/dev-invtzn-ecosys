@@ -1,12 +1,14 @@
 import invtznClient from '@/core/api/invtznClient';
 
 export const orderService = {
-  createOrder(productId, totalAmount) {
-    // Crea una orden en estado PENDING
-    return invtznClient.post('orders/', {
+  createOrder(productId, totalAmount, userId = null) {
+    const payload = {
       product: productId,
       total_amount: totalAmount,
       status: 'PENDING'
-    });
+    };
+    if (userId) payload.user = userId;
+    
+    return invtznClient.post('orders/', payload);
   }
 };

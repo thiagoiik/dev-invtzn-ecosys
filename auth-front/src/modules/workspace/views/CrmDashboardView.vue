@@ -1,40 +1,66 @@
 <template>
-  <div class="crm-dashboard">
-    <div class="header">
-      <h3>Directorio de Clientes</h3>
-      <button @click="loadProfiles" class="btn btn-refresh">🔄 Actualizar</button>
+  <div class="space-y-6">
+    <div class="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+      <div>
+        <h3 class="text-2xl font-bold text-slate-800">Directorio de Clientes</h3>
+        <p class="text-slate-500 text-sm mt-1">Gestión de usuarios y billeteras (CRM)</p>
+      </div>
+      <button @click="loadProfiles" class="btn btn-outline btn-primary">
+        <span v-if="loading" class="loading loading-spinner loading-sm"></span>
+        <span v-else>🔄</span> Actualizar
+      </button>
     </div>
 
-    <div v-if="loading" class="loading">Cargando datos del CRM...</div>
+    <div v-if="loading" class="flex justify-center py-12">
+      <span class="loading loading-spinner loading-lg text-primary"></span>
+    </div>
     
-    <table v-else class="data-grid">
-      <thead>
-        <tr>
-          <th>ID Usuario</th>
-          <th>Rol</th>
-          <th>Tipo</th>
-          <th>Billetera</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="profile in profiles" :key="profile.remote_auth_id">
-          <td>#{{ profile.remote_auth_id }}</td>
-          <td>
-            <span :class="['badge', profile.custom_role.toLowerCase()]">
-              {{ profile.custom_role }}
-            </span>
-          </td>
-          <td>{{ profile.customer_type }}</td>
-          <td>${{ profile.current_balance }}</td>
-          <td>
-            <button @click="promoteToVendor(profile)" class="btn btn-sm" v-if="profile.custom_role === 'CLIENT'">
-              Hacer Vendedor
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div v-else class="card bg-base-100 shadow-xl border border-slate-100 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="table table-zebra w-full">
+          <!-- head -->
+          <thead class="bg-slate-50 text-slate-600 text-sm">
+            <tr>
+              <th>ID Usuario</th>
+              <th>Rol</th>
+              <th>Tipo Cliente</th>
+              <th>Billetera</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="profile in profiles" :key="profile.remote_auth_id">
+              <td class="font-medium text-slate-800">#{{ profile.remote_auth_id }}</td>
+              <td>
+                <div :class="[
+                  'badge font-bold',
+                  profile.custom_role === 'ADMIN' ? 'badge-error' : '',
+                  profile.custom_role === 'VENDOR' ? 'badge-success text-white' : '',
+                  profile.custom_role === 'CLIENT' ? 'badge-info text-white' : ''
+                ]">
+                  {{ profile.custom_role }}
+                </div>
+              </td>
+              <td>{{ profile.customer_type }}</td>
+              <td class="font-bold text-slate-700">${{ profile.current_balance }}</td>
+              <td>
+                <div class="flex gap-2">
+                  <button @click="promoteToVendor(profile)" class="btn btn-xs btn-success text-white" v-if="profile.custom_role === 'CLIENT'">
+                    ↑ Hacer Vendedor
+                  </button>
+                  <button @click="promoteToAdmin(profile)" class="btn btn-xs btn-error text-white" v-if="profile.custom_role === 'VENDOR'">
+                    ↑ Hacer Admin
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="profiles.length === 0">
+              <td colspan="5" class="text-center py-8 text-slate-500">No se encontraron usuarios en la base de datos.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -50,7 +76,7 @@ const loading = ref(true);
 const loadProfiles = async () => {
   loading.value = true;
   try {
-    const res = await crmService.fetchAllProfiles();
+    const res = await crmService.fetchUsers();
     profiles.value = res.data;
   } catch (error) {
     toast.error('No tienes permisos para ver el CRM o hubo un error.');
@@ -60,9 +86,21 @@ const loadProfiles = async () => {
 };
 
 const promoteToVendor = async (profile) => {
+  if(!confirm(`¿Hacer a #${profile.remote_auth_id} Vendedor?`)) return;
   try {
-    await crmService.updateProfileRole(profile.remote_auth_id, 'VENDOR');
+    await crmService.updateUserRole(profile.id, 'VENDOR');
     toast.success(`Usuario #${profile.remote_auth_id} ascendido a VENDOR`);
+    loadProfiles();
+  } catch (error) {
+    toast.error('Error al actualizar el rol');
+  }
+};
+
+const promoteToAdmin = async (profile) => {
+  if(!confirm(`¿Hacer a #${profile.remote_auth_id} Administrador?`)) return;
+  try {
+    await crmService.updateUserRole(profile.id, 'ADMIN');
+    toast.success(`Usuario #${profile.remote_auth_id} ascendido a ADMIN`);
     loadProfiles();
   } catch (error) {
     toast.error('Error al actualizar el rol');
@@ -75,56 +113,5 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.crm-dashboard {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-}
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-.btn {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-}
-.btn-refresh {
-  background: #f1f5f9;
-  color: #475569;
-}
-.btn-sm {
-  background: #10b981;
-  color: white;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.85rem;
-}
-.data-grid {
-  width: 100%;
-  border-collapse: collapse;
-}
-.data-grid th, .data-grid td {
-  padding: 1rem;
-  text-align: left;
-  border-bottom: 1px solid #e2e8f0;
-}
-.data-grid th {
-  background: #f8fafc;
-  color: #64748b;
-  font-weight: 600;
-}
-.badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  font-weight: bold;
-}
-.badge.client { background: #e0f2fe; color: #0284c7; }
-.badge.vendor { background: #dcfce7; color: #16a34a; }
-.badge.admin { background: #fef08a; color: #854d0e; }
+/* Tailwind maneja los estilos */
 </style>
