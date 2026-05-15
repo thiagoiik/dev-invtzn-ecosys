@@ -1,40 +1,97 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, permissions, status
+from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import Order
-from .serializers import OrderSerializer
+from .models import Order, CashSession, Commission
+from .serializers import OrderSerializer, CashSessionSerializer, CommissionSerializer
+from profiles.models import UserProfile
+from django.db import models
 
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
 
-    def _get_user_role(self):
-        from profiles.models import UserProfile
+    def _get_user_profile(self):
         try:
-            profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
-            return profile.custom_role
+            return UserProfile.objects.get(remote_auth_id=self.request.user.id)
         except UserProfile.DoesNotExist:
             return None
 
     def get_queryset(self):
-        # ADMIN ve todo. VENDOR ve lo suyo y lo que vendió. CLIENT ve lo suyo.
-        from profiles.models import UserProfile
-        from django.db import models
-        role = self._get_user_role()
-        
-        if role == UserProfile.Role.ADMIN:
+        profile = self._get_user_profile()
+        if not profile:
+            return Order.objects.none()
+            
+        if profile.custom_role == UserProfile.Role.ADMIN:
             return Order.objects.all().order_by('-created_at')
-        if role == UserProfile.Role.VENDOR:
-            return Order.objects.filter(models.Q(user=self.request.user.id) | models.Q(vendor_id=self.request.user.id)).order_by('-created_at')
+        if profile.custom_role == UserProfile.Role.VENDOR:
+            return Order.objects.filter(
+                models.Q(user=self.request.user.id) | 
+                models.Q(vendor_id=self.request.user.id)
+            ).order_by('-created_at')
             
         return Order.objects.filter(user=self.request.user.id).order_by('-created_at')
 
     def perform_create(self, serializer):
-        from profiles.models import UserProfile
-        role = self._get_user_role()
+        profile = self._get_user_profile()
+        role = profile.custom_role if profile else UserProfile.Role.CLIENT
         
-        # Si es VENDOR/ADMIN y viene un user en la request, se lo asignamos
-        if role in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR] and 'user' in self.request.data:
-            serializer.save(vendor_id=self.request.user.id) # El serializer usará el user enviado pero registramos el vendor_id
+        # Valores por defecto
+        save_kwargs = {}
+        
+        if role in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR]:
+            # Si el Staff registra la orden para un cliente (Buscó al cliente en el POS)
+            if 'user' in self.request.data:
+                save_kwargs['vendor_id'] = self.request.user.id
+                save_kwargs['origin'] = Order.OriginChoices.POS
+                if profile and profile.assigned_store:
+                    save_kwargs['store'] = profile.assigned_store
+            else:
+                # El staff compra para sí mismo (B2C flow siendo staff)
+                save_kwargs['user'] = self.request.user.id
+                save_kwargs['origin'] = Order.OriginChoices.ONLINE
         else:
-            # Forzamos al usuario actual
-            serializer.save(user=self.request.user.id)
+            # Cliente normal comprando online
+            save_kwargs['user'] = self.request.user.id
+            save_kwargs['origin'] = Order.OriginChoices.ONLINE
+
+        order = serializer.save(**save_kwargs)
+        
+        # Lógica de Comisiones: Solo si es POS y hay un vendedor diferente al cliente
+        if order.origin == Order.OriginChoices.POS and order.vendor_id:
+            if profile and profile.base_commission_rate > 0:
+                commission_amount = (order.total_amount * profile.base_commission_rate) / 100
+                Commission.objects.create(
+                    order=order,
+                    vendor_id=order.vendor_id,
+                    amount=commission_amount,
+                    percentage=profile.base_commission_rate
+                )
+
+class CashSessionViewSet(viewsets.ModelViewSet):
+    serializer_class = CashSessionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
+            if profile.custom_role == UserProfile.Role.ADMIN:
+                return CashSession.objects.all()
+        except: pass
+        return CashSession.objects.filter(user=self.request.user.id)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user.id)
+
+class CommissionViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = CommissionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
+            if profile.custom_role == UserProfile.Role.ADMIN:
+                return Commission.objects.all()
+        except: pass
+        return Commission.objects.filter(vendor_id=self.request.user.id)

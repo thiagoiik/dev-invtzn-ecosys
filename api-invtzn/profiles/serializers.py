@@ -19,6 +19,8 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'base_commission_rate', 
             'current_balance',
             'internal_notes', 
+            'assigned_store',
+            'vendor_mode',
             'created_at', 
             'updated_at'
         ]
@@ -27,6 +29,5 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'remote_auth_id', 
             'custom_role', 
             'base_commission_rate', 
-            'current_balance', 
-            'internal_notes'
+            'current_balance'
         ]

@@ -14,6 +14,10 @@ class UserProfile(models.Model):
         ACTIVE = 'ACTIVE', 'Activo'
         VIP = 'VIP', 'VIP'
 
+    class VendorMode(models.TextChoices):
+        PHYSICAL = 'PHYSICAL', 'En Tienda (Físico)'
+        REMOTE = 'REMOTE', 'A distancia (Remoto)'
+
     # PK explícita: Vinculada directamente al ID del token JWT de api-auth
     remote_auth_id = models.IntegerField(primary_key=True)
     
@@ -23,6 +27,10 @@ class UserProfile(models.Model):
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     customer_type = models.CharField(max_length=20, choices=CustomerType.choices, default=CustomerType.LEAD)
     internal_notes = models.TextField(blank=True, null=True, help_text="Notas del CRM para vendedores")
+    
+    # Configuración de Vendedor
+    vendor_mode = models.CharField(max_length=20, choices=VendorMode.choices, default=VendorMode.REMOTE)
+    assigned_store = models.ForeignKey('inventory.Store', on_delete=models.SET_NULL, null=True, blank=True, related_name='staff')
     
     # Campos financieros
     base_commission_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0.00'), help_text="Porcentaje ej. 15.00")

@@ -22,6 +22,11 @@ export default [
         path: 'pos',
         name: 'workspace-pos',
         component: () => import('@/modules/workspace/views/PosView.vue')
+      },
+      {
+        path: 'stores',
+        name: 'workspace-stores',
+        component: () => import('@/modules/workspace/views/StoresManagerView.vue')
       }
     ]
   }

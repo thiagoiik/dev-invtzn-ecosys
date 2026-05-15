@@ -1,14 +1,45 @@
 <template>
   <div class="space-y-6">
+    <!-- Header dinámico con tienda -->
     <div class="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
       <div>
         <h2 class="text-2xl font-bold text-slate-800">Terminal Punto de Venta (POS)</h2>
-        <p class="text-slate-500">Registra ventas manuales y asigna diseños a clientes.</p>
+        <p class="text-slate-500">
+          {{ assignedStore ? `Sucursal: ${assignedStore.name}` : 'Modo Venta a Distancia' }}
+        </p>
       </div>
-      <div class="badge badge-primary p-4 font-bold">MODO VENDEDOR</div>
+      <div class="flex gap-3">
+        <button v-if="activeSession" class="btn btn-outline btn-error" @click="closeSession">
+          Cerrar Turno
+        </button>
+        <div class="badge badge-primary p-4 font-bold uppercase">{{ vendorMode }}</div>
+      </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Pantalla de Bloqueo: Apertura de Turno (Solo para Vendedores Físicos) -->
+    <div v-if="vendorMode === 'PHYSICAL' && !activeSession" class="flex justify-center py-20">
+      <div class="card w-96 bg-white shadow-xl border border-primary/20">
+        <div class="card-body text-center">
+          <div class="bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-bold">Apertura de Caja</h3>
+          <p class="text-slate-500 text-sm mb-6">Ingresa el saldo inicial para comenzar a vender en esta sucursal.</p>
+          <div class="form-control">
+            <input v-model="openingBalance" type="number" placeholder="$0.00" class="input input-bordered text-center text-2xl font-bold" />
+          </div>
+          <button class="btn btn-primary btn-block mt-6" @click="startShift" :disabled="loadingSession">
+            <span v-if="loadingSession" class="loading loading-spinner"></span>
+            Abrir Turno
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interfaz de Venta (Visible si hay sesión o si es remoto) -->
+    <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <!-- Columna Izquierda: Selección de Producto -->
       <div class="lg:col-span-2 space-y-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -36,7 +67,13 @@
 
       <!-- Columna Derecha: Resumen y Cliente -->
       <div class="space-y-6">
-        <div class="card bg-white shadow-xl border border-slate-200">
+        <div class="card bg-white shadow-xl border border-slate-200 overflow-hidden">
+          <!-- Panel de Comisiones Rápido -->
+          <div class="bg-slate-900 p-4 text-white flex justify-between items-center">
+            <span class="text-xs font-bold uppercase opacity-60">Mis Comisiones</span>
+            <span class="font-black text-green-400">${{ totalCommissions.toFixed(2) }}</span>
+          </div>
+          
           <div class="card-body p-6">
             <h3 class="text-lg font-bold text-slate-800 border-b pb-4 mb-4">Finalizar Venta</h3>
             
@@ -77,7 +114,7 @@
             <!-- Resumen -->
             <div class="space-y-4 mb-8">
               <div class="flex justify-between text-slate-600">
-                <span>Producto seleccionado:</span>
+                <span>Producto:</span>
                 <span class="font-bold text-slate-800">{{ selectedProduct?.name || 'Ninguno' }}</span>
               </div>
               <div class="divider my-0"></div>
@@ -110,6 +147,7 @@ import { useToast } from 'vue-toastification';
 import { catalogService } from '@/modules/ecommerce/services/catalogService';
 import { crmService } from '@/modules/workspace/services/crmService';
 import { orderService } from '@/modules/ecommerce/services/orderService';
+import { profileService } from '@/modules/dashboard/services/profileService';
 
 const toast = useToast();
 
@@ -122,6 +160,57 @@ const customer = ref(null);
 const searching = ref(false);
 
 const processing = ref(false);
+
+// Perfil y Tienda
+const vendorMode = ref('REMOTE');
+const assignedStore = ref(null);
+const activeSession = ref(null);
+const openingBalance = ref(0);
+const loadingSession = ref(false);
+
+// Comisiones
+const totalCommissions = ref(0);
+
+const initProfileData = async () => {
+  try {
+    const resProfile = await profileService.fetchMyProfile();
+    vendorMode.value = resProfile.data.vendor_mode;
+    
+    // Si tiene tienda asignada, cargar sus datos
+    if (resProfile.data.assigned_store) {
+      const storesRes = await crmService.fetchAllStores();
+      assignedStore.value = storesRes.data.find(s => s.id === resProfile.data.assigned_store);
+    }
+
+    // Cargar comisiones
+    const commRes = await crmService.fetchMyCommissions();
+    totalCommissions.value = commRes.data.reduce((acc, curr) => acc + parseFloat(curr.amount), 0);
+
+    // Cargar sesión activa
+    const sessionRes = await crmService.fetchMySessions();
+    activeSession.value = sessionRes.data.find(s => s.is_open);
+
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const startShift = async () => {
+  if (!assignedStore.value) {
+    toast.error('No tienes una sucursal asignada. Contacta al Admin.');
+    return;
+  }
+  loadingSession.value = true;
+  try {
+    const res = await crmService.openCashSession(openingBalance.value, assignedStore.value.id);
+    activeSession.value = res.data;
+    toast.success('Turno abierto correctamente. ¡Buena venta!');
+  } catch (e) {
+    toast.error('Error al abrir turno.');
+  } finally {
+    loadingSession.value = false;
+  }
+};
 
 const fetchProducts = async () => {
   loadingProducts.value = true;
@@ -142,9 +231,9 @@ const findCustomer = async () => {
   try {
     const res = await crmService.searchProfile(customerSearchId.value);
     customer.value = res.data;
-    toast.success('Cliente validado correctamente');
+    toast.success('Cliente validado');
   } catch (e) {
-    toast.error('No se encontró el cliente o no tienes permisos.');
+    toast.error('Cliente no encontrado');
   } finally {
     searching.value = false;
   }
@@ -152,31 +241,28 @@ const findCustomer = async () => {
 
 const processSale = async () => {
   if (!selectedProduct.value || !customer.value) return;
-  
   processing.value = true;
   try {
-    // Registramos la orden en el backend asignándola al cliente encontrado
     await orderService.createOrder(
       selectedProduct.value.id, 
       selectedProduct.value.base_price,
       customer.value.remote_auth_id
     );
-    
-    toast.success('¡Venta registrada con éxito!');
-    
-    // Limpiar formulario
+    toast.success('Venta registrada con éxito');
     selectedProduct.value = null;
     customer.value = null;
     customerSearchId.value = '';
-    
+    // Recargar comisiones
+    initProfileData();
   } catch (e) {
-    toast.error('Error al procesar la venta manual.');
+    toast.error('Error al procesar la venta.');
   } finally {
     processing.value = false;
   }
 };
 
 onMounted(() => {
+  initProfileData();
   fetchProducts();
 });
 </script>

@@ -1,14 +1,12 @@
 from rest_framework import serializers
-from .models import Product, Template
-
-class TemplateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Template
-        fields = ['vue_component_name', 'default_config']
+from .models import Product, Store
 
 class ProductSerializer(serializers.ModelSerializer):
-    template = TemplateSerializer(source='template_config', read_only=True)
-
     class Meta:
         model = Product
+        fields = '__all__'
+
+class StoreSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Store
         fields = '__all__'
