@@ -11,5 +11,9 @@ export const crmService = {
   
   fetchAllDeployments() {
     return invtznClient.get('deployments/');
+  },
+
+  searchProfile(remoteAuthId) {
+    return invtznClient.get('profiles/search/', { params: { remote_auth_id: remoteAuthId } });
   }
 };

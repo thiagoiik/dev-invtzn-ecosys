@@ -10,7 +10,8 @@
     <table v-else class="data-grid">
       <thead>
         <tr>
-          <th>ID Usuario</th>
+          <th>Usuario</th>
+          <th>ID</th>
           <th>Rol</th>
           <th>Tipo</th>
           <th>Billetera</th>
@@ -19,6 +20,9 @@
       </thead>
       <tbody>
         <tr v-for="profile in profiles" :key="profile.remote_auth_id">
+          <td>
+            <div class="font-bold">{{ profile.full_name || 'Desconocido' }}</div>
+          </td>
           <td>#{{ profile.remote_auth_id }}</td>
           <td>
             <span :class="['badge', profile.custom_role.toLowerCase()]">

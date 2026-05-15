@@ -12,6 +12,7 @@ class Order(models.Model):
         REFUNDED = 'REFUNDED', 'Reembolsado'
 
     user = models.IntegerField(db_index=True, help_text="ID del usuario en api-auth")
+    vendor_id = models.IntegerField(null=True, blank=True, help_text="ID del vendedor que registró la orden")
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     deployment = models.ForeignKey(Deployment, on_delete=models.SET_NULL, null=True, blank=True)
     

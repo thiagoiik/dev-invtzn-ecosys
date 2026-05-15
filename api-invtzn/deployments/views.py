@@ -11,17 +11,19 @@ class DeploymentViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Permitir que ADMIN, VENDOR y DESIGNER vean todas las invitaciones
         from profiles.models import UserProfile
+        from django.db import models
         try:
             profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
-            if profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR, UserProfile.Role.DESIGNER]:
-                return Deployment.objects.all()
+            if profile.custom_role == UserProfile.Role.ADMIN:
+                return Deployment.objects.all().order_by('-created_at')
+            if profile.custom_role in [UserProfile.Role.VENDOR, UserProfile.Role.DESIGNER]:
+                return Deployment.objects.filter(models.Q(user=self.request.user.id) | models.Q(vendor_id=self.request.user.id)).order_by('-created_at')
         except Exception:
             pass
             
         # Usuarios normales solo ven las suyas
-        return Deployment.objects.filter(user=self.request.user.id)
+        return Deployment.objects.filter(user=self.request.user.id).order_by('-created_at')
 
     def check_object_permissions(self, request, obj):
         super().check_object_permissions(request, obj)
@@ -48,6 +50,15 @@ class DeploymentViewSet(viewsets.ModelViewSet):
         raise PermissionDenied("No tienes permisos de diseñador para modificar esta invitación.")
 
     def perform_create(self, serializer):
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
+            if profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR] and 'user' in self.request.data:
+                serializer.save(vendor_id=self.request.user.id)
+                return
+        except Exception:
+            pass
+            
         serializer.save(user=self.request.user.id)
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny], url_path='slug/(?P<slug>[^/.]+)')

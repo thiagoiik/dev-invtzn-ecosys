@@ -8,10 +8,10 @@ class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewset
     serializer_class = UserProfileSerializer
 
     def get_queryset(self):
-        # Si el usuario es ADMIN o VENDOR, puede ver a todos los usuarios
+        # Si el usuario es ADMIN, puede ver a todos los usuarios
         try:
             profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
-            if profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR]:
+            if profile.custom_role == UserProfile.Role.ADMIN:
                 return UserProfile.objects.all()
         except UserProfile.DoesNotExist:
             pass
@@ -19,18 +19,29 @@ class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewset
         return UserProfile.objects.filter(remote_auth_id=self.request.user.id)
 
     # Creamos un endpoint personalizado: /api/v1/profiles/me/
-    @action(detail=False, methods=['get', 'patch'])
+    @action(detail=False, methods=['get', 'post', 'patch'])
     def me(self, request):
         # request.user.id viene directamente del JWT decodificado en authentication.py
         user_id = request.user.id
         
-        # MAGIA: Buscamos el perfil. Si no existe en esta DB, lo creamos asignándole rol CLIENT
+        # Sincronizamos el full_name si viene en el body
+        full_name = request.data.get('full_name')
+        
+        # Buscamos el perfil. Si no existe, lo creamos.
         profile, created = UserProfile.objects.get_or_create(
             remote_auth_id=user_id,
-            defaults={'custom_role': UserProfile.Role.CLIENT}
+            defaults={
+                'custom_role': UserProfile.Role.CLIENT,
+                'full_name': full_name or ""
+            }
         )
 
-        if request.method == 'GET':
+        # Si ya existe pero enviamos un nombre nuevo, lo actualizamos (Sincronización)
+        if not created and full_name and profile.full_name != full_name:
+            profile.full_name = full_name
+            profile.save()
+
+        if request.method in ['GET', 'POST']:
             serializer = self.get_serializer(profile)
             return Response(serializer.data)
             
@@ -40,6 +51,27 @@ class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewset
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='search')
+    def search(self, request):
+        # Permite a VENDOR y ADMIN buscar un usuario por remote_auth_id sin exponer toda la base de datos
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            if profile.custom_role not in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR]:
+                return Response({'error': 'No tienes permisos.'}, status=403)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'No tienes perfil asignado.'}, status=403)
+
+        user_id = request.query_params.get('remote_auth_id')
+        if not user_id:
+            return Response({'error': 'remote_auth_id es requerido'}, status=400)
+            
+        try:
+            user_profile = UserProfile.objects.get(remote_auth_id=user_id)
+            serializer = self.get_serializer(user_profile)
+            return Response(serializer.data)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'Usuario no encontrado'}, status=404)
 
     @action(detail=True, methods=['patch'], url_path='change-role')
     def change_role(self, request, pk=None):

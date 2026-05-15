@@ -83,10 +83,9 @@ onMounted(async () => {
 const trySandbox = async () => {
   loadingSandbox.value = true;
   try {
-    await deploymentService.createSandbox(product.value.id);
+    const res = await deploymentService.createSandbox(product.value.id);
     toast.success('¡Tu entorno de prueba está listo!');
-    // Aquí el roadmap dice redirigir a DraftSuccess, por ahora mandaremos al dashboard
-    router.push('/dashboard'); 
+    router.push(`/i/${res.data.slug}`);
   } catch (error) {
     toast.error('Necesitas iniciar sesión para probar la invitación.');
     router.push('/login');

@@ -11,6 +11,7 @@ class Deployment(models.Model):
         EXPIRED = 'EXPIRED', 'Expirado / Inactivo'
 
     user = models.IntegerField(db_index=True, help_text="ID del usuario en api-auth")
+    vendor_id = models.IntegerField(null=True, blank=True, help_text="ID del vendedor que registró el diseño")
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='deployments')
     
     slug = models.SlugField(max_length=100, unique=True, blank=True, null=True, help_text="URL única para acceso público")
