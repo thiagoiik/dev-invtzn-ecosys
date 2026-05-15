@@ -1,8 +1,8 @@
-from rest_framework import viewsets, mixins
+from rest_framework import viewsets, mixins, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .models import UserProfile
-from .serializers import UserProfileSerializer
+from .models import UserProfile, WalletLog
+from .serializers import UserProfileSerializer, WalletLogSerializer
 
 class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
     serializer_class = UserProfileSerializer
@@ -21,13 +21,9 @@ class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewset
     # Creamos un endpoint personalizado: /api/v1/profiles/me/
     @action(detail=False, methods=['get', 'post', 'patch'])
     def me(self, request):
-        # request.user.id viene directamente del JWT decodificado en authentication.py
         user_id = request.user.id
-        
-        # Sincronizamos el full_name si viene en el body
         full_name = request.data.get('full_name')
         
-        # Buscamos el perfil. Si no existe, lo creamos.
         profile, created = UserProfile.objects.get_or_create(
             remote_auth_id=user_id,
             defaults={
@@ -36,7 +32,6 @@ class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewset
             }
         )
 
-        # Si ya existe pero enviamos un nombre nuevo, lo actualizamos (Sincronización)
         if not created and full_name and profile.full_name != full_name:
             profile.full_name = full_name
             profile.save()
@@ -46,7 +41,6 @@ class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewset
             return Response(serializer.data)
             
         elif request.method == 'PATCH':
-            # Permitimos que el usuario actualice su teléfono, por ejemplo
             serializer = self.get_serializer(profile, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -54,7 +48,6 @@ class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewset
 
     @action(detail=False, methods=['get'], url_path='search')
     def search(self, request):
-        # Permite a VENDOR y ADMIN buscar un usuario por remote_auth_id sin exponer toda la base de datos
         try:
             profile = UserProfile.objects.get(remote_auth_id=request.user.id)
             if profile.custom_role not in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR]:
@@ -75,7 +68,6 @@ class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewset
 
     @action(detail=True, methods=['patch'], url_path='change-role')
     def change_role(self, request, pk=None):
-        # Solo administradores pueden cambiar roles
         try:
             admin_profile = UserProfile.objects.get(remote_auth_id=request.user.id)
             if admin_profile.custom_role != UserProfile.Role.ADMIN:
@@ -93,3 +85,16 @@ class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewset
         user_to_promote.save()
         
         return Response({'success': f'Rol cambiado a {new_role}'})
+
+class WalletLogViewSet(viewsets.ModelViewSet):
+    queryset = WalletLog.objects.all().order_by('-timestamp')
+    serializer_class = WalletLogSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
+            if profile.custom_role == UserProfile.Role.ADMIN:
+                return WalletLog.objects.all().order_by('-timestamp')
+        except: pass
+        return WalletLog.objects.filter(user__remote_auth_id=self.request.user.id).order_by('-timestamp')
