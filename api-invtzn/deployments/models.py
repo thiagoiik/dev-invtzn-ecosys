@@ -16,6 +16,7 @@ class Deployment(models.Model):
     
     slug = models.SlugField(max_length=100, unique=True, blank=True, null=True, help_text="URL única para acceso público")
     status = models.CharField(max_length=20, choices=StatusChoices.choices, default=StatusChoices.DRAFT)
+    is_paid = models.BooleanField(default=False, help_text="Indica si la invitación ya fue pagada")
     
     custom_data = models.JSONField(default=dict, blank=True, help_text="Almacena el diseño de Pinia")
     
