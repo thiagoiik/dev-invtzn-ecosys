@@ -7,21 +7,33 @@
           INVITAZYON
         </router-link>
       </div>
-      <div class="flex-none gap-4">
-        <router-link to="/catalog" class="btn btn-ghost">Catálogo</router-link>
-        <router-link to="/dashboard" class="btn btn-ghost">Mis Diseños</router-link>
+      <div class="flex-none gap-2 sm:gap-6">
+        <router-link to="/catalog" class="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Catálogo</router-link>
         
-        <div class="dropdown dropdown-end">
-          <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
-            <div class="w-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold">
-              {{ initial }}
+        <template v-if="authStore.isAuthenticated">
+          <router-link to="/dashboard" class="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Mis Diseños</router-link>
+          
+          <div class="dropdown dropdown-end">
+            <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar border-2 border-slate-100">
+              <div class="w-full rounded-full bg-slate-50 flex items-center justify-center text-slate-600 font-bold">
+                {{ initial }}
+              </div>
             </div>
+            <ul tabindex="0" class="mt-3 z-[1] p-3 shadow-2xl menu menu-sm dropdown-content bg-white rounded-2xl w-60 border border-slate-100">
+              <div class="px-4 py-3 border-b border-slate-50 mb-2">
+                <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Cuenta</p>
+                <p class="text-sm font-bold text-slate-800 truncate">{{ authStore.user?.email }}</p>
+              </div>
+              <li><router-link to="/profile" class="py-3 rounded-xl">👤 Mi Perfil</router-link></li>
+              <li><a @click="handleLogout" class="py-3 rounded-xl text-error hover:bg-error/10">🔌 Cerrar Sesión</a></li>
+            </ul>
           </div>
-          <ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-white rounded-box w-52 border border-slate-100">
-            <li><router-link to="/profile">Mi Perfil</router-link></li>
-            <li><a @click="handleLogout" class="text-error">Cerrar Sesión</a></li>
-          </ul>
-        </div>
+        </template>
+
+        <template v-else>
+          <router-link to="/login" class="btn btn-ghost btn-sm sm:btn-md text-slate-600 font-bold">Ingresar</router-link>
+          <router-link to="/register" class="btn btn-primary btn-sm sm:btn-md rounded-xl shadow-lg shadow-primary/20">Empezar Gratis</router-link>
+        </template>
       </div>
     </header>
 
@@ -31,10 +43,40 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer footer-center p-4 bg-white text-slate-500 border-t border-slate-200 mt-auto">
-      <aside>
-        <p>Copyright © 2026 - Todos los derechos reservados por Invitazyon B2C</p>
-      </aside>
+    <footer class="bg-white border-t border-slate-100 pt-20 pb-10 px-6 mt-20">
+      <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+        <div class="col-span-1 md:col-span-2 space-y-6">
+          <h2 class="text-2xl font-black tracking-widest text-slate-900">INVITAZYON</h2>
+          <p class="text-slate-400 max-w-sm leading-relaxed">
+            Redefiniendo la forma en que el mundo celebra. Invitaciones digitales de lujo con tecnología interactiva para eventos inolvidables.
+          </p>
+        </div>
+        <div>
+          <h4 class="font-black text-slate-900 uppercase tracking-widest text-xs mb-6">Explorar</h4>
+          <ul class="space-y-4 text-sm font-bold text-slate-400">
+            <li><router-link to="/catalog" class="hover:text-primary transition-colors">Catálogo</router-link></li>
+            <li><router-link to="/login" class="hover:text-primary transition-colors">Precios</router-link></li>
+            <li><a href="#" class="hover:text-primary transition-colors">Showcase</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-black text-slate-900 uppercase tracking-widest text-xs mb-6">Soporte</h4>
+          <ul class="space-y-4 text-sm font-bold text-slate-400">
+            <li><a href="#" class="hover:text-primary transition-colors">Ayuda</a></li>
+            <li><a href="#" class="hover:text-primary transition-colors">Términos</a></li>
+            <li><a href="#" class="hover:text-primary transition-colors">Privacidad</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="max-w-7xl mx-auto pt-10 border-t border-slate-50 flex flex-col md:row items-center justify-between gap-6 text-slate-300">
+        <p class="text-[10px] font-black uppercase tracking-[0.2em]">© 2026 INVITAZYON DIGITAL LUXURY. TODOS LOS DERECHOS RESERVADOS.</p>
+        <div class="flex gap-6">
+          <!-- Social Placeholders -->
+          <span class="w-5 h-5 bg-slate-100 rounded-full"></span>
+          <span class="w-5 h-5 bg-slate-100 rounded-full"></span>
+          <span class="w-5 h-5 bg-slate-100 rounded-full"></span>
+        </div>
+      </div>
     </footer>
   </div>
 </template>

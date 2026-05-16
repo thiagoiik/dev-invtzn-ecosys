@@ -8,13 +8,19 @@ const invtznClient = axios.create({
 // Interceptor de Petición: Inyectamos el token dinámicamente
 invtznClient.interceptors.request.use(async (config) => {
   try {
-    const { useAuthStore } = await import('@/modules/auth/store/auth');
-    const authStore = useAuthStore();
-    if (authStore.token) {
-      config.headers.Authorization = `Bearer ${authStore.token}`;
+    // Si la URL es pública (ej. ver invitación por slug), NO enviamos el token
+    // Esto evita errores de "Token Expirado" en vistas que no lo requieren
+    const isPublic = config.url.includes('/slug/');
+    
+    if (!isPublic) {
+      const { useAuthStore } = await import('@/modules/auth/store/auth');
+      const authStore = useAuthStore();
+      if (authStore.token) {
+        config.headers.Authorization = `Bearer ${authStore.token}`;
+      }
     }
   } catch (e) {
-    console.warn("Auth store not ready");
+    console.warn("Auth store not ready or public route");
   }
   return config;
 });

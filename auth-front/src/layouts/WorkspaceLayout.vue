@@ -58,7 +58,7 @@
               </label>
               <ul tabindex="0" class="mt-3 z-[1] p-2 shadow-2xl menu menu-sm dropdown-content bg-white rounded-xl w-52 border border-slate-100 animate-in fade-in slide-in-from-top-2">
                 <li class="menu-title px-4 py-2 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-50 mb-1">Mi Cuenta</li>
-                <li><router-link to="/dashboard/profile" class="py-3 font-bold text-slate-700 hover:bg-slate-50">👤 Mi Perfil</router-link></li>
+                <li><router-link to="/profile" class="py-3 font-bold text-slate-700 hover:bg-slate-50">👤 Mi Perfil</router-link></li>
                 <li><router-link to="/dashboard" class="py-3 font-bold text-slate-700 hover:bg-slate-50">🏠 Inicio B2C</router-link></li>
                 <li class="mt-2 border-t border-slate-50 pt-2"><button @click="authStore.logout()" class="py-3 font-bold text-error hover:bg-error/5">🚪 Cerrar Sesión</button></li>
               </ul>

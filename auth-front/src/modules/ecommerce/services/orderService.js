@@ -11,5 +11,12 @@ export const orderService = {
     if (userId) payload.user = userId;
     
     return invtznClient.post('orders/', payload);
+  },
+
+  createStripeCheckout(orderId, successUrl, cancelUrl) {
+    return invtznClient.post(`orders/${orderId}/pay-stripe/`, { 
+      success_url: successUrl, 
+      cancel_url: cancelUrl 
+    });
   }
 };

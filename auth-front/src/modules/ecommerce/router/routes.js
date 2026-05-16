@@ -16,8 +16,7 @@ export default [
       {
         path: '/checkout/:id',
         name: 'checkout',
-        component: () => import('@/modules/ecommerce/views/CheckoutView.vue'),
-        meta: { requiresAuth: true } // El checkout sí requiere estar logueado
+        component: () => import('@/modules/ecommerce/views/CheckoutView.vue')
       }
     ]
   }
