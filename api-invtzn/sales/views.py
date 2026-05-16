@@ -82,6 +82,22 @@ class OrderViewSet(viewsets.ModelViewSet):
             save_kwargs['user'] = self.request.user.id
             save_kwargs['origin'] = Order.OriginChoices.ONLINE
 
+        # Vincular diseño si viene de un Sandbox/Draft
+        deployment_id = self.request.data.get('deployment')
+        if deployment_id:
+            from deployments.models import Deployment
+            try:
+                dep = Deployment.objects.get(id=deployment_id)
+                # Reclamar si es anónimo
+                if dep.user is None:
+                    dep.user = self.request.user.id
+                    dep.save()
+                
+                # Pasar el objeto completo al save_kwargs
+                save_kwargs['deployment'] = dep
+            except Deployment.DoesNotExist:
+                pass
+
         order = serializer.save(**save_kwargs)
         
         # Lógica de Comisiones: Solo si es POS y hay un vendedor diferente al cliente
