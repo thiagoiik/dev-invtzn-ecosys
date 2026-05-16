@@ -1,19 +1,7 @@
 <template>
   <div class="min-h-screen bg-slate-50 relative">
     
-    <!-- MARCA DE AGUA PREMIUM SANDBOX -->
-    <div v-if="status === 'DRAFT' && !loading && !errorMsg" class="fixed top-0 left-0 w-full z-50">
-      <div class="bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 text-white text-center py-2 font-black text-[10px] tracking-[0.3em] uppercase shadow-2xl border-b border-amber-400/30">
-        ✨ MODO VISTA PREVIA - INVITAZYON DIGITAL ✨
-      </div>
-    </div>
-
-    <!-- BOTÓN FLOTANTE DE COMPRA -->
-    <div v-if="status === 'DRAFT' && !loading && !errorMsg" class="fixed bottom-8 right-8 z-50 animate-bounce">
-      <button @click="goToCheckout" class="btn btn-primary rounded-2xl shadow-2xl shadow-primary/40 border-2 border-white/20 px-6 h-14 font-black">
-        🛒 Eliminar Marca de Agua
-      </button>
-    </div>
+    <!-- NOTE: Redundant watermark markups removed; fully handled inside RenderEngineMaster component -->
 
     <!-- PANTALLA DE CARGA PREMIUM -->
     <DataLoaderLoader v-if="loading" />
@@ -33,14 +21,15 @@
       </div>
     </div>
 
-    <!-- MOTOR DE RENDER -->
-    <div v-else class="engine-canvas" :class="{ 'pt-6': status === 'DRAFT' }">
-      
-      <!-- INYECCIÓN DINÁMICA DE COMPONENTES -->
-      <EngineCover :config="customData.cover || {}" />
-      <EngineRSVP :slug="route.params.slug" :config="customData.rsvp || {}" />
-      
-    </div>
+    <!-- MOTOR DE RENDER INTELIGENTE -->
+    <RenderEngineMaster 
+      v-else 
+      :status="status" 
+      :customData="customData" 
+      :slug="route.params.slug" 
+      :deploymentId="deploymentId"
+      @purchase="goToCheckout"
+    />
   </div>
 </template>
 
@@ -48,10 +37,9 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { engineService } from '@/modules/engine/services/engineService';
-import EngineCover from '@/modules/engine/components/EngineCover.vue';
-import EngineRSVP from '@/modules/engine/components/EngineRSVP.vue';
 import DataLoaderLoader from '@/modules/engine/components/DataLoaderLoader.vue';
 import ExpiredEventScreen from '@/modules/engine/components/ExpiredEventScreen.vue';
+import RenderEngineMaster from '@/modules/engine/components/RenderEngineMaster.vue';
 
 const route = useRoute();
 const router = useRouter();
