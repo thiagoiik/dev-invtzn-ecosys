@@ -5,12 +5,17 @@
         <h2 class="text-2xl font-bold text-slate-800">Gestión de Sucursales</h2>
         <p class="text-slate-500">Administra las tiendas físicas y puntos de venta.</p>
       </div>
-      <button class="btn btn-primary" @click="showAddModal = true">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
-        </svg>
-        Nueva Tienda
-      </button>
+      <div class="flex gap-2">
+        <button class="btn btn-outline btn-sm" @click="testStripe">
+          Test Stripe API
+        </button>
+        <button class="btn btn-primary" @click="showAddModal = true">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+          </svg>
+          Nueva Tienda
+        </button>
+      </div>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -40,8 +45,20 @@
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a7 7 0 00-7 7v1h11v-1a7 7 0 00-7-7z" />
               </svg>
-              Ver Personal
+              Staff
             </button>
+            <button 
+              v-if="!store.stripe_onboarding_completed"
+              class="btn btn-outline btn-info btn-sm" 
+              @click="setupStripe(store)"
+              :disabled="loading"
+            >
+              Configurar Stripe
+            </button>
+            <div v-else class="badge badge-info gap-2 py-3 px-4">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              Stripe OK
+            </div>
           </div>
         </div>
       </div>
@@ -96,6 +113,15 @@
             <label class="label"><span class="label-text font-bold">Ciudad</span></label>
             <input v-model="newStore.city" type="text" placeholder="Ciudad de México" class="input input-bordered" />
           </div>
+          <div class="form-control">
+            <label class="label"><span class="label-text font-bold">Dueño / Franquiciatario</span></label>
+            <select v-model="newStore.owner" class="select select-bordered">
+              <option :value="null">Sin asignar (Super Admin)</option>
+              <option v-for="f in franchisees" :key="f.remote_auth_id" :value="f.id">
+                {{ f.full_name }}
+              </option>
+            </select>
+          </div>
         </div>
         <div class="modal-action">
           <button class="btn btn-ghost" @click="showAddModal = false">Cancelar</button>
@@ -119,10 +145,12 @@ const stores = ref([]);
 const showAddModal = ref(false);
 const loading = ref(false);
 
+const franchisees = ref([]);
 const newStore = ref({
   name: '',
   address: '',
-  city: ''
+  city: '',
+  owner: null
 });
 
 // Lógica de Personal
@@ -154,6 +182,15 @@ const viewStaff = async (store) => {
   }
 };
 
+const testStripe = async () => {
+  try {
+    const res = await crmService.debugStripe();
+    alert(`Conexión exitosa: ${JSON.stringify(res.data, null, 2)}`);
+  } catch (e) {
+    alert(`Error de conexión: ${e.response?.data?.error || e.message}`);
+  }
+};
+
 const saveStore = async () => {
   if (!newStore.value.name) return;
   loading.value = true;
@@ -161,7 +198,7 @@ const saveStore = async () => {
     await crmService.createStore(newStore.value);
     toast.success('Tienda creada exitosamente');
     showAddModal.value = false;
-    newStore.value = { name: '', address: '', city: '' };
+    newStore.value = { name: '', address: '', city: '', owner: null };
     fetchStores();
   } catch (e) {
     toast.error('Error al crear la tienda');
@@ -170,5 +207,46 @@ const saveStore = async () => {
   }
 };
 
-onMounted(fetchStores);
+const setupStripe = async (store) => {
+  loading.value = true;
+  try {
+    const res = await crmService.getStripeOnboardingLink(store.id, window.location.href);
+    window.location.href = res.data.url;
+  } catch (e) {
+    toast.error('Error al generar enlace de Stripe');
+  } finally {
+    loading.value = false;
+  }
+};
+
+const verifyStripeStatus = async (store) => {
+  try {
+    const res = await crmService.verifyStripeOnboarding(store.id);
+    if (res.data.stripe_onboarding_completed && !store.stripe_onboarding_completed) {
+      store.stripe_onboarding_completed = true;
+    }
+  } catch (e) {
+    console.error('Error verificando Stripe', e);
+  }
+};
+
+const fetchFranchisees = async () => {
+  try {
+    const res = await crmService.fetchAllProfiles();
+    franchisees.value = res.data.filter(p => p.custom_role === 'FRANCHISEE');
+  } catch (e) {
+    console.error('Error al cargar franquiciatarios', e);
+  }
+};
+
+onMounted(async () => {
+  await fetchStores();
+  await fetchFranchisees();
+  // Verificar estado de stripe para todas las tiendas que tengan ID pero no estén completadas
+  stores.value.forEach(s => {
+    if (s.stripe_account_id && !s.stripe_onboarding_completed) {
+      verifyStripeStatus(s);
+    }
+  });
+});
 </script>

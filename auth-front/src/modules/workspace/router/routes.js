@@ -27,6 +27,11 @@ export default [
         path: 'stores',
         name: 'workspace-stores',
         component: () => import('@/modules/workspace/views/StoresManagerView.vue')
+      },
+      {
+        path: 'finance',
+        name: 'workspace-finance',
+        component: () => import('@/modules/workspace/views/FinanceReconciliationView.vue')
       }
     ]
   }

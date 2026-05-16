@@ -59,6 +59,50 @@ export const crmService = {
     return invtznClient.get('cash-sessions/');
   },
 
+  // Finanzas y Conciliación
+  fetchBankLogs() {
+    return invtznClient.get('integrations/');
+  },
+
+  simulateBankWebhook(amount) {
+    return invtznClient.post('integrations/simulate-webhook/', { amount });
+  },
+
+  syncOrderWithBank(bankLogId, orderId) {
+    return invtznClient.post('integrations/sync/', { 
+      bank_log_id: bankLogId, 
+      order_id: orderId 
+    });
+  },
+
+  fetchPendingOrders() {
+    return invtznClient.get('orders/', { params: { status: 'PENDING' } });
+  },
+
+  createOrder(data) {
+    return invtznClient.post('orders/', data);
+  },
+
+  // Stripe
+  getStripeOnboardingLink(storeId, returnUrl) {
+    return invtznClient.post(`stores/${storeId}/stripe-onboarding/`, { return_url: returnUrl });
+  },
+
+  verifyStripeOnboarding(storeId) {
+    return invtznClient.get(`stores/${storeId}/stripe-verify/`);
+  },
+
+  debugStripe() {
+    return invtznClient.get('integrations/debug-stripe/');
+  },
+
+  createStripeCheckout(orderId, successUrl, cancelUrl) {
+    return invtznClient.post(`orders/${orderId}/pay-stripe/`, { 
+      success_url: successUrl, 
+      cancel_url: cancelUrl 
+    });
+  },
+
   // Diseños
   fetchAllDeployments() {
     return invtznClient.get('deployments/');
