@@ -11,7 +11,10 @@
     >
       <option value="CLIENT">Cliente (B2C)</option>
       <option value="VENDOR">Vendedor (POS)</option>
-      <option value="ADMIN">Administrador (Full)</option>
+      <option value="DESIGNER">Diseñador</option>
+      <option value="MANAGER">Gerente de Sucursal</option>
+      <option value="FRANCHISEE">Franquiciatario / Dueño</option>
+      <option value="ADMIN">Super Administrador</option>
     </select>
   </div>
 </template>
