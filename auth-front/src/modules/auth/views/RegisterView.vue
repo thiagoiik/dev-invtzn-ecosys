@@ -62,8 +62,9 @@ const handleRegister = async () => {
   loading.value = true;
   try {
     await authService.register(form);
-    toast.success('¡Registro exitoso! Por favor, verifica tu correo.');
-    router.push({ name: 'login' });
+    toast.success('¡Registro exitoso! Por favor, inicia sesión.');
+    const redirectTo = router.currentRoute.value.query.redirect;
+    router.push({ name: 'login', query: redirectTo ? { redirect: redirectTo } : {} });
   } catch (error) {
     toast.error('Error al registrar. Verifica los datos ingresados.');
   } finally {

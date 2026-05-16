@@ -139,9 +139,20 @@ const initiateStripePayment = async () => {
 
   loading.value = true;
   try {
-    // 2. Crear la Orden
-    const orderRes = await orderService.createOrder(product.value.id, product.value.base_price);
+    // 2. Recuperar ID de diseño si viene de un Sandbox
+    const deploymentId = localStorage.getItem('pending_sandbox_id');
+    
+    // 3. Crear la Orden vinculada al diseño
+    const orderRes = await orderService.createOrder(
+      product.value.id, 
+      product.value.base_price,
+      null,
+      deploymentId
+    );
     const orderId = orderRes.data.id;
+    
+    // Limpiar el sandbox pendiente una vez que ya se creó la orden
+    if (deploymentId) localStorage.removeItem('pending_sandbox_id');
     
     // 3. Generar Link de Stripe
     const successUrl = `${window.location.origin}/dashboard?payment=success`;

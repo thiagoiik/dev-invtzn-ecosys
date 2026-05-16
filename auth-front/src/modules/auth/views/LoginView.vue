@@ -56,7 +56,10 @@ const handleLogin = async () => {
     });
     
     toast.success('¡Bienvenido de vuelta!');
-    router.push('/dashboard');
+    
+    // Si hay una URL de redirección, la usamos. Si no, al dashboard.
+    const redirectTo = router.currentRoute.value.query.redirect || '/dashboard';
+    router.push(redirectTo);
   } catch (err) {
     error.value = "Error al iniciar sesión. Revisa tus credenciales.";
     toast.error("Las credenciales no coinciden.");

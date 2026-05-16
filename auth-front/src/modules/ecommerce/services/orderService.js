@@ -1,7 +1,7 @@
 import invtznClient from '@/core/api/invtznClient';
 
 export const orderService = {
-  createOrder(productId, totalAmount, userId = null) {
+  createOrder(productId, totalAmount, userId = null, deploymentId = null) {
     // Crea una orden en estado PENDING. Si userId viene, se asigna a ese cliente.
     const payload = {
       product: productId,
@@ -9,6 +9,7 @@ export const orderService = {
       status: 'PENDING'
     };
     if (userId) payload.user = userId;
+    if (deploymentId) payload.deployment = deploymentId;
     
     return invtznClient.post('orders/', payload);
   },
