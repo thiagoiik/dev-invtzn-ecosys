@@ -39,5 +39,6 @@ const crmStore = useCrmStore();
 
 onMounted(() => {
   crmStore.fetchProfiles();
+  crmStore.fetchStores();
 });
 </script>

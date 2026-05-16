@@ -24,12 +24,34 @@
 
       <div class="divider"></div>
 
-      <!-- Gestión de Rol -->
+      <!-- Gestión de Rol (Solo Admin y Franquiciatario pueden cambiar roles) -->
       <RoleSelector 
+        v-if="['ADMIN', 'FRANCHISEE'].includes(currentUserRole)"
         v-model="profile.custom_role" 
         :loading="updatingRole" 
         @update:modelValue="handleRoleChange"
       />
+      <div v-else class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+        <p class="text-xs font-black text-slate-400 uppercase tracking-widest mb-1">Rol Actual</p>
+        <p class="font-bold text-slate-700">{{ profile.custom_role }}</p>
+      </div>
+
+      <!-- Asignación de Sucursal (Para Vendedores y Gerentes) -->
+      <div v-if="['VENDOR', 'MANAGER'].includes(profile.custom_role)" class="form-control w-full mt-4">
+        <label class="label">
+          <span class="label-text font-bold text-xs uppercase text-slate-500">Sucursal Asignada</span>
+        </label>
+        <select 
+          v-model="profile.assigned_store" 
+          class="select select-bordered w-full font-medium"
+          @change="handleUpdateProfile"
+        >
+          <option :value="null">Ninguna / Central</option>
+          <option v-for="store in crmStore.stores" :key="store.id" :value="store.id">
+            {{ store.name }}
+          </option>
+        </select>
+      </div>
 
       <!-- Gestión de Billetera -->
       <WalletManager 
@@ -63,17 +85,30 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import RoleSelector from './RoleSelector.vue';
 import WalletManager from './WalletManager.vue';
 import { crmService } from '@/modules/workspace/services/crmService';
+import { useCrmStore } from '../store/crmStore';
 import { useToast } from 'vue-toastification';
+import { profileService } from '@/modules/dashboard/services/profileService';
 
 const props = defineProps(['isOpen', 'profile']);
 const emit = defineEmits(['close', 'refresh']);
 const toast = useToast();
+const crmStore = useCrmStore();
 
 const updatingRole = ref(false);
+const currentUserRole = ref(null);
+
+onMounted(async () => {
+  try {
+    const res = await profileService.fetchMyProfile();
+    currentUserRole.value = res.data.custom_role;
+  } catch (e) {
+    console.error("Error fetching current user role", e);
+  }
+});
 
 const handleRoleChange = async (newRole) => {
   updatingRole.value = true;
