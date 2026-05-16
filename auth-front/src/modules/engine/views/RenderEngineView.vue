@@ -15,19 +15,20 @@
       </button>
     </div>
 
-    <!-- PANTALLA DE CARGA -->
-    <div v-if="loading" class="min-h-screen flex flex-col items-center justify-center">
-      <span class="loading loading-infinity w-16 text-primary"></span>
-      <p class="mt-4 text-slate-500 font-medium">Preparando tu invitación...</p>
-    </div>
-
-    <!-- PANTALLA DE ERROR / EXPIRED -->
-    <div v-else-if="errorMsg" class="min-h-screen flex items-center justify-center p-4">
-      <div class="alert alert-error shadow-lg max-w-md">
-        <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-        <div>
-          <h3 class="font-bold text-lg">Aviso importante</h3>
-          <p class="text-sm">{{ errorMsg }}</p>
+    <!-- PANTALLA DE CARGA PREMIUM -->
+    <DataLoaderLoader v-if="loading" />
+ 
+    <!-- PANTALLA DE ERROR / EXPIRED / INACTIVE -->
+    <div v-else-if="errorMsg || ['EXPIRED', 'INACTIVE'].includes(status)" class="min-h-screen">
+      <ExpiredEventScreen v-if="['EXPIRED', 'INACTIVE'].includes(status)" :status="status" />
+      
+      <div v-else class="min-h-screen flex items-center justify-center p-4">
+        <div class="alert alert-error shadow-lg max-w-md rounded-3xl">
+          <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <div>
+            <h3 class="font-bold text-lg text-white">Invitación no disponible</h3>
+            <p class="text-sm text-white/80">{{ errorMsg }}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -49,6 +50,8 @@ import { useRoute, useRouter } from 'vue-router';
 import { engineService } from '@/modules/engine/services/engineService';
 import EngineCover from '@/modules/engine/components/EngineCover.vue';
 import EngineRSVP from '@/modules/engine/components/EngineRSVP.vue';
+import DataLoaderLoader from '@/modules/engine/components/DataLoaderLoader.vue';
+import ExpiredEventScreen from '@/modules/engine/components/ExpiredEventScreen.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -75,8 +78,8 @@ onMounted(async () => {
     status.value = response.data.status;
     deploymentId.value = response.data.id;
     
-    if (status.value === 'EXPIRED') {
-      errorMsg.value = 'Esta invitación ha expirado o ya no se encuentra activa.';
+    if (['EXPIRED', 'INACTIVE'].includes(status.value)) {
+      // El template se encargará de mostrar ExpiredEventScreen basándose en el status
       return;
     }
 
