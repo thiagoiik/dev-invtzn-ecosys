@@ -1,5 +1,19 @@
 from django.contrib import admin
-from .models import Product, Template
+from .models import Product, Template, Store
+
+@admin.register(Store)
+class StoreAdmin(admin.ModelAdmin):
+    list_display = ('name', 'city', 'stripe_account_id', 'stripe_onboarding_completed', 'is_active')
+    list_filter = ('is_active', 'stripe_onboarding_completed', 'city')
+    search_fields = ('name', 'city', 'stripe_account_id')
+    fieldsets = (
+        ('Información General', {
+            'fields': ('name', 'address', 'city', 'is_active')
+        }),
+        ('Stripe Connect', {
+            'fields': ('stripe_account_id', 'stripe_onboarding_completed')
+        }),
+    )
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):

@@ -11,6 +11,9 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
+import os
+import sys
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -20,7 +23,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-# SECRET_KEY = 'django-insecure-zd8e_g_w-ncqql9cgw%p#6!$pcznk+#yy#0583=umg)sni1l&8'
 SECRET_KEY = 'django-insecure-8n9vs72itf!k%^-mzv!iuqv@!bl-^52^8!nc+@o4*wufpkqvhe'
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -51,6 +53,7 @@ INSTALLED_APPS = [
     'inventory',
     'deployments',
     'sales',
+    'integrations',
 ]
 
 MIDDLEWARE = [
@@ -87,15 +90,11 @@ WSGI_APPLICATION = 'invtzn_core.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-import dj_database_url
-import os
-
-import sys
 
 DATABASES = {
     'default': dj_database_url.config(
         default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600  # Opcional: mantiene la conexión abierta para mayor velocidad
+        conn_max_age=600
     )
 }
 
@@ -158,13 +157,9 @@ CORS_ALLOWED_ORIGINS = [
  ]
 
 
- # IMPORTANTE: Asegúrate de que esta llave sea idéntica a la de tu api-auth
-# SECRET_KEY = 'tu-llave-secreta-compartida' 
-
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'invtzn_core.authentication.MicroserviceJWTAuthentication',
-        # Puedes mantener SessionAuthentication si usas el panel de Admin localmente
         'rest_framework.authentication.SessionAuthentication', 
     ],
     'DEFAULT_PERMISSION_CLASSES': [
@@ -174,3 +169,8 @@ REST_FRAMEWORK = {
 
 # Configuración Swagger para silenciar el warning de renderers
 SWAGGER_USE_COMPAT_RENDERERS = False
+
+# Stripe Settings
+STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', 'sk_test_placeholder')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', 'whsec_placeholder')
+STRIPE_CONNECT_CLIENT_ID = os.environ.get('STRIPE_CONNECT_CLIENT_ID', 'ca_placeholder')

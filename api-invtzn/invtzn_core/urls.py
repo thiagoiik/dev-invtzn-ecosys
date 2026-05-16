@@ -42,6 +42,7 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
     # Aquí conectamos nuestra API versión 1
+    path('api/v1/', include('integrations.urls')),
     path('api/v1/', include('profiles.urls')),
     path('api/v1/', include('events.urls')),
     path('api/v1/', include('inventory.urls')),

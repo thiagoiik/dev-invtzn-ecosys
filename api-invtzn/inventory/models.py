@@ -5,6 +5,14 @@ class Store(models.Model):
     address = models.CharField(max_length=255, blank=True, null=True)
     city = models.CharField(max_length=100, blank=True, null=True)
     is_active = models.BooleanField(default=True)
+    
+    # Stripe Connect integration
+    stripe_account_id = models.CharField(max_length=100, blank=True, null=True, help_text="ID de la cuenta de Stripe Connect")
+    stripe_onboarding_completed = models.BooleanField(default=False)
+    
+    # Propiedad y Franquicia
+    owner = models.ForeignKey('profiles.UserProfile', on_delete=models.SET_NULL, null=True, blank=True, related_name='owned_stores', help_text="Dueño / Franquiciatario de esta sucursal")
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

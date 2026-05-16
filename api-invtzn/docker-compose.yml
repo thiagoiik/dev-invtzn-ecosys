@@ -4,6 +4,8 @@ services:
     restart: unless-stopped
     volumes:
       - .:/app
+    env_file:
+      - ../.env
     command: gunicorn invtzn_core.wsgi:application --bind 0.0.0.0:8000
     
     environment:

@@ -13,3 +13,4 @@ drf-yasg
 pytest
 pytest-django
 factory-boy
+stripe

@@ -35,6 +35,12 @@ class PaymentTransaction(models.Model):
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='payment')
     provider = models.CharField(max_length=50, default='Stripe')
     transaction_id = models.CharField(max_length=100, unique=True, null=True, blank=True)
+    
+    # Stripe specific tracking
+    stripe_checkout_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    stripe_payment_intent_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    
+    payment_method = models.CharField(max_length=50, default='CARD', help_text="CARD, BANK_TRANSFER, CASH")
     success = models.BooleanField(default=False)
     timestamp = models.DateTimeField(auto_now_add=True)
 
