@@ -1,12 +1,12 @@
 import invtznClient from '@/core/api/invtznClient';
 
 export const deploymentService = {
-  createSandbox(productId) {
+  createSandbox(productId, customData = null) {
     // Crea una invitación en estado DRAFT asociada al producto seleccionado
     return invtznClient.post('deployments/', {
       product: productId,
       status: 'DRAFT',
-      custom_data: {
+      custom_data: customData || {
         message: "¡Diseña tu invitación aquí!",
         theme: "light"
       }

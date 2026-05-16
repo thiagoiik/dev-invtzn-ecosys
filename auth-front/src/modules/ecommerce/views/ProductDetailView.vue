@@ -88,9 +88,8 @@
                 <button class="btn btn-primary btn-lg w-full rounded-2xl h-16 text-lg font-black shadow-lg shadow-primary/20" @click="buyNow">
                   Continuar al Pago
                 </button>
-                <button v-if="product.has_template" class="btn btn-ghost w-full text-slate-400 hover:text-white" @click="trySandbox" :disabled="loadingSandbox">
-                  <span v-if="loadingSandbox" class="loading loading-spinner"></span>
-                  {{ loadingSandbox ? 'Preparando...' : '🛠️ Probar Demo Gratis' }}
+                <button v-if="product.has_template" class="btn btn-ghost w-full text-slate-400 hover:text-white" @click="isModalOpen = true">
+                  🛠️ Probar Demo Gratis
                 </button>
               </div>
             </div>
@@ -102,6 +101,14 @@
         </div>
       </div>
     </div>
+
+    <!-- Quick Draft Modal -->
+    <QuickDraftModal 
+      :isOpen="isModalOpen" 
+      :productId="product?.id" 
+      @close="isModalOpen = false" 
+      @success="handleSandboxSuccess" 
+    />
   </div>
 </template>
 
@@ -112,6 +119,7 @@ import { useToast } from 'vue-toastification';
 import { catalogService } from '@/modules/ecommerce/services/catalogService';
 import { deploymentService } from '@/modules/ecommerce/services/deploymentService';
 import AddonSelector from '../components/AddonSelector.vue';
+import QuickDraftModal from '../components/QuickDraftModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -120,6 +128,7 @@ const toast = useToast();
 const product = ref(null);
 const availableAddons = ref([]);
 const selectedAddonIds = ref([]);
+const isModalOpen = ref(false);
 const loadingSandbox = ref(false);
 
 const totalPrice = computed(() => {
@@ -150,18 +159,13 @@ onMounted(async () => {
   }
 });
 
-const trySandbox = async () => {
-  loadingSandbox.value = true;
-  try {
-    const res = await deploymentService.createSandbox(product.value.id);
-    toast.success('¡Tu entorno de prueba está listo!');
-    router.push(`/i/${res.data.slug}`);
-  } catch (error) {
-    toast.error('Necesitas iniciar sesión para probar la invitación.');
-    router.push('/login');
-  } finally {
-    loadingSandbox.value = false;
-  }
+const handleSandboxSuccess = (deployment) => {
+  isModalOpen.value = false;
+  // Guardamos en localStorage para persistencia anónima
+  localStorage.setItem('pending_sandbox_id', deployment.id);
+  
+  // Abrimos en nueva pestaña o redirigimos
+  window.open(`/i/${deployment.slug}`, '_blank');
 };
 
 const buyNow = () => {

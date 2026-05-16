@@ -10,7 +10,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.filter(is_active=True)
     serializer_class = ProductSerializer
     # La tienda es pública (para ver), pero solo el Admin crea productos
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.AllowAny]
 
 class StoreViewSet(viewsets.ModelViewSet):
     serializer_class = StoreSerializer

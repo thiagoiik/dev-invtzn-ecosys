@@ -8,7 +8,16 @@ from .serializers import DeploymentSerializer
 
 class DeploymentViewSet(viewsets.ModelViewSet):
     serializer_class = DeploymentSerializer
-    permission_classes = [IsAuthenticated]
+    
+    permission_classes = [AllowAny]
+    
+    def get_permissions(self):
+        if self.action == 'create':
+            return [AllowAny()]
+        # Para ver slugs públicos
+        if self.action == 'public_by_slug':
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     def get_queryset(self):
         from profiles.models import UserProfile
@@ -51,21 +60,33 @@ class DeploymentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         from profiles.models import UserProfile
+        user_id = self.request.user.id if self.request.user.is_authenticated else None
+        
+        # Si es anónimo, forzamos DRAFT y is_paid=False
+        if not user_id:
+            serializer.save(
+                user=None, 
+                status=Deployment.StatusChoices.DRAFT,
+                is_paid=False
+            )
+            return
+
         try:
-            profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
+            profile = UserProfile.objects.get(remote_auth_id=user_id)
             if profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR] and 'user' in self.request.data:
-                serializer.save(vendor_id=self.request.user.id)
+                serializer.save(vendor_id=user_id)
                 return
         except Exception:
             pass
             
-        serializer.save(user=self.request.user.id)
+        serializer.save(user=user_id)
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny], url_path='slug/(?P<slug>[^/.]+)')
     def public_by_slug(self, request, slug=None):
         deployment = get_object_or_404(Deployment, slug=slug)
         # Solo devolvemos datos necesarios para el engine (no datos sensibles del usuario)
         return Response({
+            'id': deployment.id,
             'status': deployment.status,
             'custom_data': deployment.custom_data,
             'slug': deployment.slug,

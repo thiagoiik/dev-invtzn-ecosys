@@ -10,7 +10,7 @@ class Deployment(models.Model):
         LIVE = 'LIVE', 'Publicado'
         EXPIRED = 'EXPIRED', 'Expirado / Inactivo'
 
-    user = models.IntegerField(db_index=True, help_text="ID del usuario en api-auth")
+    user = models.IntegerField(db_index=True, null=True, blank=True, help_text="ID del usuario en api-auth")
     vendor_id = models.IntegerField(null=True, blank=True, help_text="ID del vendedor que registró el diseño")
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='deployments')
     
