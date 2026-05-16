@@ -4,7 +4,9 @@ from decimal import Decimal
 class UserProfile(models.Model):
     # Opciones predefinidas (Enums) para asegurar integridad de datos
     class Role(models.TextChoices):
-        ADMIN = 'ADMIN', 'Administrador'
+        ADMIN = 'ADMIN', 'Super Administrador'
+        FRANCHISEE = 'FRANCHISEE', 'Franquiciatario / Dueño'
+        MANAGER = 'MANAGER', 'Gerente de Sucursal'
         VENDOR = 'VENDOR', 'Vendedor'
         DESIGNER = 'DESIGNER', 'Diseñador'
         CLIENT = 'CLIENT', 'Cliente'

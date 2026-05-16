@@ -6,17 +6,37 @@ from .serializers import UserProfileSerializer, WalletLogSerializer
 
 class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
     serializer_class = UserProfileSerializer
+    lookup_field = 'remote_auth_id'
+
+    def dispatch(self, request, *args, **kwargs):
+        print(f"DEBUG DISPATCH: {request.method} {request.path}")
+        return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
-        # Si el usuario es ADMIN, puede ver a todos los usuarios
         try:
             profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
             if profile.custom_role == UserProfile.Role.ADMIN:
                 return UserProfile.objects.all()
+            
+            if profile.custom_role == UserProfile.Role.FRANCHISEE:
+                # El franquiciatario ve el personal de sus tiendas
+                from inventory.models import Store
+                owned_stores = Store.objects.filter(owner=profile)
+                return UserProfile.objects.filter(assigned_store__in=owned_stores)
+                
+            if profile.custom_role == UserProfile.Role.MANAGER:
+                # El gerente ve el personal de su tienda asignada
+                if profile.assigned_store:
+                    return UserProfile.objects.filter(assigned_store=profile.assigned_store)
+                    
         except UserProfile.DoesNotExist:
             pass
         # Si no, solo puede verse a sí mismo
         return UserProfile.objects.filter(remote_auth_id=self.request.user.id)
+
+    def partial_update(self, request, *args, **kwargs):
+        print(f"DEBUG UPDATE PROFILE: {kwargs.get('remote_auth_id')} with data {request.data}")
+        return super().partial_update(request, *args, **kwargs)
 
     # Creamos un endpoint personalizado: /api/v1/profiles/me/
     @action(detail=False, methods=['get', 'post', 'patch'])
@@ -67,11 +87,16 @@ class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewset
             return Response({'error': 'Usuario no encontrado'}, status=404)
 
     @action(detail=True, methods=['patch'], url_path='change-role')
-    def change_role(self, request, pk=None):
+    def change_role(self, request, remote_auth_id=None):
+        print(f"DEBUG CHANGE ROLE: User {request.user.id} attempting to change profile {remote_auth_id}")
         try:
-            admin_profile = UserProfile.objects.get(remote_auth_id=request.user.id)
-            if admin_profile.custom_role != UserProfile.Role.ADMIN:
-                return Response({'error': 'No tienes permisos de administrador.'}, status=403)
+            current_user_profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            print(f"DEBUG CHANGE ROLE: Current user role: {current_user_profile.custom_role}")
+            is_admin = current_user_profile.custom_role == UserProfile.Role.ADMIN
+            is_franchisee = current_user_profile.custom_role == UserProfile.Role.FRANCHISEE
+            
+            if not is_admin and not is_franchisee:
+                return Response({'error': 'No tienes permisos para cambiar roles.'}, status=403)
         except UserProfile.DoesNotExist:
             return Response({'error': 'No tienes perfil asignado.'}, status=403)
 
@@ -81,6 +106,16 @@ class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewset
         if new_role not in dict(UserProfile.Role.choices):
             return Response({'error': 'Rol inválido.'}, status=400)
             
+        # Validar jerarquía
+        if is_franchisee:
+            # Un franquiciatario no puede crear un ADMIN
+            if new_role == UserProfile.Role.ADMIN:
+                return Response({'error': 'No puedes asignar rol de ADMIN.'}, status=403)
+            # Debe ser personal de su tienda
+            from inventory.models import Store
+            if not Store.objects.filter(owner=current_user_profile, id=user_to_promote.assigned_store_id).exists():
+                return Response({'error': 'El usuario no pertenece a tus sucursales.'}, status=403)
+
         user_to_promote.custom_role = new_role
         user_to_promote.save()
         
