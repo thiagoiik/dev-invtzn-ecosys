@@ -11,9 +11,9 @@
       <thead>
         <tr>
           <th>ID</th>
-          <th>Cliente (ID)</th>
-          <th>Producto</th>
-          <th>Estado</th>
+          <th>Cliente</th>
+          <th>Estado Pago</th>
+          <th>Estado Visibilidad</th>
           <th>URL Pública</th>
           <th>Acciones</th>
         </tr>
@@ -21,8 +21,14 @@
       <tbody>
         <tr v-for="dep in deployments" :key="dep.id">
           <td>#{{ dep.id }}</td>
-          <td>Usuario {{ dep.user }}</td>
-          <td>Prod #{{ dep.product }}</td>
+          <td>
+            <div class="font-bold">Usuario {{ dep.user }}</div>
+            <div class="text-[10px] text-slate-400 uppercase">Prod #{{ dep.product }}</div>
+          </td>
+          <td>
+            <span v-if="dep.is_paid" class="badge paid">✅ PAGADA</span>
+            <span v-else class="badge trial">🧪 PRUEBA</span>
+          </td>
           <td>
             <span :class="['badge', dep.status.toLowerCase()]">{{ dep.status }}</span>
           </td>
@@ -31,15 +37,17 @@
             <span v-else class="text-muted">Sin asignar</span>
           </td>
           <td class="actions-cell">
-            <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="btn btn-sm btn-outline">👁️ Previa</a>
+            <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="btn btn-sm btn-outline" title="Previa">👁️</a>
             
-            <!-- Vendedores no verán este botón, pero por ahora lo ocultaremos dinámicamente si sabemos su rol. 
-                 Como protección real, el Backend ya prohíbe el guardado si entra. -->
-            <router-link :to="'/builder/' + dep.id" class="btn btn-sm btn-primary">
-              🛠️ Editor
+            <router-link :to="'/builder/' + dep.id" class="btn btn-sm btn-primary" title="Editar">
+              🛠️
             </router-link>
             
-            <button @click="onDelete(dep.id)" class="btn btn-sm btn-danger" style="margin-left: 0.5rem;">
+            <button v-if="!dep.is_paid" @click="onPay(dep)" class="btn btn-sm btn-success" title="Pagar">
+              💰 Pagar
+            </button>
+
+            <button @click="onDelete(dep.id)" class="btn btn-sm btn-danger" title="Eliminar">
               🗑️
             </button>
           </td>
@@ -84,6 +92,35 @@ const onDelete = async (id) => {
   }
 };
 
+const onPay = async (dep) => {
+  try {
+    toast.info('Generando orden de pago...');
+    // 1. Crear la orden para este deployment
+    const orderData = {
+      product: dep.product,
+      deployment: dep.id,
+      total_amount: "50.00", 
+      user: dep.user
+    };
+    
+    const res = await crmService.createOrder(orderData);
+    const orderId = res.data.id;
+    
+    // 2. Generar el link de Stripe
+    const successUrl = `${window.location.origin}/workspace/designs?success=true`;
+    const cancelUrl = `${window.location.origin}/workspace/designs?cancel=true`;
+    
+    const checkoutRes = await crmService.createStripeCheckout(orderId, successUrl, cancelUrl);
+    const { url } = checkoutRes.data;
+    
+    // 3. Redirigir
+    window.location.href = url;
+  } catch (error) {
+    toast.error('Error al procesar el pago.');
+    console.error(error);
+  }
+};
+
 onMounted(() => {
   loadDeployments();
 });
@@ -114,6 +151,7 @@ onMounted(() => {
 .btn-sm { font-size: 0.85rem; padding: 0.35rem 0.75rem; margin-right: 0.5rem; }
 .btn-outline { border: 1px solid #cbd5e1; background: white; color: #475569; }
 .btn-primary { background: #3b82f6; color: white; }
+.btn-success { background: #10b981; color: white; }
 .btn-danger { background: #ef4444; color: white; }
 
 .data-grid { width: 100%; border-collapse: collapse; }
@@ -121,8 +159,10 @@ onMounted(() => {
 .data-grid th { background: #f8fafc; color: #64748b; font-weight: 600; }
 
 .badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; font-weight: bold; }
-.badge.draft { background: #fef3c7; color: #d97706; }
-.badge.live { background: #dcfce7; color: #16a34a; }
+.badge.draft { background: #f1f5f9; color: #475569; }
+.badge.live { background: #3b82f6; color: white; }
+.badge.paid { background: #dcfce7; color: #16a34a; }
+.badge.trial { background: #fef3c7; color: #d97706; }
 .badge.expired { background: #fee2e2; color: #dc2626; }
 
 .link { color: #3b82f6; text-decoration: underline; }
