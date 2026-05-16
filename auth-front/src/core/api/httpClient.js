@@ -8,7 +8,7 @@ const httpClient = axios.create({
 });
 
 
-const toast = useToast(); 
+// const toast = useToast(); // Eliminado de aquí, se usa dentro del interceptor
 
 
 // Interceptor de Petición: Inyección de JWT
