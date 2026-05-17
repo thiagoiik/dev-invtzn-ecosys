@@ -10,5 +10,9 @@ export const engineService = {
   
   submitRSVP(slug, data) {
     return invtznClient.post(`deployments/slug/${slug}/rsvp/`, data);
+  },
+
+  submitMetric(slug, metricType = 'VISIT') {
+    return invtznClient.post(`deployments/slug/${slug}/metric/`, { metric_type: metricType });
   }
 };

@@ -36,7 +36,7 @@
       />
 
       <!-- 4. RSVP Form Block (Always at the bottom) -->
-      <EngineRSVP 
+      <RsvpFormBlock 
         v-if="!customData.hide_rsvp" 
         :slug="slug" 
         :config="customData.rsvp || {}" 
@@ -46,13 +46,14 @@
 </template>
 
 <script setup>
-import { computed, defineProps, defineEmits } from 'vue';
+import { computed, onMounted } from 'vue';
 import DraftWatermarkOverlay from './DraftWatermarkOverlay.vue';
 import CoverBlock from './CoverBlock.vue';
 import AudioPlayer from './AudioPlayer.vue';
 import CountdownTimer from './CountdownTimer.vue';
 import TimelineBlock from './TimelineBlock.vue';
-import EngineRSVP from './EngineRSVP.vue';
+import RsvpFormBlock from './RsvpFormBlock.vue';
+import { useTelemetry } from '../composables/useTelemetry';
 
 const props = defineProps({
   status: { type: String, required: true },
@@ -62,6 +63,13 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['purchase']);
+
+const telemetry = useTelemetry();
+
+onMounted(() => {
+  // Silent tracking of page visits upon master load
+  telemetry.trackVisit(props.slug);
+});
 
 const handlePurchaseRedirect = () => {
   emit('purchase');

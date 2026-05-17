@@ -12,10 +12,7 @@ class DeploymentViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     
     def get_permissions(self):
-        if self.action == 'create':
-            return [AllowAny()]
-        # Para ver slugs públicos
-        if self.action == 'public_by_slug':
+        if self.action in ['create', 'public_by_slug', 'public_rsvp_by_slug', 'public_metric_by_slug']:
             return [AllowAny()]
         return [IsAuthenticated()]
 
@@ -116,3 +113,52 @@ class DeploymentViewSet(viewsets.ModelViewSet):
         )
         
         return Response({'success': 'Confirmación recibida', 'guest_id': guest.id})
+
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='slug/(?P<slug>[^/.]+)/metric')
+    def public_metric_by_slug(self, request, slug=None):
+        deployment = get_object_or_404(Deployment, slug=slug)
+        metric_type = request.data.get('metric_type', 'VISIT')
+        
+        # Parse client IP
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+        
+        # Geolocation logic (non-blocking, fast timeout fallback)
+        city = 'Desconocido'
+        country = 'Desconocido'
+        
+        # If IP is loopback or private range
+        if ip in ['127.0.0.1', 'localhost', '::1', None] or ip.startswith('192.168.') or ip.startswith('10.'):
+            city = 'Localhost'
+            country = 'México'
+        else:
+            try:
+                import requests
+                # Use a fast timeout (e.g. 1.0s) so it doesn't block the request if service is slow
+                geo_res = requests.get(f"http://ip-api.com/json/{ip}", timeout=1.0).json()
+                if geo_res.get('status') == 'success':
+                    city = geo_res.get('city', 'Desconocido')
+                    country = geo_res.get('country', 'Desconocido')
+            except Exception:
+                pass
+
+        from .models import DeploymentMetric
+        metric = DeploymentMetric.objects.create(
+            deployment=deployment,
+            metric_type=metric_type,
+            ip_address=ip,
+            user_agent=user_agent[:500] if user_agent else '',
+            city=city,
+            country=country
+        )
+        
+        return Response({
+            'success': 'Métrica registrada',
+            'city': city,
+            'country': country
+        })
