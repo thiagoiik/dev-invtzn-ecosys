@@ -38,7 +38,7 @@ const isTokenValid = (token) => {
   } catch { return false; }
 };
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
   const token = authStore.token;
   
@@ -47,6 +47,29 @@ router.beforeEach((to, from, next) => {
   // 2. Navigation Guards
   if (to.meta.requiresAuth) {
     if (isAuthenticated) {
+      // Si la ruta requiere rol y no lo tenemos en el store, intentamos cargarlo
+      if (to.meta.requiresRole && !authStore.role) {
+        try {
+          await authStore.fetchUser();
+        } catch (error) {
+          authStore.logout();
+          next({ name: 'login' });
+          return;
+        }
+      }
+
+      // Validar rol si está especificado
+      if (to.meta.requiresRole) {
+        const allowedRoles = Array.isArray(to.meta.requiresRole)
+          ? to.meta.requiresRole
+          : [to.meta.requiresRole];
+
+        if (!authStore.role || !allowedRoles.includes(authStore.role)) {
+          next({ name: 'dashboard' });
+          return;
+        }
+      }
+      
       next(); 
     } else {
       authStore.logout(); 

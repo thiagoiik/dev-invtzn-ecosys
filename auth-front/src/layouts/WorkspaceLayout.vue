@@ -75,38 +75,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toastification';
+import { ref, computed } from 'vue';
 import { useAuthStore } from '@/modules/auth/store/auth';
-import { profileService } from '@/modules/dashboard/services/profileService';
 
 const authStore = useAuthStore();
-const router = useRouter();
-const toast = useToast();
-const userRole = ref(null);
+const userRole = computed(() => authStore.role);
 const menuOpen = ref(false);
 
 const toggleMenu = () => {
   menuOpen.value = !menuOpen.value;
 };
-
-onMounted(async () => {
-  try {
-    const res = await profileService.fetchMyProfile();
-    userRole.value = res.data.custom_role;
-    
-    // Si el usuario es un CLIENTE normal, lo sacamos del Workspace
-    if (userRole.value === 'CLIENT') {
-      toast.error('Acceso denegado. Área exclusiva para personal B2B.');
-      router.push('/dashboard');
-    }
-  } catch (error) {
-    console.error("B2B Auth Error:", error);
-    toast.error('Error al validar permisos B2B.');
-    router.push('/dashboard');
-  }
-});
 </script>
 
 <style scoped>

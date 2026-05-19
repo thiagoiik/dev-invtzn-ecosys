@@ -143,6 +143,56 @@ class CashSessionViewSet(viewsets.ModelViewSet):
             
         serializer.save(user=self.request.user.id)
 
+    @action(detail=True, methods=['post'], url_path='close')
+    def close_session(self, request, pk=None):
+        from django.utils import timezone
+        from rest_framework.exceptions import ValidationError
+        from decimal import Decimal
+        
+        session = self.get_object()
+        if not session.is_open:
+            return Response({'error': 'Esta sesión ya se encuentra cerrada.'}, status=400)
+            
+        closing_balance = request.data.get('closing_balance')
+        if closing_balance is None:
+            return Response({'error': 'El saldo de cierre (closing_balance) es requerido.'}, status=400)
+            
+        try:
+            closing_balance = Decimal(str(closing_balance))
+        except Exception:
+            return Response({'error': 'Saldo de cierre inválido.'}, status=400)
+            
+        # Calcular ventas registradas en esta sucursal por este vendedor durante el turno
+        completed_orders = Order.objects.filter(
+            vendor_id=session.user,
+            store=session.store,
+            created_at__gte=session.opened_at,
+            status=Order.StatusChoices.COMPLETED
+        )
+        
+        # Sumar los montos de ventas completadas
+        total_sales = sum(o.total_amount for o in completed_orders)
+        expected_balance = session.opening_balance + total_sales
+        difference = closing_balance - expected_balance
+        
+        # Cerrar la sesión
+        session.closing_balance = closing_balance
+        session.is_open = False
+        session.closed_at = timezone.now()
+        session.save()
+        
+        return Response({
+            'session_id': session.id,
+            'opened_at': session.opened_at,
+            'closed_at': session.closed_at,
+            'opening_balance': session.opening_balance,
+            'closing_balance': session.closing_balance,
+            'total_sales_amount': total_sales,
+            'expected_closing_balance': expected_balance,
+            'difference': difference,
+            'is_open': session.is_open
+        })
+
 class CommissionViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CommissionSerializer
     permission_classes = [IsAuthenticated]

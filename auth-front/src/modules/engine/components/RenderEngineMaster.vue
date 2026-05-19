@@ -17,29 +17,12 @@
 
     <!-- Render Blocks dynamically based on configuration -->
     <div class="master-canvas" :class="{ 'pt-[44px]': status === 'DRAFT' }">
-      <!-- 1. Beautiful Hero Cover -->
-      <CoverBlock 
-        v-if="!customData.hide_cover" 
-        :config="customData.cover || {}" 
-      />
-
-      <!-- 2. Countdown Timer Block -->
-      <CountdownTimer 
-        v-if="customData.has_timer || customData.timer" 
-        :config="customData.timer || {}" 
-      />
-
-      <!-- 3. Dynamic Timeline Block -->
-      <TimelineBlock 
-        v-if="customData.has_timeline || customData.timeline" 
-        :config="customData.timeline || {}" 
-      />
-
-      <!-- 4. RSVP Form Block (Always at the bottom) -->
-      <RsvpFormBlock 
-        v-if="!customData.hide_rsvp" 
-        :slug="slug" 
-        :config="customData.rsvp || {}" 
+      <component
+        v-for="block in orderedBlocks"
+        :key="block.id"
+        :is="block.component"
+        :config="block.config"
+        v-bind="block.component === RsvpFormBlock ? { slug: slug } : {}"
       />
     </div>
   </div>
@@ -74,6 +57,66 @@ onMounted(() => {
 const handlePurchaseRedirect = () => {
   emit('purchase');
 };
+
+// Mapeo de componentes disponibles para renderizado dinámico
+const componentMap = {
+  CoverBlock: CoverBlock,
+  CountdownTimer: CountdownTimer,
+  TimelineBlock: TimelineBlock,
+  RsvpFormBlock: RsvpFormBlock
+};
+
+// Generar el orden dinámico de bloques con fallback retrocompatible
+const orderedBlocks = computed(() => {
+  // Caso 1: Estructura moderna con ordenamiento dinámico
+  if (Array.isArray(props.customData.blocks)) {
+    return props.customData.blocks
+      .map(b => ({
+        id: b.id,
+        component: componentMap[b.type],
+        config: b.config || {},
+        visible: b.visible !== false
+      }))
+      .filter(b => b.component && b.visible);
+  }
+
+  // Caso 2: Fallback retrocompatible para registros antiguos
+  const fallback = [];
+
+  if (!props.customData.hide_cover) {
+    fallback.push({
+      id: 'cover',
+      component: CoverBlock,
+      config: props.customData.cover || {}
+    });
+  }
+
+  if (props.customData.has_timer || props.customData.timer) {
+    fallback.push({
+      id: 'timer',
+      component: CountdownTimer,
+      config: props.customData.timer || {}
+    });
+  }
+
+  if (props.customData.has_timeline || props.customData.timeline) {
+    fallback.push({
+      id: 'timeline',
+      component: TimelineBlock,
+      config: props.customData.timeline || {}
+    });
+  }
+
+  if (!props.customData.hide_rsvp) {
+    fallback.push({
+      id: 'rsvp',
+      component: RsvpFormBlock,
+      config: props.customData.rsvp || {}
+    });
+  }
+
+  return fallback;
+});
 
 // Generates dynamic brand color palletes using HSL variables
 const themeVariables = computed(() => {

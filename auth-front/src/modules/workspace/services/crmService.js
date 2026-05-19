@@ -59,6 +59,12 @@ export const crmService = {
     return invtznClient.get('cash-sessions/');
   },
 
+  closeCashSession(sessionId, closingBalance) {
+    return invtznClient.post(`cash-sessions/${sessionId}/close/`, {
+      closing_balance: closingBalance
+    });
+  },
+
   // Finanzas y Conciliación
   fetchBankLogs() {
     return invtznClient.get('integrations/');
