@@ -7,6 +7,9 @@ services:
       - '443:443'
     environment:
       - CERTBOT_EMAIL=${CERTBOT_EMAIL}
+      - DOMAIN_FRONT=${DOMAIN_FRONT}
+      - DOMAIN_AUTH_API=${DOMAIN_AUTH_API}
+      - DOMAIN_INVTZN_API=${DOMAIN_INVTZN_API}
     volumes:
       - ./letsencrypt:/etc/letsencrypt
       - ./user_conf.d:/etc/nginx/user_conf.d:ro

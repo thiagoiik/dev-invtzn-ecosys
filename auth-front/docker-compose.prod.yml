@@ -1,11 +1,6 @@
 services:
   auth-front:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        - VITE_API_AUTH_URL=${VITE_API_AUTH_URL}
-        - VITE_API_INVTZN_URL=${VITE_API_INVTZN_URL}
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/auth-front:${IMAGE_TAG}
     restart: unless-stopped
     networks:
       - red_publica

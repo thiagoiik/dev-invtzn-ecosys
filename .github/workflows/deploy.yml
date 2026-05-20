@@ -116,8 +116,8 @@ jobs:
           context: ./auth-front
           push: true
           build-args: |
-            VITE_API_AUTH_URL=${{ github.ref == 'refs/heads/main' && 'https://api.auth.tudominio.com/' || 'https://api.auth.sandbox.tudominio.com/' }}
-            VITE_API_INVTZN_URL=${{ github.ref == 'refs/heads/main' && 'https://api.invtzn.tudominio.com/api/v1/' || 'https://api.invtzn.sandbox.tudominio.com/api/v1/' }}
+            VITE_API_AUTH_URL=${{ github.ref == 'refs/heads/main' && 'https://api.auth.invitazyon.online/' || 'https://api.auth.sandbox.invitazyon.online/' }}
+            VITE_API_INVTZN_URL=${{ github.ref == 'refs/heads/main' && 'https://api.invtzn.invitazyon.online/api/v1/' || 'https://api.invtzn.sandbox.invitazyon.online/api/v1/' }}
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/auth-front:${{ env.IMAGE_TAG }}
             ghcr.io/${{ env.OWNER_LC }}/auth-front:latest
@@ -132,6 +132,18 @@ jobs:
     runs-on: ubuntu-latest
     environment: sandbox # <--- Vinculado al Sandbox Environment de GitHub
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Copy Config Files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "bd/docker-compose.prod.yml,bd/init-scripts/**,auth-service/docker-compose.prod.yml,api-invtzn/docker-compose.prod.yml,auth-front/docker-compose.prod.yml,gateway/docker-compose.prod.yml,gateway/user_conf.d/**,landing-page/docker-compose.prod.yml,landing-page/src/**"
+          target: "/home/${{ secrets.SSH_USER }}/ecosys"
+
       - name: Deploy to VPS (Sandbox) via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -139,17 +151,63 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             cd /home/${{ secrets.SSH_USER }}/ecosys
-            # Escribir variables de entorno limpias
+            
+            # Escribir variables de entorno y definir variables de imagen dinámicas en la raíz
             echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
-            # Loguearse en GHCR y jalar últimas imágenes
+            echo "GITHUB_REPOSITORY_OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> .env
+            if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+              echo "IMAGE_TAG=${{ github.ref_name }}" >> .env
+            elif [[ "${{ github.ref }}" == refs/heads/main ]]; then
+              echo "IMAGE_TAG=production-latest" >> .env
+            else
+              echo "IMAGE_TAG=sandbox-latest" >> .env
+            fi
+            
+            # Crear redes de Docker externas si no existen
+            docker network inspect red_datos >/dev/null 2>&1 || docker network create red_datos
+            docker network inspect red_publica >/dev/null 2>&1 || docker network create red_publica
+            
+            # Loguearse en GHCR
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+            
+            # 1. Base de datos
+            cd /home/${{ secrets.SSH_USER }}/ecosys/bd
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
-            # Correr migraciones
+            
+            # 2. Backends (Auth y Negocio)
+            cd /home/${{ secrets.SSH_USER }}/ecosys/auth-service
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            
+            cd /home/${{ secrets.SSH_USER }}/ecosys/api-invtzn
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            
+            # 3. Frontends (Vue y Estático Landing)
+            cd /home/${{ secrets.SSH_USER }}/ecosys/auth-front
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            
+            cd /home/${{ secrets.SSH_USER }}/ecosys/landing-page
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            
+            # 4. Gateway (Proxy reverso)
+            cd /home/${{ secrets.SSH_USER }}/ecosys/gateway
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            
+            # Correr migraciones en caliente
+            cd /home/${{ secrets.SSH_USER }}/ecosys/auth-service
             docker compose -f docker-compose.prod.yml exec -T auth-service-api python manage.py migrate
+            
+            cd /home/${{ secrets.SSH_USER }}/ecosys/api-invtzn
             docker compose -f docker-compose.prod.yml exec -T invtzn-service-api python manage.py migrate
-            # Limpiar imágenes huérfanas antiguas
+            
+            # Limpiar imágenes huérfanas
             docker image prune -f
 
   # =========================================================================
@@ -162,6 +220,18 @@ jobs:
     runs-on: ubuntu-latest
     environment: production # <--- Vinculado a Production Environment (Aprobación manual requerida en UI)
     steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Copy Config Files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "bd/docker-compose.prod.yml,bd/init-scripts/**,auth-service/docker-compose.prod.yml,api-invtzn/docker-compose.prod.yml,auth-front/docker-compose.prod.yml,gateway/docker-compose.prod.yml,gateway/user_conf.d/**,landing-page/docker-compose.prod.yml,landing-page/src/**"
+          target: "/home/${{ secrets.SSH_USER }}/ecosys"
+
       - name: Deploy to VPS (Production) via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -169,17 +239,63 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             cd /home/${{ secrets.SSH_USER }}/ecosys
-            # Escribir variables de entorno de producción reales
+            
+            # Escribir variables de entorno y definir variables de imagen dinámicas en la raíz
             echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
-            # Loguearse en GHCR y jalar imágenes tagged de producción
+            echo "GITHUB_REPOSITORY_OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> .env
+            if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+              echo "IMAGE_TAG=${{ github.ref_name }}" >> .env
+            elif [[ "${{ github.ref }}" == refs/heads/main ]]; then
+              echo "IMAGE_TAG=production-latest" >> .env
+            else
+              echo "IMAGE_TAG=sandbox-latest" >> .env
+            fi
+            
+            # Crear redes de Docker externas si no existen
+            docker network inspect red_datos >/dev/null 2>&1 || docker network create red_datos
+            docker network inspect red_publica >/dev/null 2>&1 || docker network create red_publica
+            
+            # Loguearse en GHCR
             docker login ghcr.io -u ${{ github.actor }} -p ${{ secrets.GITHUB_TOKEN }}
+            
+            # 1. Base de datos
+            cd /home/${{ secrets.SSH_USER }}/ecosys/bd
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            
+            # 2. Backends (Auth y Negocio)
+            cd /home/${{ secrets.SSH_USER }}/ecosys/auth-service
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            
+            cd /home/${{ secrets.SSH_USER }}/ecosys/api-invtzn
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            
+            # 3. Frontends (Vue y Estático Landing)
+            cd /home/${{ secrets.SSH_USER }}/ecosys/auth-front
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            
+            cd /home/${{ secrets.SSH_USER }}/ecosys/landing-page
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            
+            # 4. Gateway (Proxy reverso)
+            cd /home/${{ secrets.SSH_USER }}/ecosys/gateway
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+            
             # Correr migraciones y recolectar estáticos
+            cd /home/${{ secrets.SSH_USER }}/ecosys/auth-service
             docker compose -f docker-compose.prod.yml exec -T auth-service-api python manage.py migrate
             docker compose -f docker-compose.prod.yml exec -T auth-service-api python manage.py collectstatic --noinput
+            
+            cd /home/${{ secrets.SSH_USER }}/ecosys/api-invtzn
             docker compose -f docker-compose.prod.yml exec -T invtzn-service-api python manage.py migrate
             docker compose -f docker-compose.prod.yml exec -T invtzn-service-api python manage.py collectstatic --noinput
+            
             # Limpiar imágenes obsoletas
             docker image prune -f
