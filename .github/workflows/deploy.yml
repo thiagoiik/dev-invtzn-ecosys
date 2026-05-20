@@ -175,30 +175,30 @@ jobs:
             # 1. Base de datos
             cd /home/${{ secrets.SSH_USER }}/ecosys/bd
             docker compose --env-file ../.env -f docker-compose.prod.yml pull
-            docker compose --env-file ../.env -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file ../.env -f docker-compose.prod.yml up -d
             
             # 2. Backends (Auth y Negocio)
             cd /home/${{ secrets.SSH_USER }}/ecosys/auth-service
             docker compose --env-file ../.env -f docker-compose.prod.yml pull
-            docker compose --env-file ../.env -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file ../.env -f docker-compose.prod.yml up -d
             
             cd /home/${{ secrets.SSH_USER }}/ecosys/api-invtzn
             docker compose --env-file ../.env -f docker-compose.prod.yml pull
-            docker compose --env-file ../.env -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file ../.env -f docker-compose.prod.yml up -d
             
             # 3. Frontends (Vue y Estático Landing)
             cd /home/${{ secrets.SSH_USER }}/ecosys/auth-front
             docker compose --env-file ../.env -f docker-compose.prod.yml pull
-            docker compose --env-file ../.env -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file ../.env -f docker-compose.prod.yml up -d
             
             cd /home/${{ secrets.SSH_USER }}/ecosys/landing-page
             docker compose --env-file ../.env -f docker-compose.prod.yml pull
-            docker compose --env-file ../.env -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file ../.env -f docker-compose.prod.yml up -d
             
             # 4. Gateway (Proxy reverso)
             cd /home/${{ secrets.SSH_USER }}/ecosys/gateway
             docker compose --env-file ../.env -f docker-compose.prod.yml pull
-            docker compose --env-file ../.env -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file ../.env -f docker-compose.prod.yml up -d
             
             # Correr migraciones en caliente
             cd /home/${{ secrets.SSH_USER }}/ecosys/auth-service
@@ -263,30 +263,30 @@ jobs:
             # 1. Base de datos
             cd /home/${{ secrets.SSH_USER }}/ecosys/bd
             docker compose --env-file ../.env -f docker-compose.prod.yml pull
-            docker compose --env-file ../.env -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file ../.env -f docker-compose.prod.yml up -d
             
             # 2. Backends (Auth y Negocio)
             cd /home/${{ secrets.SSH_USER }}/ecosys/auth-service
             docker compose --env-file ../.env -f docker-compose.prod.yml pull
-            docker compose --env-file ../.env -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file ../.env -f docker-compose.prod.yml up -d
             
             cd /home/${{ secrets.SSH_USER }}/ecosys/api-invtzn
             docker compose --env-file ../.env -f docker-compose.prod.yml pull
-            docker compose --env-file ../.env -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file ../.env -f docker-compose.prod.yml up -d
             
             # 3. Frontends (Vue y Estático Landing)
             cd /home/${{ secrets.SSH_USER }}/ecosys/auth-front
             docker compose --env-file ../.env -f docker-compose.prod.yml pull
-            docker compose --env-file ../.env -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file ../.env -f docker-compose.prod.yml up -d
             
             cd /home/${{ secrets.SSH_USER }}/ecosys/landing-page
             docker compose --env-file ../.env -f docker-compose.prod.yml pull
-            docker compose --env-file ../.env -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file ../.env -f docker-compose.prod.yml up -d
             
             # 4. Gateway (Proxy reverso)
             cd /home/${{ secrets.SSH_USER }}/ecosys/gateway
             docker compose --env-file ../.env -f docker-compose.prod.yml pull
-            docker compose --env-file ../.env -f docker-compose.prod.yml up -d --remove-orphans
+            docker compose --env-file ../.env -f docker-compose.prod.yml up -d
             
             # Correr migraciones y recolectar estáticos
             cd /home/${{ secrets.SSH_USER }}/ecosys/auth-service
