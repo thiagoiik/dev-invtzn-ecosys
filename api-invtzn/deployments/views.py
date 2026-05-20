@@ -21,9 +21,9 @@ class DeploymentViewSet(viewsets.ModelViewSet):
         from django.db import models
         try:
             profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
-            if profile.custom_role == UserProfile.Role.ADMIN:
+            if profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]:
                 return Deployment.objects.all().order_by('-created_at')
-            if profile.custom_role in [UserProfile.Role.VENDOR, UserProfile.Role.DESIGNER]:
+            if profile.custom_role == UserProfile.Role.VENDOR:
                 return Deployment.objects.filter(models.Q(user=self.request.user.id) | models.Q(vendor_id=self.request.user.id)).order_by('-created_at')
         except Exception:
             pass

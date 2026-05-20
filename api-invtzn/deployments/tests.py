@@ -55,7 +55,7 @@ class TestDeployments:
     def test_vendor_cannot_patch_deployment(self):
         vendor_user = User.objects.create_user(username='vendor', password='password123')
         UserProfile.objects.create(remote_auth_id=vendor_user.id, custom_role=UserProfile.Role.VENDOR)
-        deployment = Deployment.objects.create(user=self.user.id, product=self.product)
+        deployment = Deployment.objects.create(user=self.user.id, vendor_id=vendor_user.id, product=self.product)
         self.client.force_authenticate(user=vendor_user)
         response = self.client.patch(f'/api/v1/deployments/{deployment.id}/', {'slug': 'hacked'})
         assert response.status_code == 403

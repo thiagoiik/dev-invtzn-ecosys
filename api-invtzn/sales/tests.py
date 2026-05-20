@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from sales.models import Order, PaymentTransaction
 from inventory.models import Product
+from profiles.models import UserProfile
 
 User = get_user_model()
 
@@ -11,17 +12,18 @@ class TestSales:
     def setup_method(self):
         self.client = APIClient()
         self.user = User.objects.create_user(username='testuser2', password='password123')
+        UserProfile.objects.create(remote_auth_id=self.user.id, custom_role=UserProfile.Role.CLIENT)
         self.product = Product.objects.create(name='Test Product 2', base_price=50.00, product_type='DIGITAL')
         self.client.force_authenticate(user=self.user)
 
     def test_create_order_model(self):
         order = Order.objects.create(
-            user=self.user,
+            user=self.user.id,
             product=self.product,
             total_amount=50.00,
             status=Order.StatusChoices.PENDING
         )
-        assert order.user == self.user
+        assert order.user == self.user.id
         assert order.total_amount == 50.00
         assert order.status == 'PENDING'
 
@@ -35,7 +37,7 @@ class TestSales:
         assert payment.success is True
 
     def test_order_viewset_list(self):
-        Order.objects.create(user=self.user, product=self.product, total_amount=10.00)
+        Order.objects.create(user=self.user.id, product=self.product, total_amount=10.00)
         response = self.client.get('/api/v1/orders/')
         assert response.status_code == 200
         assert len(response.data) == 1
