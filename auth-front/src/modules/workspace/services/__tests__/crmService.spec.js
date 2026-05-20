@@ -22,7 +22,7 @@ describe('crmService', () => {
 
     await crmService.updateProfileRole(123, 'VENDOR');
     
-    expect(invtznClient.patch).toHaveBeenCalledWith('profiles/123/', { custom_role: 'VENDOR' });
+    expect(invtznClient.patch).toHaveBeenCalledWith('profiles/123/change-role/', { custom_role: 'VENDOR' });
   });
 
   it('should fetch all deployments globally', async () => {
