@@ -4,13 +4,13 @@ on:
   push:
     branches:
       - main
-      - develop
+      - sandbox
     tags:
       - 'v*.*.*'
   pull_request:
     branches:
       - main
-      - develop
+      - sandbox
 
 permissions:
   contents: read
@@ -128,7 +128,7 @@ jobs:
   deploy-sandbox:
     name: Deploy to Sandbox
     needs: build-and-push
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/sandbox'
     runs-on: ubuntu-latest
     environment: sandbox # <--- Vinculado al Sandbox Environment de GitHub
     steps:
