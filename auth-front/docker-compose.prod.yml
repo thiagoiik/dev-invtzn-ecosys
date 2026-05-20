@@ -3,9 +3,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - VITE_API_AUTH_URL=${VITE_API_AUTH_URL}
+        - VITE_API_INVTZN_URL=${VITE_API_INVTZN_URL}
     restart: unless-stopped
     networks:
       - red_publica
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     deploy:
       resources:
         limits:

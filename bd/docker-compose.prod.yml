@@ -1,6 +1,7 @@
 services:
   db_central:
     image: postgres:15-alpine
+    command: postgres -c shared_buffers=256MB -c effective_cache_size=768MB -c work_mem=16MB -c maintenance_work_mem=64MB -c max_connections=100
     restart: unless-stopped
     env_file:
       - ../.env
@@ -14,6 +15,11 @@ services:
       - ./init-scripts:/docker-entrypoint-initdb.d
     networks:
       - red_datos
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     deploy:
       resources:
         limits:

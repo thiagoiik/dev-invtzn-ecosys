@@ -3,6 +3,9 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile  # Usa el multi-stage que vimos antes
+      args:
+        - VITE_API_AUTH_URL=http://api.auth.local/
+        - VITE_API_INVTZN_URL=http://api.invtzn.local/api/v1/
     volumes:
     #- vue_data:/app # Esto es un volumen gestionado por Docker, no por Windows
     - .:/app # Esto es solo para desarrollo

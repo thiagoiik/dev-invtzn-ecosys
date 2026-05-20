@@ -1,7 +1,13 @@
 import axios from 'axios';
 
+const invtznUrl = import.meta.env.VITE_API_INVTZN_URL || 'http://api.invtzn.local/api/v1/';
+const normalizedInvtznUrl = invtznUrl.endsWith('/') ? invtznUrl : `${invtznUrl}/`;
+
+const authUrl = import.meta.env.VITE_API_AUTH_URL || 'http://api.auth.local/';
+const normalizedAuthUrl = authUrl.endsWith('/') ? authUrl : `${authUrl}/`;
+
 const invtznClient = axios.create({
-  baseURL: 'http://api.invtzn.local/api/v1/',
+  baseURL: normalizedInvtznUrl,
   headers: { 'Content-Type': 'application/json' }
 });
 
@@ -58,7 +64,7 @@ invtznClient.interceptors.response.use(
         const authStore = useAuthStore();
 
         // Intentamos refrescar el token en api-auth
-        const refreshRes = await axios.post('http://api.auth.local/auth/token/refresh/', {
+        const refreshRes = await axios.post(`${normalizedAuthUrl}auth/token/refresh/`, {
           refresh: authStore.refreshToken
         });
 

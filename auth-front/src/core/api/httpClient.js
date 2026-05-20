@@ -2,8 +2,11 @@ import axios from 'axios';
 import { useAuthStore } from '@/modules/auth/store/auth';
 import { useToast } from "vue-toastification"; 
 
+const authUrl = import.meta.env.VITE_API_AUTH_URL || 'http://api.auth.local/';
+const normalizedAuthUrl = authUrl.endsWith('/') ? authUrl : `${authUrl}/`;
+
 const httpClient = axios.create({
-  baseURL: 'http://api.auth.local/', // Dominio
+  baseURL: normalizedAuthUrl,
   headers: { 'Content-Type': 'application/json' }
 });
 
@@ -51,7 +54,7 @@ httpClient.interceptors.response.use(
       originalRequest._retry = true;
       try {
         // Envía el refresh_token a /auth/token/refresh/ para obtener un nuevo JWT de forma transparente
-        const refreshResponse = await axios.post('http://api.auth.local/auth/token/refresh/', {
+        const refreshResponse = await axios.post(`${normalizedAuthUrl}auth/token/refresh/`, {
           refresh: authStore.refreshToken
         });
 
