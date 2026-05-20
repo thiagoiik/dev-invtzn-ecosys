@@ -1,14 +1,16 @@
 services:
   proxy:
-    image: 'jc21/nginx-proxy-manager:2.11.2'
+    image: 'jonasal/nginx-certbot:4'
     restart: unless-stopped
     ports:
       - '80:80'
       - '443:443'
-      - '127.0.0.1:81:81' # El panel de NPM se limita únicamente a localhost
+    environment:
+      - CERTBOT_EMAIL=${CERTBOT_EMAIL}
     volumes:
-      - ./data:/data
       - ./letsencrypt:/etc/letsencrypt
+      - ./user_conf.d:/etc/nginx/user_conf.d:ro
+      - ./dhparam:/etc/nginx/dhparam
     networks:
       - red_publica
     logging:

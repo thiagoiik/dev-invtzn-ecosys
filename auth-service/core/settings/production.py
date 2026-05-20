@@ -64,6 +64,7 @@ EMAIL_PORT = int(os.environ.get('AUTH_EMAIL_PORT', 587))
 EMAIL_HOST_USER = os.environ.get('AUTH_EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.environ.get('AUTH_EMAIL_HOST_PASSWORD')
 EMAIL_USE_TLS = os.environ.get('AUTH_EMAIL_USE_TLS', 'True') == 'True'
+DEFAULT_FROM_EMAIL = os.environ.get('AUTH_DEFAULT_FROM_EMAIL', 'webmaster@localhost')
 
 # Cabeceras de seguridad HTTP de producción adicionales
 SECURE_BROWSER_XSS_FILTER = True
