@@ -6,7 +6,7 @@ services:
     env_file:
       - ../.env
     environment:
-      - DJANGO_SETTINGS_MODULE=core.settings.production
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE_AUTH:-core.settings.production}
     networks:
       - red_publica
       - red_datos

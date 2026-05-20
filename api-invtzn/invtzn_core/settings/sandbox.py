@@ -11,12 +11,13 @@ ALLOWED_HOSTS = os.environ.get('INVTZN_DJANGO_ALLOWED_HOSTS', '').split(',')
 
 db_url = os.environ.get('DATABASE_URL')
 if not db_url:
-    db_user = os.environ.get('API_INVTZN_DB_USER', 'api_invtzn_user')
-    db_password = os.environ.get('API_INVTZN_DB_PASSWORD', 'invtzn-api-password-secure')
-    db_name = os.environ.get('API_INVTZN_DB_NAME', 'api_invtzn_db')
+    db_user = os.environ.get('API_INVTZN_DB_USER')
+    db_password = os.environ.get('API_INVTZN_DB_PASSWORD')
+    db_name = os.environ.get('API_INVTZN_DB_NAME')
     db_host = os.environ.get('DB_HOST', 'db_central')
     db_port = os.environ.get('DB_PORT', '5432')
-    db_url = f'postgres://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
+    if db_user and db_password and db_name:
+        db_url = f'postgres://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
 
 DATABASES = {
     'default': dj_database_url.config(
@@ -24,6 +25,8 @@ DATABASES = {
         conn_max_age=600
     )
 }
+if not DATABASES['default']:
+    raise ValueError("CRÍTICO: La base de datos centralizada debe estar configurada en el entorno Sandbox.")
 
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = os.environ.get('INVTZN_CORS_ALLOWED_ORIGINS', '').split(',')

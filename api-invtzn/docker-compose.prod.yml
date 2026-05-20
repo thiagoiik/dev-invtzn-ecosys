@@ -6,7 +6,7 @@ services:
     env_file:
       - ../.env
     environment:
-      - DJANGO_SETTINGS_MODULE=invtzn_core.settings.production
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE_INVTZN:-invtzn_core.settings.production}
     networks:
       - red_publica
       - red_datos

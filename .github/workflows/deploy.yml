@@ -164,6 +164,8 @@ jobs:
             else
               echo "IMAGE_TAG=sandbox-latest" >> .env
             fi
+            echo "DJANGO_SETTINGS_MODULE_AUTH=core.settings.sandbox" >> .env
+            echo "DJANGO_SETTINGS_MODULE_INVTZN=invtzn_core.settings.sandbox" >> .env
             
             # Crear redes de Docker externas si no existen
             docker network inspect red_datos >/dev/null 2>&1 || docker network create red_datos
@@ -252,6 +254,8 @@ jobs:
             else
               echo "IMAGE_TAG=sandbox-latest" >> .env
             fi
+            echo "DJANGO_SETTINGS_MODULE_AUTH=core.settings.production" >> .env
+            echo "DJANGO_SETTINGS_MODULE_INVTZN=invtzn_core.settings.production" >> .env
             
             # Crear redes de Docker externas si no existen
             docker network inspect red_datos >/dev/null 2>&1 || docker network create red_datos

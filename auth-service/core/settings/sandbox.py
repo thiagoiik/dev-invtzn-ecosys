@@ -12,12 +12,13 @@ ALLOWED_HOSTS = os.environ.get('AUTH_DJANGO_ALLOWED_HOSTS', '').split(',')
 
 db_url = os.environ.get('DATABASE_URL')
 if not db_url:
-    db_user = os.environ.get('AUTH_DB_USER', 'auth_service_user')
-    db_password = os.environ.get('AUTH_DB_PASSWORD', 'auth_password_secure')
-    db_name = os.environ.get('AUTH_DB_NAME', 'auth_db_service')
+    db_user = os.environ.get('AUTH_DB_USER')
+    db_password = os.environ.get('AUTH_DB_PASSWORD')
+    db_name = os.environ.get('AUTH_DB_NAME')
     db_host = os.environ.get('DB_HOST', 'db_central')
     db_port = os.environ.get('DB_PORT', '5432')
-    db_url = f'postgres://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
+    if db_user and db_password and db_name:
+        db_url = f'postgres://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
 
 DATABASES = {
     'default': dj_database_url.config(
@@ -25,6 +26,8 @@ DATABASES = {
         conn_max_age=600
     )
 }
+if not DATABASES['default']:
+    raise ValueError("CRÍTICO: La base de datos centralizada debe estar configurada en el entorno Sandbox.")
 
 # Configuración REST_AUTH (HTTPS recomendado en Sandbox pero HTTP disponible si es necesario)
 REST_AUTH = {
@@ -48,10 +51,11 @@ SIMPLE_JWT = {
 
 CORS_ALLOWED_ORIGINS = os.environ.get('AUTH_CORS_ALLOWED_ORIGINS', '').split(',')
 
-# Configuración de email en Sandbox (SMTP de pruebas)
+# Configuración de email en Sandbox
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.environ.get('AUTH_EMAIL_HOST', 'localhost')
-EMAIL_PORT = int(os.environ.get('AUTH_EMAIL_PORT', 25))
-EMAIL_HOST_USER = os.environ.get('AUTH_EMAIL_HOST_USER', '')
-EMAIL_HOST_PASSWORD = os.environ.get('AUTH_EMAIL_HOST_PASSWORD', '')
-EMAIL_USE_TLS = os.environ.get('AUTH_EMAIL_USE_TLS', 'False') == 'True'
+EMAIL_HOST = os.environ.get('AUTH_EMAIL_HOST')
+EMAIL_PORT = int(os.environ.get('AUTH_EMAIL_PORT', 587))
+EMAIL_HOST_USER = os.environ.get('AUTH_EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.environ.get('AUTH_EMAIL_HOST_PASSWORD')
+EMAIL_USE_TLS = os.environ.get('AUTH_EMAIL_USE_TLS', 'True') == 'True'
+DEFAULT_FROM_EMAIL = os.environ.get('AUTH_DEFAULT_FROM_EMAIL', 'webmaster@localhost')
