@@ -3,16 +3,18 @@ services:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: admin_global
-      POSTGRES_PASSWORD: tu_password_seguro
-      # Aquí crearás las bases lógicas por separado después
+      POSTGRES_USER: ${POSTGRES_USER:-admin_global}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tu_password_seguro_global}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_MULTIPLE_DATABASES: "${AUTH_DB_NAME:-auth_db_service}:${AUTH_DB_USER:-auth_service_user}:${AUTH_DB_PASSWORD:-auth_password_secure_para_desarrollo},${API_INVTZN_DB_NAME:-api_invtzn_db}:${API_INVTZN_DB_USER:-api_invtzn_user}:${API_INVTZN_DB_PASSWORD:-invtzn_password_secure_para_desarrollo}"
     volumes:
       - pg_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
     networks:
       - red_datos
 
 volumes:
-  pg_data: # Este volumen persistirá aunque borres el contenedor
+  pg_data:
 
 networks:
   red_datos:

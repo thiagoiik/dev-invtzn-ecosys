@@ -1,0 +1,17 @@
+services:
+  auth-front:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    networks:
+      - red_publica
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
+networks:
+  red_publica:
+    external: true

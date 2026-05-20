@@ -1,0 +1,2 @@
+-r base.txt
+# Agrega aquí dependencias específicas de producción para api-invtzn

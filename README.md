@@ -129,16 +129,23 @@ docker compose up -d --build
 
 ---
 
-## 🛡️ Estándares para Producción
+## 🛡️ Estándares y Despliegue en Producción
 
-Para migrar este entorno local a un entorno de producción (ej. AWS EC2, GCP Compute Engine, Kubernetes), se deben aplicar los siguientes criterios estrictos detallados en el informe [docker_production_analysis.md](file:///C:/Users/Thiago/.gemini/antigravity/brain/aef023af-5190-47a6-8e96-60d38e544783/docker_production_analysis.md):
+Para migrar este entorno local a un entorno de producción (ej. AWS EC2, GCP Compute Engine, Kubernetes), cada servicio cuenta con su propio archivo de configuración `docker-compose.prod.yml` descentralizado. Esto evita dependencias acopladas entre servicios y permite el despliegue y escalado independiente de cada módulo.
 
-* **Inmutabilidad:** Desactivar por completo el montaje de código local (`.:/app`) en los contenedores. El código debe estar empaquetado en la propia imagen.
-* **Seguridad de Django:** Configurar `DEBUG = False`, regenerar claves secretas fuertes mediante variables de entorno, y restringir `CORS_ALLOWED_ORIGINS` y `ALLOWED_HOSTS`.
-* **Seguridad JWT:** Habilitar `'JWT_AUTH_HTTPONLY': True` y `'JWT_AUTH_SECURE': True` en las configuraciones de dj-rest-auth para evitar robos de token por XSS.
-* **Gateway Protegido:** Cambiar el mapeo de puertos del panel web de Nginx Proxy Manager a `127.0.0.1:81:81` para que solo sea accesible mediante SSH Tunneling o VPN.
-* **Límites de RAM y CPU:** Configurar `deploy.resources.limits` en Docker Compose para evitar saturación de memoria del servidor host.
-* **Copias de Seguridad (Backups):** Configurar un agente sidecar de Postgres que realice respaldos diarios automáticos hacia un bucket S3 o Cloud Storage.
+### Despliegue de un Servicio en Producción:
+Accede al directorio del microservicio que deseas desplegar y arráncalo combinando las configuraciones:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+### Directrices de Producción Aplicadas:
+* **Inmutabilidad:** Se desactiva el montaje de volúmenes en caliente (`.:/app`) en producción. El código final se empaqueta en la propia imagen Docker en la etapa de build.
+* **Seguridad de Django:** Configurar `DEBUG = False`, generar claves secretas fuertes y restringir `CORS_ALLOWED_ORIGINS` y `ALLOWED_HOSTS` a través de variables inyectadas.
+* **Seguridad JWT:** Habilitar `'JWT_AUTH_HTTPONLY': True` y `'JWT_AUTH_SECURE': True` en las cookies del backend.
+* **Gateway Protegido:** El panel de Nginx Proxy Manager (puerto 81) se limita a `127.0.0.1` para ser accedido únicamente vía Túnel SSH o VPN.
+* **Límites de RAM y CPU:** Cada contenedor tiene asignados límites de recursos (`deploy.resources.limits`) para asegurar la estabilidad del servidor host.
+* **Copias de Seguridad (Backups):** Configurar un agente sidecar en la base de datos para respaldos diarios automatizados a un almacenamiento cloud.
 
 ---
 

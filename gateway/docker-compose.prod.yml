@@ -1,0 +1,22 @@
+services:
+  proxy:
+    image: 'jc21/nginx-proxy-manager:2.11.2'
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '127.0.0.1:81:81' # El panel de NPM se limita únicamente a localhost
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    networks:
+      - red_publica
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+networks:
+  red_publica:
+    external: true

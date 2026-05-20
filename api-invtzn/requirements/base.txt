@@ -10,7 +10,4 @@ django-cors-headers
 markdown
 PyJWT
 drf-yasg
-pytest
-pytest-django
-factory-boy
 stripe

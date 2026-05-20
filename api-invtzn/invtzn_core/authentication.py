@@ -39,6 +39,7 @@ class MicroserviceJWTAuthentication(authentication.BaseAuthentication):
 
             # 4. Extraer el User ID 8
             user_id = payload.get('user_id') or payload.get('id')
+            print(f"DEBUG AUTH: Authenticated User ID {user_id}")
             if not user_id:
                 raise exceptions.AuthenticationFailed('El token no tiene ID de usuario.')
 

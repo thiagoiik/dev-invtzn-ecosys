@@ -4,18 +4,23 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - ENV=dev
+        - ENV=production
     restart: unless-stopped
-    volumes:
-      - .:/app
     command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --no-control-socket
     env_file:
       - ../.env
     environment:
-      - DJANGO_SETTINGS_MODULE=core.settings.dev
+      - DJANGO_SETTINGS_MODULE=core.settings.production
     networks:
       - red_publica
       - red_datos
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          memory: 128M
 
 networks:
   red_publica:

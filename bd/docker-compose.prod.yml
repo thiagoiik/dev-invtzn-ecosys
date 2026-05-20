@@ -1,0 +1,28 @@
+services:
+  db_central:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_MULTIPLE_DATABASES: "${AUTH_DB_NAME}:${AUTH_DB_USER}:${AUTH_DB_PASSWORD},${API_INVTZN_DB_NAME}:${API_INVTZN_DB_USER}:${API_INVTZN_DB_PASSWORD}"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - red_datos
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+
+volumes:
+  pg_data:
+
+networks:
+  red_datos:
+    external: true
