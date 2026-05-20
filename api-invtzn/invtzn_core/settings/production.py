@@ -11,6 +11,10 @@ ALLOWED_HOSTS = os.environ.get('INVTZN_DJANGO_ALLOWED_HOSTS', '').split(',')
 if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['']:
     raise ValueError("CRÍTICO: La variable INVTZN_DJANGO_ALLOWED_HOSTS debe estar configurada en producción.")
 
+# Configuración de seguridad para Proxy SSL y CSRF
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_TRUSTED_ORIGINS = [f"https://{host.strip()}" for host in ALLOWED_HOSTS if host.strip()]
+
 db_url = os.environ.get('DATABASE_URL')
 if not db_url:
     db_user = os.environ.get('API_INVTZN_DB_USER')

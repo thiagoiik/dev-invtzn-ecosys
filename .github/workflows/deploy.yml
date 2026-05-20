@@ -174,7 +174,7 @@ jobs:
                 if '=' in line and not line.startswith('#'):
                     k, v = line.strip().split('=', 1)
                     os.environ[k.strip()] = v.strip().strip('\"').strip('\'')
-            with open('gateway/user_conf.d/ecosys.conf.template') as f:
+            with open('gateway/ecosys.conf.template') as f:
                 text = f.read()
             for var in ['DOMAIN_FRONT', 'DOMAIN_AUTH_API', 'DOMAIN_INVTZN_API']:
                 text = text.replace('__' + var + '__', os.environ.get(var, ''))
@@ -215,14 +215,16 @@ jobs:
             # 4. Gateway (Proxy reverso)
             cd /home/${{ secrets.SSH_USER }}/ecosys/gateway
             docker compose --env-file ../.env -f docker-compose.prod.yml pull
-            docker compose --env-file ../.env -f docker-compose.prod.yml up -d
+            docker compose --env-file ../.env -f docker-compose.prod.yml up -d --force-recreate
             
             # Correr migraciones en caliente
             cd /home/${{ secrets.SSH_USER }}/ecosys/auth-service
             docker compose --env-file ../.env -f docker-compose.prod.yml exec -T auth-service-api python manage.py migrate
+            docker compose --env-file ../.env -f docker-compose.prod.yml exec -T auth-service-api python manage.py collectstatic --noinput
             
             cd /home/${{ secrets.SSH_USER }}/ecosys/api-invtzn
             docker compose --env-file ../.env -f docker-compose.prod.yml exec -T invtzn-service-api python manage.py migrate
+            docker compose --env-file ../.env -f docker-compose.prod.yml exec -T invtzn-service-api python manage.py collectstatic --noinput
             
             # Limpiar imágenes huérfanas
             docker image prune -f
@@ -279,7 +281,7 @@ jobs:
                 if '=' in line and not line.startswith('#'):
                     k, v = line.strip().split('=', 1)
                     os.environ[k.strip()] = v.strip().strip('\"').strip('\'')
-            with open('gateway/user_conf.d/ecosys.conf.template') as f:
+            with open('gateway/ecosys.conf.template') as f:
                 text = f.read()
             for var in ['DOMAIN_FRONT', 'DOMAIN_AUTH_API', 'DOMAIN_INVTZN_API']:
                 text = text.replace('__' + var + '__', os.environ.get(var, ''))
@@ -320,7 +322,7 @@ jobs:
             # 4. Gateway (Proxy reverso)
             cd /home/${{ secrets.SSH_USER }}/ecosys/gateway
             docker compose --env-file ../.env -f docker-compose.prod.yml pull
-            docker compose --env-file ../.env -f docker-compose.prod.yml up -d
+            docker compose --env-file ../.env -f docker-compose.prod.yml up -d --force-recreate
             
             # Correr migraciones y recolectar estáticos
             cd /home/${{ secrets.SSH_USER }}/ecosys/auth-service

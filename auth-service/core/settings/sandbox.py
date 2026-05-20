@@ -10,6 +10,10 @@ DEBUG = os.environ.get('AUTH_DJANGO_DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('AUTH_DJANGO_ALLOWED_HOSTS', '').split(',')
 
+# Configuración de seguridad para Proxy SSL y CSRF
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_TRUSTED_ORIGINS = [f"https://{host.strip()}" for host in ALLOWED_HOSTS if host.strip()]
+
 db_url = os.environ.get('DATABASE_URL')
 if not db_url:
     db_user = os.environ.get('AUTH_DB_USER')
