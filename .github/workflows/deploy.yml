@@ -141,7 +141,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "bd/docker-compose.prod.yml,bd/init-scripts/**,auth-service/docker-compose.prod.yml,api-invtzn/docker-compose.prod.yml,auth-front/docker-compose.prod.yml,gateway/docker-compose.prod.yml,gateway/user_conf.d/**,landing-page/docker-compose.prod.yml,landing-page/src/**"
+          source: "bd/docker-compose.prod.yml,bd/init-scripts/**,auth-service/docker-compose.prod.yml,api-invtzn/docker-compose.prod.yml,auth-front/docker-compose.prod.yml,gateway/docker-compose.prod.yml,gateway/ecosys.conf.template,gateway/user_conf.d/**,landing-page/docker-compose.prod.yml,landing-page/src/**"
           target: "/home/${{ secrets.SSH_USER }}/ecosys"
 
       - name: Deploy to VPS (Sandbox) via SSH
@@ -248,7 +248,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "bd/docker-compose.prod.yml,bd/init-scripts/**,auth-service/docker-compose.prod.yml,api-invtzn/docker-compose.prod.yml,auth-front/docker-compose.prod.yml,gateway/docker-compose.prod.yml,gateway/user_conf.d/**,landing-page/docker-compose.prod.yml,landing-page/src/**"
+          source: "bd/docker-compose.prod.yml,bd/init-scripts/**,auth-service/docker-compose.prod.yml,api-invtzn/docker-compose.prod.yml,auth-front/docker-compose.prod.yml,gateway/docker-compose.prod.yml,gateway/ecosys.conf.template,gateway/user_conf.d/**,landing-page/docker-compose.prod.yml,landing-page/src/**"
           target: "/home/${{ secrets.SSH_USER }}/ecosys"
 
       - name: Deploy to VPS (Production) via SSH
