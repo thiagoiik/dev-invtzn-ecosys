@@ -269,3 +269,136 @@ class DeploymentViewSet(viewsets.ModelViewSet):
 </body>
 </html>"""
         return HttpResponse(html, content_type="text/html; charset=utf-8")
+
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='metrics')
+    def get_metrics(self, request, pk=None):
+        deployment = self.get_object()
+        
+        # Check permissions
+        # Only owners, admins, or designers can see metrics
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            has_role = profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]
+        except Exception:
+            has_role = False
+            
+        if not has_role and str(deployment.user) != str(request.user.id):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("No tienes permisos para ver las métricas de esta invitación.")
+            
+        metrics = deployment.metrics.all().order_by('-created_at')
+        
+        # Aggregate data
+        total_visits = metrics.filter(metric_type='VISIT').count()
+        total_rsvps = metrics.filter(metric_type='RSVP_SUBMIT').count()
+        unique_visits = metrics.filter(metric_type='VISIT').values('ip_address', 'user_agent').distinct().count()
+        
+        # Group by country/city
+        from django.db.models import Count
+        countries_query = metrics.values('country').annotate(count=Count('country')).order_by('-count')
+        cities_query = metrics.values('city').annotate(count=Count('city')).order_by('-count')
+        
+        by_country = list(countries_query)
+        by_city = list(cities_query)
+        
+        # Devices/Browsers parsing
+        device_counts = {'Escritorio': 0, 'Móvil': 0, 'Tablet': 0, 'Bot / Crawler': 0, 'Desconocido': 0}
+        browser_counts = {'Chrome': 0, 'Safari': 0, 'Firefox': 0, 'Edge': 0, 'Otros': 0, 'Desconocido': 0}
+        
+        def parse_ua(user_agent):
+            if not user_agent:
+                return 'Desconocido', 'Desconocido'
+            ua_lower = user_agent.lower()
+            
+            # Device type
+            if any(bot in ua_lower for bot in ['bot', 'crawler', 'spider', 'whatsapp', 'facebookexternalhit', 'telegrambot']):
+                dev = 'Bot / Crawler'
+            elif 'ipad' in ua_lower or ('android' in ua_lower and 'mobile' not in ua_lower):
+                dev = 'Tablet'
+            elif 'mobi' in ua_lower or 'iphone' in ua_lower or 'ipod' in ua_lower:
+                dev = 'Móvil'
+            else:
+                dev = 'Escritorio'
+                
+            # Browser type
+            if 'chrome' in ua_lower or 'crios' in ua_lower:
+                browser = 'Chrome'
+            elif 'safari' in ua_lower and 'chrome' not in ua_lower and 'chromium' not in ua_lower:
+                browser = 'Safari'
+            elif 'firefox' in ua_lower or 'fxios' in ua_lower:
+                browser = 'Firefox'
+            elif 'edge' in ua_lower or 'edg' in ua_lower:
+                browser = 'Edge'
+            else:
+                browser = 'Otros'
+                
+            return dev, browser
+            
+        # Parse device and browser distributions from metrics (limit to last 2000 to keep it highly performant)
+        for m in metrics[:2000]:
+            dev, browser = parse_ua(m.user_agent)
+            device_counts[dev] += 1
+            browser_counts[browser] += 1
+            
+        # Format distributions as list of dicts for frontend ease
+        devices_list = [{'device': k, 'count': v} for k, v in device_counts.items() if v > 0]
+        browsers_list = [{'browser': k, 'count': v} for k, v in browser_counts.items() if v > 0]
+        
+        # Group by date for charts
+        from django.db.models.functions import TruncDate
+        daily_stats = metrics.annotate(date=TruncDate('created_at')).values('date', 'metric_type').annotate(count=Count('id')).order_by('date')
+        
+        daily_data = {}
+        for item in daily_stats:
+            if not item['date']:
+                continue
+            date_str = item['date'].strftime('%Y-%m-%d')
+            m_type = item['metric_type']
+            if date_str not in daily_data:
+                daily_data[date_str] = {'date': date_str, 'visits': 0, 'rsvps': 0}
+            if m_type == 'VISIT':
+                daily_data[date_str]['visits'] = item['count']
+            elif m_type == 'RSVP_SUBMIT':
+                daily_data[date_str]['rsvps'] = item['count']
+                
+        # Recent details log (latest 50, mask IP)
+        recent_list = []
+        for m in metrics[:50]:
+            masked_ip = 'Desconocida'
+            if m.ip_address:
+                parts = m.ip_address.split('.')
+                if len(parts) >= 2:
+                    masked_ip = f"{parts[0]}.{parts[1]}.*.*"
+                else:
+                    masked_ip = m.ip_address[:6] + '...'
+                    
+            dev, browser = parse_ua(m.user_agent)
+            recent_list.append({
+                'id': m.id,
+                'metric_type': m.metric_type,
+                'ip_address': masked_ip,
+                'device': dev,
+                'browser': browser,
+                'city': m.city,
+                'country': m.country,
+                'created_at': m.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            })
+            
+        return Response({
+            'deployment_id': deployment.id,
+            'slug': deployment.slug,
+            'summary': {
+                'total_visits': total_visits,
+                'total_rsvps': total_rsvps,
+                'unique_visits': unique_visits,
+                'rsvp_rate': round((total_rsvps / total_visits) * 100, 1) if total_visits > 0 else 0.0
+            },
+            'by_country': by_country,
+            'by_city': by_city,
+            'by_device': sorted(devices_list, key=lambda x: x['count'], reverse=True),
+            'by_browser': sorted(browsers_list, key=lambda x: x['count'], reverse=True),
+            'daily': sorted(list(daily_data.values()), key=lambda x: x['date']),
+            'recent': recent_list
+        })
+

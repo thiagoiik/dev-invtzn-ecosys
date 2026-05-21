@@ -42,6 +42,10 @@
               <td class="actions-cell">
                 <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="btn btn-sm btn-outline" title="Previa">👁️</a>
                 
+                <button @click="onShowMetrics(dep.id)" class="btn btn-sm btn-outline" title="Métricas">
+                  📊
+                </button>
+                
                 <router-link :to="'/builder/' + dep.id" class="btn btn-sm btn-primary" title="Editar">
                   🛠️
                 </router-link>
@@ -96,25 +100,35 @@
 
           <!-- Acciones -->
           <div class="flex items-center gap-2 pt-3 border-t border-slate-100 flex-wrap">
-            <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="btn btn-sm btn-outline flex-1 text-center py-2">
+            <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="btn btn-sm btn-outline flex-1 text-center py-2 flex items-center justify-center gap-1">
               👁️ Ver
             </a>
+
+            <button @click="onShowMetrics(dep.id)" class="btn btn-sm btn-outline flex-1 py-2 flex items-center justify-center gap-1">
+              📊 Métricas
+            </button>
             
-            <router-link :to="'/builder/' + dep.id" class="btn btn-sm btn-primary flex-1 text-center py-2">
+            <router-link :to="'/builder/' + dep.id" class="btn btn-sm btn-primary flex-1 text-center py-2 flex items-center justify-center gap-1">
               🛠️ Editar
             </router-link>
             
-            <button v-if="!dep.is_paid" @click="onPay(dep)" class="btn btn-sm btn-success flex-1 py-2">
+            <button v-if="!dep.is_paid" @click="onPay(dep)" class="btn btn-sm btn-success flex-1 py-2 flex items-center justify-center gap-1">
               💰 Pagar
             </button>
 
-            <button @click="onDelete(dep.id)" class="btn btn-sm btn-danger flex-1 py-2">
+            <button @click="onDelete(dep.id)" class="btn btn-sm btn-danger flex-1 py-2 flex items-center justify-center gap-1">
               🗑️ Borrar
             </button>
           </div>
         </div>
       </div>
     </template>
+
+    <DeploymentMetricsDrawer 
+      :isOpen="isMetricsOpen" 
+      :deploymentId="selectedDeploymentId" 
+      @close="isMetricsOpen = false"
+    />
   </div>
 </template>
 
@@ -122,10 +136,19 @@
 import { ref, onMounted } from 'vue';
 import { useToast } from 'vue-toastification';
 import { crmService } from '@/modules/workspace/services/crmService';
+import DeploymentMetricsDrawer from '@/modules/workspace/components/DeploymentMetricsDrawer.vue';
 
 const toast = useToast();
 const deployments = ref([]);
 const loading = ref(true);
+
+const isMetricsOpen = ref(false);
+const selectedDeploymentId = ref(null);
+
+const onShowMetrics = (id) => {
+  selectedDeploymentId.value = id;
+  isMetricsOpen.value = true;
+};
 
 const loadDeployments = async () => {
   loading.value = true;

@@ -112,5 +112,9 @@ export const crmService = {
   // Diseños
   fetchAllDeployments() {
     return invtznClient.get('deployments/');
+  },
+  
+  fetchDeploymentMetrics(id) {
+    return invtznClient.get(`deployments/${id}/metrics/`);
   }
 };

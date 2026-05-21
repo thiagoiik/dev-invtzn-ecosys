@@ -72,6 +72,11 @@ onMounted(async () => {
     }
 
     customData.value = response.data.custom_data || {};
+    
+    // Registrar métrica de visita de forma no bloqueante
+    try {
+      engineService.submitMetric(slug, 'VISIT').catch(() => {});
+    } catch (err) {}
   } catch (err) {
     errorMsg.value = 'No se encontró la invitación (URL inválida).';
   } finally {
