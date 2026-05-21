@@ -11,3 +11,6 @@ markdown
 PyJWT
 drf-yasg
 stripe
+celery>=5.3.6
+redis>=5.0.1
+geoip2>=4.8.0

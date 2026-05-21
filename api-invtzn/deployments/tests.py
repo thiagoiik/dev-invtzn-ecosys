@@ -122,7 +122,7 @@ class TestDeployments:
             HTTP_USER_AGENT='Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
             REMOTE_ADDR='192.168.1.50'
         )
-        assert response.status_code == 200
+        assert response.status_code == 202
         assert response.data['success'] == 'Métrica registrada'
         
         # Verify db record
@@ -135,6 +135,63 @@ class TestDeployments:
         # Localhost/private IP defaults to México / Localhost in the mock
         assert metric.country == 'México'
         assert metric.city == 'Localhost'
+
+    def test_record_metric_task_internal_logic(self):
+        from deployments.tasks import record_metric_task
+        from deployments.models import DeploymentMetric
+        import unittest.mock as mock
+
+        deployment = Deployment.objects.create(
+            user=self.user.id,
+            product=self.product,
+            slug='test-task-slug'
+        )
+
+        # 1. Test local IP bypass (Docker 172.16.x.x)
+        record_metric_task(deployment.id, 'VISIT', '172.18.0.2', 'Mozilla/5.0')
+        metric = DeploymentMetric.objects.filter(deployment=deployment, ip_address='172.18.0.2').first()
+        assert metric is not None
+        assert metric.city == 'Localhost'
+        assert metric.country == 'México'
+
+        # 2. Test fallback to ip-api.com (when GEOIP_DATABASE_PATH is unset/invalid)
+        with mock.patch('requests.get') as mock_get:
+            mock_res = mock.Mock()
+            mock_res.json.return_value = {
+                'status': 'success',
+                'city': 'Santiago',
+                'country': 'Chile'
+            }
+            mock_get.return_value = mock_res
+
+            # Ensure env var is empty/non-existent path
+            with mock.patch.dict('os.environ', {'GEOIP_DATABASE_PATH': ''}):
+                record_metric_task(deployment.id, 'VISIT', '200.1.2.3', 'Mozilla/5.0')
+
+            metric_fallback = DeploymentMetric.objects.filter(deployment=deployment, ip_address='200.1.2.3').first()
+            assert metric_fallback is not None
+            assert metric_fallback.city == 'Santiago'
+            assert metric_fallback.country == 'Chile'
+            mock_get.assert_called_once_with('http://ip-api.com/json/200.1.2.3', timeout=2.0)
+
+        # 3. Test MaxMind local DB resolution
+        with mock.patch('os.path.exists', return_value=True):
+            with mock.patch.dict('os.environ', {'GEOIP_DATABASE_PATH': '/dummy/path/GeoLite2-City.mmdb'}):
+                with mock.patch('geoip2.database.Reader') as mock_reader_cls:
+                    mock_reader = mock.MagicMock()
+                    mock_reader_cls.return_value.__enter__.return_value = mock_reader
+                    
+                    mock_response = mock.Mock()
+                    mock_response.country.names = {'es': 'España'}
+                    mock_response.city.names = {'es': 'Madrid'}
+                    mock_reader.city.return_value = mock_response
+
+                    record_metric_task(deployment.id, 'VISIT', '8.8.8.8', 'Mozilla/5.0')
+
+                    metric_local = DeploymentMetric.objects.filter(deployment=deployment, ip_address='8.8.8.8').first()
+                    assert metric_local is not None
+                    assert metric_local.city == 'Madrid'
+                    assert metric_local.country == 'España'
 
     def test_get_metrics_authorization(self):
         deployment = Deployment.objects.create(

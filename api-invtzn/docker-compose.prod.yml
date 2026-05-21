@@ -22,6 +22,55 @@ services:
           memory: 512M
         reservations:
           memory: 128M
+    depends_on:
+      - redis
+    volumes:
+      - /home/deploy/geoip:/app/geoip:ro
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - red_datos
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          memory: 64M
+
+  celery-worker:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/invtzn-service-api:${IMAGE_TAG}
+    restart: unless-stopped
+    command: celery -A invtzn_core worker -l info
+    env_file:
+      - ../.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE_INVTZN:-invtzn_core.settings.production}
+    networks:
+      - red_datos
+    depends_on:
+      - redis
+    volumes:
+      - /home/deploy/geoip:/app/geoip:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          memory: 128M
 
 networks:
   red_publica:
