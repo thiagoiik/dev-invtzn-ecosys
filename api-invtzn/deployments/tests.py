@@ -69,3 +69,38 @@ class TestDeployments:
         assert response.status_code == 200
         deployment.refresh_from_db()
         assert deployment.slug == 'fixed'
+
+    def test_open_graph_unpaid_deployment(self):
+        deployment = Deployment.objects.create(
+            user=self.user.id,
+            product=self.product,
+            is_paid=False,
+            slug='test-unpaid-og',
+            custom_data={'event_title': 'Boda de Laura y Carlos'}
+        )
+        response = self.client.get(f'/api/v1/deployments/og/{deployment.slug}/')
+        assert response.status_code == 200
+        html = response.content.decode('utf-8')
+        assert 'og:title' in html
+        assert 'Invitación: Boda de Laura y Carlos' in html
+        assert 'og-free-banner.png' in html
+
+    def test_open_graph_paid_deployment_custom(self):
+        custom_data = {
+            'og_title': 'Gran Boda Real',
+            'og_description': 'Ven a celebrar con nosotros',
+            'og_image': 'https://example.com/invitation.jpg'
+        }
+        deployment = Deployment.objects.create(
+            user=self.user.id,
+            product=self.product,
+            is_paid=True,
+            slug='test-paid-og',
+            custom_data=custom_data
+        )
+        response = self.client.get(f'/api/v1/deployments/og/{deployment.slug}/')
+        assert response.status_code == 200
+        html = response.content.decode('utf-8')
+        assert 'Gran Boda Real' in html
+        assert 'Ven a celebrar con nosotros' in html
+        assert 'https://example.com/invitation.jpg' in html

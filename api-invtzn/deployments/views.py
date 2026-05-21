@@ -12,7 +12,7 @@ class DeploymentViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
     
     def get_permissions(self):
-        if self.action in ['create', 'public_by_slug', 'public_rsvp_by_slug', 'public_metric_by_slug']:
+        if self.action in ['create', 'public_by_slug', 'public_rsvp_by_slug', 'public_metric_by_slug', 'open_graph']:
             return [AllowAny()]
         return [IsAuthenticated()]
 
@@ -162,3 +162,110 @@ class DeploymentViewSet(viewsets.ModelViewSet):
             'city': city,
             'country': country
         })
+
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny], url_path='og/(?P<slug>[^/.]+)')
+    def open_graph(self, request, slug=None):
+        from django.http import HttpResponse
+        
+        deployment = get_object_or_404(Deployment, slug=slug)
+        custom_data = deployment.custom_data or {}
+        
+        is_paid = deployment.is_paid
+        
+        title = "Te invitamos a nuestro evento especial"
+        description = "Acompáñanos en este día tan importante. ¡Haz clic para ver todos los detalles!"
+        
+        host = request.META.get('HTTP_X_FORWARDED_HOST') or request.get_host()
+        protocol = "https" if "localhost" not in host and "127.0.0.1" not in host else "http"
+        base_url = f"{protocol}://{host}"
+        
+        image_url = f"{base_url}/static/deployments/og-free-banner.png"
+        
+        if is_paid:
+            title = custom_data.get('og_title')
+            description = custom_data.get('og_description')
+            image_url = custom_data.get('og_image')
+            
+            if not title:
+                cover_config = {}
+                if isinstance(custom_data.get('blocks'), list):
+                    for block in custom_data['blocks']:
+                        if block.get('type') == 'CoverBlock':
+                            cover_config = block.get('config', {})
+                            break
+                else:
+                    cover_config = custom_data.get('cover', {})
+                
+                title = cover_config.get('title') or custom_data.get('event_title') or f"Invitación de {deployment.slug}"
+                
+            if not description:
+                cover_config = {}
+                if isinstance(custom_data.get('blocks'), list):
+                    for block in custom_data['blocks']:
+                        if block.get('type') == 'CoverBlock':
+                            cover_config = block.get('config', {})
+                            break
+                else:
+                    cover_config = custom_data.get('cover', {})
+                
+                description = cover_config.get('subtitle') or custom_data.get('event_description') or "¡Te invitamos a celebrar con nosotros!"
+            
+            if not image_url:
+                cover_config = {}
+                if isinstance(custom_data.get('blocks'), list):
+                    for block in custom_data['blocks']:
+                        if block.get('type') == 'CoverBlock':
+                            cover_config = block.get('config', {})
+                            break
+                else:
+                    cover_config = custom_data.get('cover', {})
+                
+                image_url = cover_config.get('coverPhoto') or f"{base_url}/static/deployments/og-premium-card.png"
+        else:
+            cover_config = {}
+            if isinstance(custom_data.get('blocks'), list):
+                for block in custom_data['blocks']:
+                    if block.get('type') == 'CoverBlock':
+                        cover_config = block.get('config', {})
+                        break
+            else:
+                cover_config = custom_data.get('cover', {})
+            
+            event_title = cover_config.get('title') or custom_data.get('event_title') or "Boda Especial"
+            title = f"Invitación: {event_title}"
+            description = "Crea tus propias invitaciones digitales interactivas premium en Invitazyon.online"
+        
+        if image_url and not image_url.startswith('http://') and not image_url.startswith('https://'):
+            if image_url.startswith('/'):
+                image_url = f"{base_url}{image_url}"
+            else:
+                image_url = f"{base_url}/{image_url}"
+
+        canonical_url = f"{base_url}/i/{slug}"
+        
+        html = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{title}</title>
+    <meta property="og:title" content="{title}">
+    <meta property="og:description" content="{description}">
+    <meta property="og:image" content="{image_url}">
+    <meta property="og:url" content="{canonical_url}">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Invitazyon">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{title}">
+    <meta name="twitter:description" content="{description}">
+    <meta name="twitter:image" content="{image_url}">
+    
+    <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+    <h1>{title}</h1>
+    <p>{description}</p>
+    <img src="{image_url}" alt="Banner de Invitación">
+</body>
+</html>"""
+        return HttpResponse(html, content_type="text/html; charset=utf-8")
