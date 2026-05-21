@@ -170,7 +170,7 @@
                 <li class="menu-title px-4 py-2 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-50 mb-1">Mi Cuenta</li>
                 <li><router-link to="/profile" class="py-3 font-bold text-slate-700 hover:bg-slate-50">👤 Mi Perfil</router-link></li>
                 <li><router-link to="/dashboard" class="py-3 font-bold text-slate-700 hover:bg-slate-50">🏠 Inicio B2C</router-link></li>
-                <li class="mt-2 border-t border-slate-50 pt-2"><button @click="authStore.logout()" class="py-3 font-bold text-error hover:bg-error/5">🚪 Cerrar Sesión</button></li>
+                <li class="mt-2 border-t border-slate-50 pt-2"><button @click="handleLogout" class="py-3 font-bold text-error hover:bg-error/5">🚪 Cerrar Sesión</button></li>
               </ul>
             </div>
           </div>
@@ -243,8 +243,10 @@
 import { ref, computed } from 'vue';
 import { useAuthStore } from '@/modules/auth/store/auth';
 import { useDevice } from '@/composables/useDevice';
+import { useRouter } from 'vue-router';
 
 const authStore = useAuthStore();
+const router = useRouter();
 const userRole = computed(() => authStore.role);
 const menuOpen = ref(false);
 const mobileMenuOpen = ref(false);
@@ -253,6 +255,10 @@ const { isMobile, isTablet, isDesktop } = useDevice();
 
 const toggleMenu = () => {
   menuOpen.value = !menuOpen.value;
+};
+const handleLogout = () => {
+  authStore.logout();
+  router.push('/login');
 };
 </script>
 
