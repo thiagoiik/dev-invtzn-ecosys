@@ -23,12 +23,14 @@ DATABASES = {
     )
 }
 
-# Si estamos ejecutando tests, forzamos SQLite
+# Si estamos ejecutando tests, forzamos SQLite y Celery Eager Mode
 if 'test' in sys.argv or 'pytest' in sys.modules:
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'test_db.sqlite3',
     }
+    CELERY_TASK_ALWAYS_EAGER = True
+
 
 # CORS de desarrollo
 CORS_ALLOW_ALL_ORIGINS = True  # Solo para desarrollo local

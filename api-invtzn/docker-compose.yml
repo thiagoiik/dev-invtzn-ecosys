@@ -16,6 +16,33 @@ services:
     networks:
       - red_publica
       - red_datos
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - red_datos
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - ENV=dev
+    restart: unless-stopped
+    volumes:
+      - .:/app
+    command: celery -A invtzn_core worker -l info
+    env_file:
+      - ../.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=invtzn_core.settings.dev
+    networks:
+      - red_datos
+    depends_on:
+      - redis
 
 networks:
   red_publica:

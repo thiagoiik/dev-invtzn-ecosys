@@ -153,21 +153,63 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 
 ---
 
+## 📈 Analíticas y Telemetría Asíncrona (Fase 2)
+
+Hemos diseñado e implementado una arquitectura de telemetría **self-hosted, no invasiva (cookie-free) y no bloqueante** para capturar métricas clave del sistema, junto con un motor dinámico de previsualización para redes sociales:
+
+*   **Ingesta No Bloqueante:** El endpoint `/api/v1/deployments/slug/<slug>/metric/` encola las métricas en microsegundos y responde con un código `202 Accepted` de inmediato.
+*   **Procesamiento Asíncrono (Celery + Redis):** Un broker de Redis (`redis:7-alpine`) recibe las tareas y los workers de Celery las procesan en segundo plano.
+*   **Resolución Geográfica (GeoIP):** Los workers resuelven la ciudad y país a partir de la IP del cliente utilizando `ip-api.com` de forma asíncrona, evitando picos de latencia en la petición principal HTTP.
+*   **Privacidad & GDPR Compliant:** Las IPs reales se enmascaran automáticamente en la base de datos para los dashboards visuales de los clientes (ej. `189.120.45.67` $\rightarrow$ `189.120.*.*`), cumpliendo con altos estándares de privacidad.
+*   **Open Graph Dinámico (SEO & Social Share):** Implementamos un endpoint en `/api/v1/deployments/og/<slug>/` que renderiza cabeceras de Open Graph dinámicas:
+    *   *Invitaciones Gratuitas:* Sirve una plantilla básica con un banner con marca de agua (`og-free-banner.png`).
+    *   *Invitaciones Premium (Pagadas):* Genera previsualizaciones personalizadas con títulos, descripciones e imágenes específicas configuradas por el usuario.
+*   **Intercepción de Bots en Nginx:** Configuramos la ruta `/i/<slug>` en el proxy reverso para interceptar a rastreadores de redes sociales (`facebookexternalhit`, `twitterbot`, `whatsapp`, `telegrambot`, etc.) mediante su User-Agent, redirigiéndolos sutilmente al renderizador de Open Graph en el backend, mientras que los usuarios normales son enviados directamente al frontend SPA de Vue.
+
+
+---
+
 ## 🧪 Comandos Útiles
 
-* **Ejecutar migraciones en Django (ej. en auth-service):**
+### Desarrollo y Base de Datos
+*   **Ejecutar migraciones en Django (ej. en auth-service):**
   ```bash
   docker compose exec auth-service-api python manage.py migrate
   ```
-* **Crear Superusuario:**
+*   **Crear Superusuario:**
   ```bash
   docker compose exec auth-service-api python manage.py createsuperuser
   ```
-* **Recopilar estáticos (WhiteNoise):**
+*   **Recopilar estáticos (WhiteNoise):**
   ```bash
   docker compose exec auth-service-api python manage.py collectstatic --noinput
   ```
-* **Ver logs en tiempo real:**
+*   **Ver logs en tiempo real:**
   ```bash
   docker compose logs -f [nombre-servicio]
+  ```
+
+### Pruebas Unitarias e Integración (Backend y Frontend)
+*   **Correr pruebas del Backend Principal (`api-invtzn`):**
+  ```bash
+  docker exec api-invtzn-invtzn-service-api-1 pytest
+  ```
+*   **Correr pruebas del Backend de Autenticación (`auth-service`):**
+  ```bash
+  docker exec auth-service-auth-service-api-1 pytest
+  ```
+*   **Correr pruebas del Frontend (`auth-front`):**
+  ```bash
+  # Desde la raíz de auth-front
+  cmd.exe /c npx vitest run
+  ```
+
+### Monitoreo de Celery & Redis
+*   **Ver logs en tiempo real del Celery Worker:**
+  ```bash
+  docker logs -f api-invtzn-celery-worker-1
+  ```
+*   **Ver estadísticas de la cola de Redis:**
+  ```bash
+  docker exec -it api-invtzn-redis-1 redis-cli info keyspace
   ```

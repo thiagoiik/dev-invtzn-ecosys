@@ -128,40 +128,18 @@ class DeploymentViewSet(viewsets.ModelViewSet):
 
         user_agent = request.META.get('HTTP_USER_AGENT', '')
         
-        # Geolocation logic (non-blocking, fast timeout fallback)
-        city = 'Desconocido'
-        country = 'Desconocido'
-        
-        # If IP is loopback or private range
-        if ip in ['127.0.0.1', 'localhost', '::1', None] or ip.startswith('192.168.') or ip.startswith('10.'):
-            city = 'Localhost'
-            country = 'México'
-        else:
-            try:
-                import requests
-                # Use a fast timeout (e.g. 1.0s) so it doesn't block the request if service is slow
-                geo_res = requests.get(f"http://ip-api.com/json/{ip}", timeout=1.0).json()
-                if geo_res.get('status') == 'success':
-                    city = geo_res.get('city', 'Desconocido')
-                    country = geo_res.get('country', 'Desconocido')
-            except Exception:
-                pass
-
-        from .models import DeploymentMetric
-        metric = DeploymentMetric.objects.create(
-            deployment=deployment,
+        # Encolar procesamiento asíncrono usando Celery
+        from .tasks import record_metric_task
+        record_metric_task.delay(
+            deployment_id=deployment.id,
             metric_type=metric_type,
             ip_address=ip,
-            user_agent=user_agent[:500] if user_agent else '',
-            city=city,
-            country=country
+            user_agent=user_agent
         )
         
         return Response({
-            'success': 'Métrica registrada',
-            'city': city,
-            'country': country
-        })
+            'success': 'Métrica registrada'
+        }, status=202)
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny], url_path='og/(?P<slug>[^/.]+)')
     def open_graph(self, request, slug=None):
