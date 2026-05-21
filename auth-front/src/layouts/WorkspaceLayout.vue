@@ -62,7 +62,7 @@
           </template>
 
           <!-- Link: POS / Ventas -->
-          <template v-if="['ADMIN', 'MANAGER', 'VENDOR'].includes(userRole)">
+          <template v-if="['ADMIN', 'FRANCHISEE', 'MANAGER', 'VENDOR'].includes(userRole)">
             <router-link 
               to="/workspace/pos" 
               class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
@@ -194,7 +194,7 @@
       >
         <!-- POS link -->
         <router-link 
-          v-if="userRole && ['ADMIN', 'MANAGER', 'VENDOR'].includes(userRole)"
+          v-if="userRole && ['ADMIN', 'FRANCHISEE', 'MANAGER', 'VENDOR'].includes(userRole)"
           to="/workspace/pos" 
           class="flex flex-col items-center justify-center text-slate-400 transition-colors"
           active-class="text-primary"

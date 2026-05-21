@@ -27,7 +27,7 @@ export default [
         path: 'pos',
         name: 'workspace-pos',
         component: () => import('@/modules/workspace/views/PosView.vue'),
-        meta: { requiresRole: ['ADMIN', 'MANAGER', 'VENDOR'] }
+        meta: { requiresRole: ['ADMIN', 'FRANCHISEE', 'MANAGER', 'VENDOR'] }
       },
       {
         path: 'stores',

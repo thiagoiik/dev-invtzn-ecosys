@@ -25,6 +25,65 @@ class OrderViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=400)
 
+    @action(detail=True, methods=['post'], url_path='complete-pos')
+    def complete_pos_order(self, request, pk=None):
+        from django.utils import timezone
+        from .models import PaymentTransaction, CashSession
+        
+        order = self.get_object()
+        if order.status != Order.StatusChoices.PENDING:
+            return Response({'error': 'Esta orden no se encuentra pendiente.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        profile = self._get_user_profile()
+        if not profile or profile.custom_role not in [UserProfile.Role.ADMIN, UserProfile.Role.FRANCHISEE, UserProfile.Role.MANAGER, UserProfile.Role.VENDOR]:
+            return Response({'error': 'No tienes permisos para completar órdenes de caja.'}, status=status.HTTP_403_FORBIDDEN)
+            
+        payment_method = request.data.get('payment_method')
+        if payment_method not in ['CASH', 'CARD']:
+            return Response({'error': 'El método de pago para POS debe ser CASH o CARD.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if payment_method == 'CASH':
+            # Validar que tenga una sesión de caja activa
+            if not profile.assigned_store:
+                return Response({'error': 'No tienes una sucursal asignada.'}, status=status.HTTP_400_BAD_REQUEST)
+                
+            session_exists = CashSession.objects.filter(
+                user=self.request.user.id,
+                store=profile.assigned_store,
+                is_open=True
+            ).exists()
+            if not session_exists:
+                return Response({'error': 'Debes abrir un turno de caja para registrar pagos en efectivo.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Modificar estado de la orden
+        order.status = Order.StatusChoices.COMPLETED
+        # Si fue en POS, vincular al vendedor y tienda correspondientes si no estaban
+        if not order.vendor_id:
+            order.vendor_id = request.user.id
+            order.origin = Order.OriginChoices.POS
+        if not order.store and profile.assigned_store:
+            order.store = profile.assigned_store
+            
+        order.save()
+        
+        # Registrar transacción
+        PaymentTransaction.objects.update_or_create(
+            order=order,
+            defaults={
+                'provider': 'POS_TERMINAL',
+                'payment_method': payment_method,
+                'success': True,
+                'transaction_id': f"POS-{order.id}-{int(timezone.now().timestamp())}"
+            }
+        )
+        
+        return Response({
+            'success': True,
+            'order_id': order.id,
+            'status': order.status,
+            'payment_method': payment_method
+        })
+
     def _get_user_profile(self):
         try:
             return UserProfile.objects.get(remote_auth_id=self.request.user.id)
@@ -66,7 +125,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         # Valores por defecto
         save_kwargs = {}
         
-        if role in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR]:
+        if role in [UserProfile.Role.ADMIN, UserProfile.Role.FRANCHISEE, UserProfile.Role.MANAGER, UserProfile.Role.VENDOR]:
             # Si el Staff registra la orden para un cliente (Buscó al cliente en el POS)
             if 'user' in self.request.data:
                 save_kwargs['vendor_id'] = self.request.user.id

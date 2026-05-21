@@ -19,5 +19,11 @@ export const orderService = {
       success_url: successUrl, 
       cancel_url: cancelUrl 
     });
+  },
+
+  completePosOrder(orderId, paymentMethod) {
+    return invtznClient.post(`orders/${orderId}/complete-pos/`, {
+      payment_method: paymentMethod
+    });
   }
 };

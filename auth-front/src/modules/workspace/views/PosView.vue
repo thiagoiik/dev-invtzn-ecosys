@@ -111,6 +111,19 @@
               </div>
             </div>
 
+            <!-- Método de Pago -->
+            <div class="form-control w-full mb-6">
+              <label class="label">
+                <span class="label-text font-bold text-slate-700">Método de Pago</span>
+              </label>
+              <select v-model="paymentMethod" class="select select-bordered w-full font-semibold">
+                <option value="CASH">💵 Efectivo (Cierre Inmediato)</option>
+                <option value="CARD">💳 Tarjeta (Terminal Física)</option>
+                <option value="BANK_TRANSFER">📲 Transferencia Bancaria (Referenciada)</option>
+                <option value="OXXO">🏪 OXXO Referenciado</option>
+              </select>
+            </div>
+
             <!-- Resumen -->
             <div class="space-y-4 mb-8">
               <div class="flex justify-between text-slate-600">
@@ -220,7 +233,7 @@
                 <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.455L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.725 1.45 5.515.003 10.003-4.484 10.006-9.997.002-2.67-1.037-5.18-2.927-7.072C16.565 1.642 14.062.603 11.39.601 5.87.601 1.38 5.087 1.378 10.601c-.001 1.705.474 3.327 1.377 4.728l-.994 3.63 3.731-.978-.172-.25c.003.001.003.001.002 0z"/>
               </svg>
             </span>
-            Venta Registrada Exitosamente
+            {{ paymentMethod === 'OXXO' ? 'Referencia OXXO Generada' : 'Venta Registrada Exitosamente' }}
           </h3>
           <p class="text-slate-500 text-sm mb-4">Copia el siguiente mensaje y compártelo con el cliente por WhatsApp para completar el pago remoto:</p>
           
@@ -282,11 +295,15 @@ const closingBalanceInput = ref(0);
 const closingSession = ref(false);
 const closeResult = ref(null);
 const whatsappMessage = ref('');
+const paymentMethod = ref('CASH');
 
 const initProfileData = async () => {
   try {
     const resProfile = await profileService.fetchMyProfile();
     vendorMode.value = resProfile.data.vendor_mode;
+    
+    // Configurar método de pago inicial por modo del vendedor
+    paymentMethod.value = resProfile.data.vendor_mode === 'PHYSICAL' ? 'CASH' : 'BANK_TRANSFER';
     
     // Si tiene tienda asignada, cargar sus datos
     if (resProfile.data.assigned_store) {
@@ -392,27 +409,47 @@ const processSale = async () => {
   if (!selectedProduct.value || !customer.value) return;
   processing.value = true;
   try {
-    await orderService.createOrder(
+    // 1. Crear la orden en estado PENDING
+    const orderRes = await orderService.createOrder(
       selectedProduct.value.id, 
       selectedProduct.value.base_price,
       customer.value.remote_auth_id
     );
+    const orderId = orderRes.data.id;
 
-    // Generar plantilla de WhatsApp copiable
-    const clientName = customer.value.full_name || 'Cliente';
-    const productName = selectedProduct.value.name;
-    const amount = selectedProduct.value.base_price;
-    whatsappMessage.value = `¡Hola, ${clientName}! Se ha registrado tu orden para "${productName}" por un total de $${amount}.\n\nPor favor realiza tu transferencia a la CLABE: 012180000000000000 de ECOSYS y compártenos tu comprobante por este medio. ¡Muchas gracias!`;
-    showWhatsappModal.value = true;
+    // 2. Determinar flujo según el método de pago seleccionado
+    if (paymentMethod.value === 'CASH' || paymentMethod.value === 'CARD') {
+      // Completar cobro presencial de inmediato
+      await orderService.completePosOrder(orderId, paymentMethod.value);
+      toast.success(`Venta completada con éxito en ${paymentMethod.value === 'CASH' ? 'Efectivo' : 'Tarjeta'}`);
+    } else if (paymentMethod.value === 'OXXO') {
+      // Generar mensaje OXXO referenciado
+      const referenceNumber = `73812903${String(orderId).padStart(6, '0')}`;
+      const clientName = customer.value.full_name || 'Cliente';
+      const productName = selectedProduct.value.name;
+      const amount = selectedProduct.value.base_price;
+      whatsappMessage.value = `¡Hola, ${clientName}! Se ha registrado tu orden para "${productName}" por un total de $${amount}.\n\nPara completar tu pago referenciado de OXXO, acude a tu sucursal OXXO más cercana y proporciona el número de referencia:\n👉 ${referenceNumber}\n\nCompártenos el ticket de pago una vez realizado. ¡Muchas gracias!`;
+      showWhatsappModal.value = true;
+      toast.success('Orden registrada. En espera de pago por OXXO.');
+    } else {
+      // Transferencia bancaria estándar
+      const clientName = customer.value.full_name || 'Cliente';
+      const productName = selectedProduct.value.name;
+      const amount = selectedProduct.value.base_price;
+      whatsappMessage.value = `¡Hola, ${clientName}! Se ha registrado tu orden para "${productName}" por un total de $${amount}.\n\nPor favor realiza tu transferencia a la CLABE: 012180000000000000 de ECOSYS y compártenos tu comprobante por este medio. ¡Muchas gracias!`;
+      showWhatsappModal.value = true;
+      toast.success('Orden registrada. En espera de transferencia.');
+    }
 
-    toast.success('Venta registrada con éxito');
     selectedProduct.value = null;
     customer.value = null;
     customerSearchId.value = '';
-    // Recargar comisiones
+    // Recargar comisiones y estado de caja
     initProfileData();
   } catch (e) {
-    toast.error('Error al procesar la venta.');
+    console.error(e);
+    const errorMsg = e.response?.data?.error || 'Error al procesar la venta.';
+    toast.error(errorMsg);
   } finally {
     processing.value = false;
   }
