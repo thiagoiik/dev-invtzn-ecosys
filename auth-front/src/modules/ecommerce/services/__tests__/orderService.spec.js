@@ -25,6 +25,24 @@ describe('orderService', () => {
     expect(response.data).toEqual(mockOrder);
   });
 
+  it('createOrder con objeto payload hace un POST directo con el objeto', async () => {
+    const payload = {
+      user: 14,
+      total_amount: 150.00,
+      subtotal_amount: 150.00,
+      discount_amount: 0.00,
+      tax_amount: 0.00,
+      items: [{ product: 1, quantity: 1, price_at_sale: 150.00 }]
+    };
+    const mockOrder = { id: 10, ...payload };
+    invtznClient.post.mockResolvedValue({ data: mockOrder });
+
+    const response = await orderService.createOrder(payload);
+
+    expect(invtznClient.post).toHaveBeenCalledWith('orders/', payload);
+    expect(response.data).toEqual(mockOrder);
+  });
+
   it('createStripeCheckout hace un POST a orders/:id/pay-stripe/ con urls de retorno', async () => {
     const mockStripeResponse = { url: 'https://stripe.com/checkout' };
     invtznClient.post.mockResolvedValue({ data: mockStripeResponse });

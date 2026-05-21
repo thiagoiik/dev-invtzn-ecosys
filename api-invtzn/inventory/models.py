@@ -41,8 +41,25 @@ class Product(models.Model):
     # ¿Este producto genera un despliegue automático?
     has_template = models.BooleanField(default=False)
 
+    # NUEVOS CAMPOS ETAPA 2
+    sku = models.CharField(max_length=50, unique=True, null=True, blank=True, help_text="Código único de inventario")
+    cost_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Precio de costo")
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.16, help_text="Porcentaje de impuesto ej. 0.16")
+    min_stock = models.IntegerField(default=0, help_text="Stock mínimo para alertas")
+
     def __str__(self):
         return f"{self.name} (${self.base_price})"
+
+class StoreStock(models.Model):
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name='stocks')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='store_stocks')
+    quantity = models.IntegerField(default=0)
+
+    class Meta:
+        unique_together = ('store', 'product')
+
+    def __str__(self):
+        return f"Stock de {self.product.name} en {self.store.name}: {self.quantity}"
 
 class Template(models.Model):
     """
@@ -64,4 +81,4 @@ class Template(models.Model):
     )
 
     def __str__(self):
-        return f"Configuración para {self.product.name}"
+        return f"Configuración para {self.product.name}"

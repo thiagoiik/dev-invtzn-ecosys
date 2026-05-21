@@ -40,20 +40,32 @@
 
     <!-- Interfaz de Venta (Visible si hay sesión o si es remoto) -->
     <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <!-- Columna Izquierda: Selección de Producto -->
+      <!-- Columna Izquierda: Búsqueda y Selección de Producto -->
       <div class="md:col-span-2 space-y-6">
+        <!-- Buscador -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+          <input 
+            v-model="searchQuery" 
+            type="text" 
+            placeholder="🔍 Buscar por nombre o SKU..." 
+            class="input input-bordered w-full font-medium" 
+          />
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div 
-            v-for="prod in products" 
+            v-for="prod in filteredProducts" 
             :key="prod.id"
-            class="card bg-white border cursor-pointer transition-all hover:border-primary"
-            :class="selectedProduct?.id === prod.id ? 'border-primary ring-2 ring-primary/20 shadow-lg' : 'border-slate-200 shadow-sm'"
-            @click="selectedProduct = prod"
+            class="card bg-white border border-slate-200 shadow-sm cursor-pointer transition-all hover:border-primary hover:shadow-md flex flex-col justify-between"
+            @click="addToCart(prod)"
           >
             <div class="card-body p-6">
-              <div class="flex justify-between items-start">
-                <h3 class="font-bold text-slate-800">{{ prod.name }}</h3>
-                <span class="text-primary font-black">${{ prod.base_price }}</span>
+              <div class="flex justify-between items-start gap-2">
+                <div>
+                  <h3 class="font-bold text-slate-800">{{ prod.name }}</h3>
+                  <span v-if="prod.sku" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono font-bold mt-1 inline-block">SKU: {{ prod.sku }}</span>
+                </div>
+                <span class="text-primary font-black shrink-0">${{ parseFloat(prod.base_price).toFixed(2) }}</span>
               </div>
               <p class="text-sm text-slate-500 mt-2 line-clamp-2">{{ prod.description }}</p>
             </div>
@@ -63,10 +75,45 @@
         <div v-if="loadingProducts" class="flex justify-center py-10">
           <span class="loading loading-spinner loading-lg text-primary"></span>
         </div>
+
+        <div v-if="!loadingProducts && filteredProducts.length === 0" class="text-center py-12 text-slate-400 font-medium">
+          No se encontraron productos.
+        </div>
       </div>
 
-      <!-- Columna Derecha: Resumen y Cliente -->
+      <!-- Columna Derecha: Carrito, Cliente, Pago y Total -->
       <div class="space-y-6">
+        <!-- Card de Carrito de Compras -->
+        <div class="card bg-white shadow-md border border-slate-200">
+          <div class="card-body p-6">
+            <h3 class="text-lg font-bold text-slate-800 border-b pb-3 mb-4">Carrito de Compras</h3>
+            
+            <!-- Items de Carrito -->
+            <div v-if="cart.length > 0" class="space-y-4 max-h-60 overflow-y-auto pr-1">
+              <div v-for="item in cart" :key="item.product.id" class="flex items-center justify-between gap-2 pb-3 border-b border-slate-100 last:border-0 last:pb-0">
+                <div class="flex-1 min-w-0">
+                  <p class="font-bold text-sm text-slate-800 truncate">{{ item.product.name }}</p>
+                  <p class="text-xs text-slate-500">${{ parseFloat(item.price).toFixed(2) }} c/u</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <button class="btn btn-xs btn-circle btn-outline btn-neutral" @click.stop="decrementQty(item)">-</button>
+                  <span class="font-bold text-sm w-4 text-center">{{ item.quantity }}</span>
+                  <button class="btn btn-xs btn-circle btn-outline btn-neutral" @click.stop="incrementQty(item)">+</button>
+                  <button class="btn btn-xs btn-ghost btn-circle text-error ml-1" @click.stop="removeFromCart(item)">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-center py-6 text-slate-400 text-sm italic">
+              El carrito está vacío.
+            </div>
+          </div>
+        </div>
+
+        <!-- Card de Checkout / Cliente / Pago -->
         <div class="card bg-white shadow-xl border border-slate-200 overflow-hidden">
           <!-- Panel de Comisiones Rápido -->
           <div class="bg-slate-900 p-4 text-white flex justify-between items-center">
@@ -112,35 +159,58 @@
             </div>
 
             <!-- Método de Pago -->
-            <div class="form-control w-full mb-6">
+            <div class="form-control w-full mb-4">
               <label class="label">
                 <span class="label-text font-bold text-slate-700">Método de Pago</span>
               </label>
               <select v-model="paymentMethod" class="select select-bordered w-full font-semibold">
-                <option value="CASH">💵 Efectivo (Cierre Inmediato)</option>
-                <option value="CARD">💳 Tarjeta (Terminal Física)</option>
+                <option v-if="vendorMode !== 'REMOTE'" value="CASH">💵 Efectivo (Cierre Inmediato)</option>
+                <option v-if="vendorMode !== 'REMOTE'" value="CARD">💳 Tarjeta (Terminal Física)</option>
                 <option value="BANK_TRANSFER">📲 Transferencia Bancaria (Referenciada)</option>
                 <option value="OXXO">🏪 OXXO Referenciado</option>
               </select>
             </div>
 
-            <!-- Resumen -->
-            <div class="space-y-4 mb-8">
-              <div class="flex justify-between text-slate-600">
-                <span>Producto:</span>
-                <span class="font-bold text-slate-800">{{ selectedProduct?.name || 'Ninguno' }}</span>
+            <!-- Descuento Directo (Solo ADMIN o FRANCHISEE) -->
+            <div v-if="userRole === 'ADMIN' || userRole === 'FRANCHISEE'" class="form-control w-full mb-6">
+              <label class="label">
+                <span class="label-text font-bold text-slate-700">Descuento Directo ($)</span>
+              </label>
+              <input 
+                v-model.number="discountAmount" 
+                type="number" 
+                min="0" 
+                :max="subtotalAmount"
+                placeholder="0.00" 
+                class="input input-bordered w-full font-semibold" 
+              />
+            </div>
+
+            <!-- Resumen de Costos -->
+            <div class="space-y-3 mb-8">
+              <div class="flex justify-between text-slate-600 text-sm">
+                <span>Subtotal:</span>
+                <span class="font-bold text-slate-800">${{ subtotalAmount.toFixed(2) }}</span>
+              </div>
+              <div v-if="discountAmount > 0" class="flex justify-between text-error text-sm">
+                <span>Descuento:</span>
+                <span class="font-bold">-${{ discountAmount.toFixed(2) }}</span>
+              </div>
+              <div class="flex justify-between text-slate-600 text-sm">
+                <span>Impuestos:</span>
+                <span class="font-bold text-slate-800">${{ taxAmount.toFixed(2) }}</span>
               </div>
               <div class="divider my-0"></div>
               <div class="flex justify-between items-center text-xl">
                 <span class="font-bold text-slate-800">Total:</span>
-                <span class="font-black text-primary">${{ selectedProduct?.base_price || '0.00' }}</span>
+                <span class="font-black text-primary">${{ totalAmount.toFixed(2) }}</span>
               </div>
             </div>
 
             <!-- Botón Acción -->
             <button 
               class="btn btn-primary btn-block h-16 text-lg" 
-              :disabled="!selectedProduct || !customer || processing"
+              :disabled="cart.length === 0 || !customer || processing"
               @click="processSale"
             >
               <span v-if="processing" class="loading loading-spinner"></span>
@@ -257,7 +327,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useToast } from 'vue-toastification';
 import { catalogService } from '@/modules/ecommerce/services/catalogService';
 import { crmService } from '@/modules/workspace/services/crmService';
@@ -268,7 +338,9 @@ const toast = useToast();
 
 const products = ref([]);
 const loadingProducts = ref(true);
-const selectedProduct = ref(null);
+
+const searchQuery = ref('');
+const cart = ref([]);
 
 const customerSearchId = ref('');
 const customer = ref(null);
@@ -282,9 +354,13 @@ const assignedStore = ref(null);
 const activeSession = ref(null);
 const openingBalance = ref(0);
 const loadingSession = ref(false);
+const userRole = ref('');
 
 // Comisiones
 const totalCommissions = ref(0);
+
+// Descuentos y totales
+const discountAmount = ref(0);
 
 // Control de Modales
 const showCloseModal = ref(false);
@@ -297,10 +373,82 @@ const closeResult = ref(null);
 const whatsappMessage = ref('');
 const paymentMethod = ref('CASH');
 
+const filteredProducts = computed(() => {
+  if (!searchQuery.value) return products.value;
+  const q = searchQuery.value.toLowerCase();
+  return products.value.filter(p => 
+    p.name.toLowerCase().includes(q) || 
+    (p.sku && p.sku.toLowerCase().includes(q))
+  );
+});
+
+const subtotalAmount = computed(() => {
+  return cart.value.reduce((sum, item) => sum + item.price * item.quantity, 0);
+});
+
+const taxAmount = computed(() => {
+  return cart.value.reduce((sum, item) => {
+    const rate = parseFloat(item.product.tax_rate) || 0;
+    return sum + (item.price * item.quantity) * rate;
+  }, 0);
+});
+
+const totalAmount = computed(() => {
+  const tot = subtotalAmount.value - discountAmount.value + taxAmount.value;
+  return tot > 0 ? tot : 0;
+});
+
+// Watchers para validar limites de descuento
+watch(subtotalAmount, (newSubtotal) => {
+  if (discountAmount.value > newSubtotal) {
+    discountAmount.value = newSubtotal;
+  }
+});
+
+watch(discountAmount, (newDiscount) => {
+  if (newDiscount < 0) {
+    discountAmount.value = 0;
+  } else if (newDiscount > subtotalAmount.value) {
+    discountAmount.value = subtotalAmount.value;
+  }
+});
+
+const addToCart = (product) => {
+  const existing = cart.value.find(item => item.product.id === product.id);
+  if (existing) {
+    existing.quantity++;
+  } else {
+    cart.value.push({
+      product,
+      quantity: 1,
+      price: parseFloat(product.base_price)
+    });
+  }
+  toast.success(`Agregado al carrito: ${product.name}`);
+};
+
+const incrementQty = (item) => {
+  item.quantity++;
+};
+
+const decrementQty = (item) => {
+  if (item.quantity > 1) {
+    item.quantity--;
+  } else {
+    removeFromCart(item);
+  }
+};
+
+const removeFromCart = (item) => {
+  cart.value = cart.value.filter(i => i.product.id !== item.product.id);
+  toast.info(`Quitado del carrito: ${item.product.name}`);
+};
+
 const initProfileData = async () => {
   try {
     const resProfile = await profileService.fetchMyProfile();
     vendorMode.value = resProfile.data.vendor_mode;
+    userRole.value = resProfile.data.custom_role;
     
     // Configurar método de pago inicial por modo del vendedor
     paymentMethod.value = resProfile.data.vendor_mode === 'PHYSICAL' ? 'CASH' : 'BANK_TRANSFER';
@@ -406,15 +554,25 @@ const findCustomer = async () => {
 };
 
 const processSale = async () => {
-  if (!selectedProduct.value || !customer.value) return;
+  if (cart.value.length === 0 || !customer.value) return;
   processing.value = true;
   try {
-    // 1. Crear la orden en estado PENDING
-    const orderRes = await orderService.createOrder(
-      selectedProduct.value.id, 
-      selectedProduct.value.base_price,
-      customer.value.remote_auth_id
-    );
+    // 1. Crear la orden en estado PENDING con múltiples ítems
+    const payload = {
+      user: customer.value.remote_auth_id,
+      subtotal_amount: subtotalAmount.value.toFixed(2),
+      discount_amount: discountAmount.value.toFixed(2),
+      tax_amount: taxAmount.value.toFixed(2),
+      total_amount: totalAmount.value.toFixed(2),
+      status: 'PENDING',
+      items: cart.value.map(item => ({
+        product: item.product.id,
+        quantity: item.quantity,
+        price_at_sale: parseFloat(item.price).toFixed(2)
+      }))
+    };
+
+    const orderRes = await orderService.createOrder(payload);
     const orderId = orderRes.data.id;
 
     // 2. Determinar flujo según el método de pago seleccionado
@@ -426,24 +584,29 @@ const processSale = async () => {
       // Generar mensaje OXXO referenciado
       const referenceNumber = `73812903${String(orderId).padStart(6, '0')}`;
       const clientName = customer.value.full_name || 'Cliente';
-      const productName = selectedProduct.value.name;
-      const amount = selectedProduct.value.base_price;
-      whatsappMessage.value = `¡Hola, ${clientName}! Se ha registrado tu orden para "${productName}" por un total de $${amount}.\n\nPara completar tu pago referenciado de OXXO, acude a tu sucursal OXXO más cercana y proporciona el número de referencia:\n👉 ${referenceNumber}\n\nCompártenos el ticket de pago una vez realizado. ¡Muchas gracias!`;
+      
+      const itemsList = cart.value.map(item => `• ${item.quantity}x ${item.product.name} ($${parseFloat(item.price).toFixed(2)} c/u)`).join('\n');
+      const amount = totalAmount.value.toFixed(2);
+      
+      whatsappMessage.value = `¡Hola, ${clientName}! Se ha registrado tu orden:\n${itemsList}\n\nSubtotal: $${subtotalAmount.value.toFixed(2)}\nDescuento: -$${discountAmount.value.toFixed(2)}\nImpuestos: $${taxAmount.value.toFixed(2)}\nTotal a pagar: $${amount} MXN\n\nPara completar tu pago referenciado de OXXO, acude a tu sucursal OXXO más cercana y proporciona el número de referencia:\n👉 ${referenceNumber}\n\nCompártenos el ticket de pago una vez realizado. ¡Muchas gracias!`;
       showWhatsappModal.value = true;
       toast.success('Orden registrada. En espera de pago por OXXO.');
     } else {
       // Transferencia bancaria estándar
       const clientName = customer.value.full_name || 'Cliente';
-      const productName = selectedProduct.value.name;
-      const amount = selectedProduct.value.base_price;
-      whatsappMessage.value = `¡Hola, ${clientName}! Se ha registrado tu orden para "${productName}" por un total de $${amount}.\n\nPor favor realiza tu transferencia a la CLABE: 012180000000000000 de ECOSYS y compártenos tu comprobante por este medio. ¡Muchas gracias!`;
+      const itemsList = cart.value.map(item => `• ${item.quantity}x ${item.product.name} ($${parseFloat(item.price).toFixed(2)} c/u)`).join('\n');
+      const amount = totalAmount.value.toFixed(2);
+      
+      whatsappMessage.value = `¡Hola, ${clientName}! Se ha registrado tu orden:\n${itemsList}\n\nSubtotal: $${subtotalAmount.value.toFixed(2)}\nDescuento: -$${discountAmount.value.toFixed(2)}\nImpuestos: $${taxAmount.value.toFixed(2)}\nTotal a pagar: $${amount} MXN\n\nPor favor realiza tu transferencia a la CLABE: 012180000000000000 de ECOSYS y compártenos tu comprobante por este medio. ¡Muchas gracias!`;
       showWhatsappModal.value = true;
       toast.success('Orden registrada. En espera de transferencia.');
     }
 
-    selectedProduct.value = null;
+    cart.value = [];
+    discountAmount.value = 0;
     customer.value = null;
     customerSearchId.value = '';
+    
     // Recargar comisiones y estado de caja
     initProfileData();
   } catch (e) {

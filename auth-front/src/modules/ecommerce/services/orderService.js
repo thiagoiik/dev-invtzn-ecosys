@@ -1,10 +1,14 @@
 import invtznClient from '@/core/api/invtznClient';
 
 export const orderService = {
-  createOrder(productId, totalAmount, userId = null, deploymentId = null) {
-    // Crea una orden en estado PENDING. Si userId viene, se asigna a ese cliente.
+  createOrder(productIdOrPayload, totalAmount = null, userId = null, deploymentId = null) {
+    if (typeof productIdOrPayload === 'object' && productIdOrPayload !== null) {
+      return invtznClient.post('orders/', productIdOrPayload);
+    }
+    
+    // Fallback compatibility
     const payload = {
-      product: productId,
+      product: productIdOrPayload,
       total_amount: totalAmount,
       status: 'PENDING'
     };

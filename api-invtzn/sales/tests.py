@@ -197,3 +197,111 @@ class TestPOSAndCashSessions:
         assert float(res_close.data['difference']) == 0.00
         assert res_close.data['is_open'] is False
 
+
+@pytest.mark.django_db
+class TestStage2Features:
+    def setup_method(self):
+        from inventory.models import Store
+        from decimal import Decimal
+
+        self.client = APIClient()
+        self.p1 = Product.objects.create(name='Boda Oro', base_price=100.00, product_type='DIGITAL')
+        self.p2 = Product.objects.create(name='Boda Plata', base_price=50.00, product_type='DIGITAL')
+
+        # Admin, Franchisee, and Vendor Users
+        self.admin_user = User.objects.create_user(username='admin_test', password='password123')
+        self.admin_profile = UserProfile.objects.create(
+            remote_auth_id=self.admin_user.id,
+            custom_role=UserProfile.Role.ADMIN
+        )
+
+        self.franchisee_user = User.objects.create_user(username='fran_test', password='password123')
+        self.franchisee_profile = UserProfile.objects.create(
+            remote_auth_id=self.franchisee_user.id,
+            custom_role=UserProfile.Role.FRANCHISEE
+        )
+
+        self.vendor_user = User.objects.create_user(username='vendor_test', password='password123')
+        self.vendor_profile = UserProfile.objects.create(
+            remote_auth_id=self.vendor_user.id,
+            custom_role=UserProfile.Role.VENDOR
+        )
+
+        self.client_user = User.objects.create_user(username='client_test', password='password123')
+        self.client_profile = UserProfile.objects.create(
+            remote_auth_id=self.client_user.id,
+            custom_role=UserProfile.Role.CLIENT
+        )
+
+    def test_create_order_with_items(self):
+        self.client.force_authenticate(user=self.admin_user)
+        payload = {
+            'total_amount': 150.00,
+            'subtotal_amount': 150.00,
+            'user': self.client_user.id,
+            'items': [
+                {'product': self.p1.id, 'quantity': 1, 'price_at_sale': 100.00},
+                {'product': self.p2.id, 'quantity': 1, 'price_at_sale': 50.00}
+            ]
+        }
+        response = self.client.post('/api/v1/orders/', payload, format='json')
+        assert response.status_code == 201
+        order_id = response.data['id']
+        order = Order.objects.get(id=order_id)
+        assert order.items.count() == 2
+        # Backwards compatibility: the primary product on the order should point to the first item's product
+        assert order.product == self.p1
+
+    def test_discount_allowed_for_admin_and_franchisee(self):
+        # Admin
+        self.client.force_authenticate(user=self.admin_user)
+        payload = {
+            'product': self.p1.id,
+            'total_amount': 90.00,
+            'subtotal_amount': 100.00,
+            'discount_amount': 10.00,
+            'user': self.client_user.id
+        }
+        response = self.client.post('/api/v1/orders/', payload)
+        assert response.status_code == 201
+
+        # Franchisee
+        self.client.force_authenticate(user=self.franchisee_user)
+        payload = {
+            'product': self.p1.id,
+            'total_amount': 80.00,
+            'subtotal_amount': 100.00,
+            'discount_amount': 20.00,
+            'user': self.client_user.id
+        }
+        response = self.client.post('/api/v1/orders/', payload)
+        assert response.status_code == 201
+
+    def test_discount_forbidden_for_vendor_and_client(self):
+        # Vendor
+        self.client.force_authenticate(user=self.vendor_test if hasattr(self, 'vendor_test') else self.vendor_user)
+        payload = {
+            'product': self.p1.id,
+            'total_amount': 90.00,
+            'subtotal_amount': 100.00,
+            'discount_amount': 10.00,
+            'user': self.client_user.id
+        }
+        response = self.client.post('/api/v1/orders/', payload)
+        assert response.status_code == 400
+        assert 'discount_amount' in response.data
+        assert 'No tienes permisos' in response.data['discount_amount'][0]
+
+        # Client
+        self.client.force_authenticate(user=self.client_user)
+        payload = {
+            'product': self.p1.id,
+            'total_amount': 90.00,
+            'subtotal_amount': 100.00,
+            'discount_amount': 10.00,
+        }
+        response = self.client.post('/api/v1/orders/', payload)
+        assert response.status_code == 400
+        assert 'discount_amount' in response.data
+
+

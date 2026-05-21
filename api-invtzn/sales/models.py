@@ -17,10 +17,14 @@ class Order(models.Model):
 
     user = models.IntegerField(db_index=True, help_text="ID del usuario en api-auth")
     vendor_id = models.IntegerField(null=True, blank=True, help_text="ID del vendedor que registró la orden")
-    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, null=True, blank=True)
     deployment = models.ForeignKey(Deployment, on_delete=models.SET_NULL, null=True, blank=True)
     
+    subtotal_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    
     status = models.CharField(max_length=20, choices=StatusChoices.choices, default=StatusChoices.PENDING)
     origin = models.CharField(max_length=20, choices=OriginChoices.choices, default=OriginChoices.ONLINE)
     store = models.ForeignKey('inventory.Store', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
@@ -30,6 +34,16 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Orden #{self.id} - User {self.user} ({self.status})"
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField(default=1)
+    price_at_sale = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        return f"{self.quantity}x {self.product.name} en Orden #{self.order.id}"
+
 
 class PaymentTransaction(models.Model):
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='payment')
