@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <div class="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
       <div>
         <h2 class="text-2xl font-bold text-slate-800">Centro de Control de Usuarios</h2>
         <p class="text-slate-500">Gestión centralizada de perfiles, roles y finanzas del ecosistema.</p>

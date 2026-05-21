@@ -1,25 +1,42 @@
 <template>
   <div class="min-h-screen bg-slate-50 flex flex-col">
     <!-- Navbar -->
-    <header class="navbar bg-white shadow-sm sticky top-0 z-50 px-4 sm:px-8">
-      <div class="flex-1">
+    <header class="navbar bg-white shadow-sm sticky top-0 z-50 px-4 sm:px-8 flex justify-between items-center h-20">
+      <div class="flex items-center gap-2">
+        <!-- Mobile Dropdown Menu -->
+        <div class="dropdown md:hidden">
+          <label tabindex="0" class="btn btn-ghost btn-circle text-slate-800">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" />
+            </svg>
+          </label>
+          <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[50] p-3 shadow-2xl bg-white rounded-2xl w-52 border border-slate-100 font-bold text-slate-700">
+            <li><router-link to="/catalog" class="py-3">Catálogo</router-link></li>
+            <li v-if="authStore.isAuthenticated"><router-link to="/dashboard" class="py-3">Mis Diseños</router-link></li>
+          </ul>
+        </div>
+
         <router-link to="/dashboard" class="btn btn-ghost text-xl font-extrabold tracking-widest text-slate-800">
           INVITAZYON
         </router-link>
       </div>
-      <div class="flex-none gap-2 sm:gap-6">
+
+      <!-- Center Desktop Navigation Links -->
+      <div class="hidden md:flex gap-8 items-center">
         <router-link to="/catalog" class="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Catálogo</router-link>
-        
+        <router-link v-if="authStore.isAuthenticated" to="/dashboard" class="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Mis Diseños</router-link>
+      </div>
+
+      <!-- Right: User Avatar / Login Buttons -->
+      <div class="flex items-center gap-2 sm:gap-4">
         <template v-if="authStore.isAuthenticated">
-          <router-link to="/dashboard" class="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Mis Diseños</router-link>
-          
           <div class="dropdown dropdown-end">
             <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar border-2 border-slate-100">
-              <div class="w-full rounded-full bg-slate-50 flex items-center justify-center text-slate-600 font-bold">
+              <div class="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-600 font-bold">
                 {{ initial }}
               </div>
             </div>
-            <ul tabindex="0" class="mt-3 z-[1] p-3 shadow-2xl menu menu-sm dropdown-content bg-white rounded-2xl w-60 border border-slate-100">
+            <ul tabindex="0" class="mt-3 z-[50] p-3 shadow-2xl menu menu-sm dropdown-content bg-white rounded-2xl w-60 border border-slate-100">
               <div class="px-4 py-3 border-b border-slate-50 mb-2">
                 <p class="text-xs font-black text-slate-400 uppercase tracking-widest">Cuenta</p>
                 <p class="text-sm font-bold text-slate-800 truncate">{{ authStore.user?.email }}</p>
@@ -32,7 +49,10 @@
 
         <template v-else>
           <router-link to="/login" class="btn btn-ghost btn-sm sm:btn-md text-slate-600 font-bold">Ingresar</router-link>
-          <router-link to="/register" class="btn btn-primary btn-sm sm:btn-md rounded-xl shadow-lg shadow-primary/20">Empezar Gratis</router-link>
+          <router-link to="/register" class="btn btn-primary btn-sm sm:btn-md rounded-xl shadow-lg shadow-primary/20">
+            <span class="hidden sm:inline">Empezar Gratis</span>
+            <span class="sm:hidden">Empezar</span>
+          </router-link>
         </template>
       </div>
     </header>

@@ -15,8 +15,8 @@
       />
     </div>
 
-    <!-- Grid / Tabla -->
-    <div class="overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200">
+    <!-- Vista de Tabla (Escritorio / Tablet) -->
+    <div class="hidden md:block overflow-x-auto bg-white rounded-2xl shadow-sm border border-slate-200">
       <table class="table table-zebra w-full">
         <thead class="bg-slate-50">
           <tr>
@@ -62,6 +62,45 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Vista de Tarjetas (Móvil) -->
+    <div class="grid grid-cols-1 gap-4 md:hidden">
+      <div 
+        v-for="profile in filteredProfiles" 
+        :key="profile.remote_auth_id"
+        class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-all active:bg-slate-50 cursor-pointer flex flex-col gap-3"
+        @click="$emit('select', profile)"
+      >
+        <!-- Fila superior: Info principal y Rol -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <div class="avatar placeholder">
+              <div class="bg-slate-100 text-slate-500 rounded-lg w-10 h-10 border border-slate-200 font-bold">
+                {{ profile.full_name?.charAt(0) || '?' }}
+              </div>
+            </div>
+            <div>
+              <div class="font-bold text-slate-800 text-sm">{{ profile.full_name || 'Desconocido' }}</div>
+              <div class="text-xs text-slate-400 font-medium">ID #{{ profile.remote_auth_id }}</div>
+            </div>
+          </div>
+          <span :class="['badge font-black text-[9px] uppercase tracking-widest px-2 py-1', getBadgeClass(profile.custom_role)]">
+            {{ profile.custom_role }}
+          </span>
+        </div>
+
+        <!-- Fila inferior: Saldo y Botón de acción -->
+        <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+          <div>
+            <div class="text-[9px] text-slate-400 font-black uppercase tracking-wider">Saldo</div>
+            <div class="font-black text-slate-700 text-base">${{ profile.current_balance }}</div>
+          </div>
+          <button class="btn btn-primary btn-sm rounded-xl font-bold text-xs">
+            Detalles →
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>

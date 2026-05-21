@@ -7,53 +7,112 @@
 
     <div v-if="loading" class="loading">Cargando diseños globales...</div>
     
-    <table v-else class="data-grid">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Cliente</th>
-          <th>Estado Pago</th>
-          <th>Estado Visibilidad</th>
-          <th>URL Pública</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="dep in deployments" :key="dep.id">
-          <td>#{{ dep.id }}</td>
-          <td>
-            <div class="font-bold">Usuario {{ dep.user }}</div>
-            <div class="text-[10px] text-slate-400 uppercase">Prod #{{ dep.product }}</div>
-          </td>
-          <td>
-            <span v-if="dep.is_paid" class="badge paid">✅ PAGADA</span>
-            <span v-else class="badge trial">🧪 PRUEBA</span>
-          </td>
-          <td>
-            <span :class="['badge', dep.status.toLowerCase()]">{{ dep.status }}</span>
-          </td>
-          <td>
-            <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="link">/i/{{ dep.slug }}</a>
-            <span v-else class="text-muted">Sin asignar</span>
-          </td>
-          <td class="actions-cell">
-            <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="btn btn-sm btn-outline" title="Previa">👁️</a>
-            
-            <router-link :to="'/builder/' + dep.id" class="btn btn-sm btn-primary" title="Editar">
-              🛠️
-            </router-link>
-            
-            <button v-if="!dep.is_paid" @click="onPay(dep)" class="btn btn-sm btn-success" title="Pagar">
-              💰 Pagar
-            </button>
+    <!-- Vista de Tabla (Escritorio / Tablet) -->
+    <div v-else-if="!loading" class="hidden md:block overflow-x-auto">
+      <table class="data-grid">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Estado Pago</th>
+            <th>Estado Visibilidad</th>
+            <th>URL Pública</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="dep in deployments" :key="dep.id">
+            <td>#{{ dep.id }}</td>
+            <td>
+              <div class="font-bold">Usuario {{ dep.user }}</div>
+              <div class="text-[10px] text-slate-400 uppercase">Prod #{{ dep.product }}</div>
+            </td>
+            <td>
+              <span v-if="dep.is_paid" class="badge paid">✅ PAGADA</span>
+              <span v-else class="badge trial">🧪 PRUEBA</span>
+            </td>
+            <td>
+              <span :class="['badge', dep.status.toLowerCase()]">{{ dep.status }}</span>
+            </td>
+            <td>
+              <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="link">/i/{{ dep.slug }}</a>
+              <span v-else class="text-muted">Sin asignar</span>
+            </td>
+            <td class="actions-cell">
+              <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="btn btn-sm btn-outline" title="Previa">👁️</a>
+              
+              <router-link :to="'/builder/' + dep.id" class="btn btn-sm btn-primary" title="Editar">
+                🛠️
+              </router-link>
+              
+              <button v-if="!dep.is_paid" @click="onPay(dep)" class="btn btn-sm btn-success" title="Pagar">
+                💰 Pagar
+              </button>
 
-            <button @click="onDelete(dep.id)" class="btn btn-sm btn-danger" title="Eliminar">
-              🗑️
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+              <button @click="onDelete(dep.id)" class="btn btn-sm btn-danger" title="Eliminar">
+                🗑️
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Vista Móvil (Tarjetas) -->
+    <div v-else-if="!loading" class="grid grid-cols-1 gap-4 md:hidden">
+      <div 
+        v-for="dep in deployments" 
+        :key="dep.id"
+        class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col gap-4"
+      >
+        <!-- Fila superior: ID y Visibilidad -->
+        <div class="flex items-center justify-between">
+          <span class="font-black text-slate-800 text-sm">ID #{{ dep.id }}</span>
+          <span :class="['badge font-bold text-[10px] uppercase tracking-wider', dep.status.toLowerCase()]">
+            {{ dep.status }}
+          </span>
+        </div>
+
+        <!-- Cuerpo del Diseño -->
+        <div class="space-y-3">
+          <div>
+            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Cliente</div>
+            <div class="font-bold text-slate-800 text-sm">Usuario {{ dep.user }}</div>
+            <div class="text-[10px] text-slate-400">Prod #{{ dep.product }}</div>
+          </div>
+          
+          <div>
+            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Pago</div>
+            <span v-if="dep.is_paid" class="badge paid text-xs">✅ PAGADA</span>
+            <span v-else class="badge trial text-xs">🧪 PRUEBA</span>
+          </div>
+
+          <div v-if="dep.slug">
+            <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">URL Pública</div>
+            <a :href="'/i/' + dep.slug" target="_blank" class="link text-sm font-bold">/i/{{ dep.slug }}</a>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="flex items-center gap-2 pt-3 border-t border-slate-100 flex-wrap">
+          <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="btn btn-sm btn-outline flex-1 text-center py-2">
+            👁️ Ver
+          </a>
+          
+          <router-link :to="'/builder/' + dep.id" class="btn btn-sm btn-primary flex-1 text-center py-2">
+            🛠️ Editar
+          </router-link>
+          
+          <button v-if="!dep.is_paid" @click="onPay(dep)" class="btn btn-sm btn-success flex-1 py-2">
+            💰 Pagar
+          </button>
+
+          <button @click="onDelete(dep.id)" class="btn btn-sm btn-danger flex-1 py-2">
+            🗑️ Borrar
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
