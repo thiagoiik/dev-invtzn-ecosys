@@ -185,6 +185,20 @@ Hemos diseñado e implementado una arquitectura de Punto de Venta (POS / TPV) ro
 
 ---
 
+## 🌐 E-commerce Storefront & Facturación SAT CFDI 4.0 - Etapas Básica y Avanzada
+
+Hemos diseñado e implementado el canal de ventas digital B2C y el portal postventa para clientes finales, complementando el ecosistema híbrido digital-físico:
+
+*   **Venta Híbrida y Multi-ítem:** Habilitado el soporte en backend (`OrderItem`) y frontend (`CheckoutView.vue` y Pinia) para procesar carritos de compra mixtos (invitaciones base + add-ons físicos o de servicios).
+*   **Checkout Dinámico y Pasarela (Stripe):** Desglose en tiempo real del subtotal, impuestos y servicios seleccionados durante el flujo de pago con Stripe.
+*   **Historial de Pedidos del Cliente ("Mis Pedidos"):** Creación de una interfaz responsiva premium en el dashboard del cliente para el seguimiento histórico de compras (Online y POS).
+*   **Seguimiento Visual de Logística Física:** Barra de progreso interactiva (Pendiente ➔ En Producción ➔ Enviado ➔ Entregado) con enlaces de rastreo directo a paqueterías (FedEx/DHL) si el pedido contiene ítems físicos.
+*   **Facturación SAT CFDI 4.0 Automatizada:** Timbrado y generación de facturas con Facturapi al finalizar la compra de manera exitosa, o de forma manual desde el dashboard mediante un formulario SAT integrado con validaciones (RFC, Régimen Fiscal, C.P., Uso de CFDI).
+*   **Descargas y Reenvío de CFDIs:** Descarga directa de archivos XML y PDF de la factura desde el panel del cliente, con opción de reenvío asíncrono automatizado al correo del comprador mediante Celery Workers.
+*   **Canal de Ayuda y Soporte:** Botón de contacto directo y pre-configurado hacia `soporte@invitazyon.online` para resolver incidencias postventa.
+
+---
+
 ## 🧪 Comandos Útiles
 
 ### Desarrollo y Base de Datos
