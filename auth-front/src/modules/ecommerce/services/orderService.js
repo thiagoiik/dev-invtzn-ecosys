@@ -1,7 +1,7 @@
 import invtznClient from '@/core/api/invtznClient';
 
 export const orderService = {
-  createOrder(items, totalAmount, userId = null, deploymentId = null) {
+  createOrder(items, totalAmount, userId = null, deploymentId = null, shippingAddress = null) {
     // Si se pasa un objeto de payload completo, enviarlo directamente
     if (items && typeof items === 'object' && !Array.isArray(items)) {
       return invtznClient.post('orders/', items);
@@ -13,6 +13,7 @@ export const orderService = {
     };
     if (userId) payload.user = userId;
     if (deploymentId) payload.deployment = deploymentId;
+    if (shippingAddress) payload.shipping_address = shippingAddress;
 
     if (Array.isArray(items)) {
       payload.items = items;

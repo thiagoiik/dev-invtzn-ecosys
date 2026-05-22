@@ -472,5 +472,139 @@ class TestStage3Features:
         assert 'rfc' in response.data
         assert 'codigo_postal' in response.data
 
+    def test_shipping_address_creation(self):
+        from sales.models import ShippingAddress
+        payload = {
+            'total_amount': 100.00,
+            'subtotal_amount': 100.00,
+            'user': self.user.id,
+            'items': [
+                {'product': self.product.id, 'quantity': 2, 'price_at_sale': 50.00}
+            ],
+            'shipping_address': {
+                'recipient_name': 'Thiago Test',
+                'address_line1': 'Av. Reforma 100',
+                'address_line2': 'Piso 2',
+                'city': 'CDMX',
+                'state': 'DF',
+                'postal_code': '06600',
+                'phone': '5512345678'
+            }
+        }
+        response = self.client.post('/api/v1/orders/', payload, format='json')
+        assert response.status_code == 201
+        order_id = response.data['id']
+        
+        addr = ShippingAddress.objects.get(order_id=order_id)
+        assert addr.recipient_name == 'Thiago Test'
+        assert addr.address_line1 == 'Av. Reforma 100'
+        assert addr.city == 'CDMX'
+        assert addr.postal_code == '06600'
+
+    def test_stock_deduction_on_order_completed(self):
+        from inventory.models import Store, StoreStock
+        physical_product = Product.objects.create(
+            name='Invitación Física Premium',
+            base_price=80.00,
+            product_type='PHYSICAL',
+            is_physical=True,
+            stock_quantity=15
+        )
+        
+        store = Store.objects.create(name='Sucursal CDMX Central', is_active=True)
+        store_stock = StoreStock.objects.create(store=store, product=physical_product, quantity=8)
+        
+        admin_user = User.objects.create_user(username='admin_sales', password='password123')
+        UserProfile.objects.create(remote_auth_id=admin_user.id, custom_role=UserProfile.Role.ADMIN)
+        self.client.force_authenticate(user=admin_user)
+        
+        payload = {
+            'total_amount': 160.00,
+            'subtotal_amount': 160.00,
+            'user': self.user.id,
+            'store': store.id,
+            'origin': 'POS',
+            'items': [
+                {'product': physical_product.id, 'quantity': 2, 'price_at_sale': 80.00}
+            ]
+        }
+        res_create = self.client.post('/api/v1/orders/', payload, format='json')
+        assert res_create.status_code == 201
+        order_id = res_create.data['id']
+        
+        physical_product.refresh_from_db()
+        store_stock.refresh_from_db()
+        assert physical_product.stock_quantity == 15
+        assert store_stock.quantity == 8
+        
+        res_complete = self.client.post(f'/api/v1/orders/{order_id}/complete-pos/', {
+            'payment_method': 'CARD'
+        })
+        assert res_complete.status_code == 200
+        
+        physical_product.refresh_from_db()
+        store_stock.refresh_from_db()
+        assert physical_product.stock_quantity == 13
+        assert store_stock.quantity == 6
+        
+        order = Order.objects.get(id=order_id)
+        assert order.is_stock_deducted is True
+
+    def test_real_facturapi_integration_mocked_http(self):
+        from unittest.mock import patch, MagicMock
+        from django.test import override_settings
+        
+        admin_user = User.objects.create_user(username='admin_fact', password='password123')
+        UserProfile.objects.create(remote_auth_id=admin_user.id, custom_role=UserProfile.Role.ADMIN)
+        self.client.force_authenticate(user=admin_user)
+        
+        payload = {
+            'total_amount': 150.00,
+            'subtotal_amount': 150.00,
+            'user': self.user.id,
+            'items': [
+                {'product': self.product.id, 'quantity': 1, 'price_at_sale': 150.00}
+            ]
+        }
+        res_create = self.client.post('/api/v1/orders/', payload, format='json')
+        order_id = res_create.data['id']
+        self.client.post(f'/api/v1/orders/{order_id}/complete-pos/', {'payment_method': 'CARD'})
+        
+        billing_payload = {
+            'rfc': 'HELT880211AAA',
+            'razon_social': 'THIAGO HELGUERA',
+            'codigo_postal': '06600',
+            'regimen_fiscal': '605',
+            'uso_cfdi': 'G03'
+        }
+        
+        with override_settings(FACTURAPI_API_KEY='sk_live_real_key_mock_123'):
+            with patch('sales.views.sys.argv', ['manage.py', 'runserver']):
+                with patch('sales.views.requests.post') as mock_post:
+                    mock_response = MagicMock()
+                    mock_response.status_code = 201
+                    mock_response.json.return_value = {
+                        'id': 'invoice_facturapi_555',
+                        'uuid': 'SAT-UUID-12345-MOCK'
+                    }
+                    mock_post.return_value = mock_response
+                    
+                    response = self.client.post(f'/api/v1/orders/{order_id}/issue-cfdi/', billing_payload)
+                    assert response.status_code == 201
+                    assert response.data['success'] is True
+                    assert response.data['invoice']['uuid'] == 'SAT-UUID-12345-MOCK'
+                    assert response.data['invoice']['pdf_url'] == 'https://api.facturapi.com/v2/invoices/invoice_facturapi_555/pdf'
+                    
+                    mock_post.assert_called_once()
+                    args, kwargs = mock_post.call_args
+                    assert args[0] == 'https://api.facturapi.com/v2/invoices'
+                    assert kwargs['headers']['Authorization'] == 'Bearer sk_live_real_key_mock_123'
+                    
+                    sent_payload = kwargs['json']
+                    assert sent_payload['customer']['tax_id'] == 'HELT880211AAA'
+                    assert sent_payload['use'] == 'G03'
+                    assert len(sent_payload['items']) == 1
+                    assert sent_payload['items'][0]['product']['tax_included'] is True
+
 
 

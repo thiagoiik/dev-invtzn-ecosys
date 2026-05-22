@@ -43,3 +43,6 @@ CORS_ALLOWED_ORIGINS = os.environ.get(
 STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', 'sk_test_placeholder')
 STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', 'whsec_placeholder')
 STRIPE_CONNECT_CLIENT_ID = os.environ.get('STRIPE_CONNECT_CLIENT_ID', 'ca_placeholder')
+
+# Facturapi Settings
+FACTURAPI_API_KEY = os.environ.get('FACTURAPI_API_KEY', '')

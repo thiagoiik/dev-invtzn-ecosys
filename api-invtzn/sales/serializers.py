@@ -1,6 +1,11 @@
 from rest_framework import serializers
-from .models import Order, CashSession, Commission, OrderItem, Invoice
+from .models import Order, CashSession, Commission, OrderItem, Invoice, ShippingAddress
 from inventory.models import Product
+
+class ShippingAddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShippingAddress
+        fields = ('recipient_name', 'address_line1', 'address_line2', 'city', 'state', 'postal_code', 'phone')
 
 class OrderItemSerializer(serializers.ModelSerializer):
     serial_keys = serializers.SerializerMethodField()
@@ -21,6 +26,7 @@ class OrderSerializer(serializers.ModelSerializer):
     user = serializers.IntegerField(required=False)
     items = OrderItemSerializer(many=True, required=False)
     invoice = InvoiceSerializer(read_only=True, required=False)
+    shipping_address = ShippingAddressSerializer(required=False, allow_null=True)
     product = serializers.PrimaryKeyRelatedField(
         queryset=Product.objects.all(), write_only=True, required=False
     )
@@ -53,11 +59,15 @@ class OrderSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        shipping_address_data = validated_data.pop('shipping_address', None)
         items_data = validated_data.pop('items', [])
         legacy_product = validated_data.pop('product', None)
         
         order = Order.objects.create(**validated_data)
         
+        if shipping_address_data:
+            ShippingAddress.objects.create(order=order, **shipping_address_data)
+            
         if items_data:
             for item_data in items_data:
                 product = item_data['product']

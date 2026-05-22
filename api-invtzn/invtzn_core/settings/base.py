@@ -125,3 +125,6 @@ EMAIL_HOST_USER = os.environ.get('AUTH_EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('AUTH_EMAIL_HOST_PASSWORD', '')
 EMAIL_USE_TLS = os.environ.get('AUTH_EMAIL_USE_TLS', 'True') == 'True'
 DEFAULT_FROM_EMAIL = os.environ.get('AUTH_DEFAULT_FROM_EMAIL', 'ECOSYS <no-reply@send.invitazyon.online>')
+
+# Facturapi integration settings
+FACTURAPI_API_KEY = os.environ.get('FACTURAPI_API_KEY', '')

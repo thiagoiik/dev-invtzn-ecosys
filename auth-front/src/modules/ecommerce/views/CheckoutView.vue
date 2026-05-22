@@ -58,6 +58,124 @@
           </div>
         </div>
 
+        <!-- Shipping Address Form -->
+        <div v-if="hasPhysicalProducts" class="bg-white rounded-[2.5rem] p-10 shadow-xl shadow-slate-200/40 border border-slate-100 space-y-6">
+          <div class="flex items-center gap-4 border-b border-slate-50 pb-4">
+            <span class="text-3xl">🚚</span>
+            <div>
+              <h2 class="text-2xl font-bold text-slate-800 leading-snug">Dirección de Envío</h2>
+              <p class="text-xs text-slate-500 mt-1">Requerido para la entrega de tus productos físicos.</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Recipient Name -->
+            <div class="md:col-span-2 flex flex-col gap-2">
+              <label for="recipient_name" class="text-xs font-black text-slate-500 uppercase tracking-widest">
+                Nombre del Destinatario <span class="text-red-500">*</span>
+              </label>
+              <input 
+                id="recipient_name"
+                v-model="shippingAddress.recipient_name"
+                type="text" 
+                placeholder="Ej. Juan Pérez López"
+                class="w-full h-12 px-4 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none text-slate-700 text-sm font-semibold"
+                required
+              />
+            </div>
+
+            <!-- Address Line 1 -->
+            <div class="md:col-span-2 flex flex-col gap-2">
+              <label for="address_line1" class="text-xs font-black text-slate-500 uppercase tracking-widest">
+                Calle y Número <span class="text-red-500">*</span>
+              </label>
+              <input 
+                id="address_line1"
+                v-model="shippingAddress.address_line1"
+                type="text" 
+                placeholder="Ej. Av. Reforma 123 Int 4B"
+                class="w-full h-12 px-4 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none text-slate-700 text-sm font-semibold"
+                required
+              />
+            </div>
+
+            <!-- Address Line 2 -->
+            <div class="md:col-span-2 flex flex-col gap-2">
+              <label for="address_line2" class="text-xs font-black text-slate-500 uppercase tracking-widest flex justify-between">
+                <span>Colonia / Referencias <span class="text-slate-400 font-medium font-sans lowercase">(opcional)</span></span>
+              </label>
+              <input 
+                id="address_line2"
+                v-model="shippingAddress.address_line2"
+                type="text" 
+                placeholder="Ej. Col. Juárez, portón negro"
+                class="w-full h-12 px-4 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none text-slate-700 text-sm font-semibold"
+              />
+            </div>
+
+            <!-- City -->
+            <div class="flex flex-col gap-2">
+              <label for="city" class="text-xs font-black text-slate-500 uppercase tracking-widest">
+                Ciudad / Municipio <span class="text-red-500">*</span>
+              </label>
+              <input 
+                id="city"
+                v-model="shippingAddress.city"
+                type="text" 
+                placeholder="Ej. Monterrey"
+                class="w-full h-12 px-4 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none text-slate-700 text-sm font-semibold"
+                required
+              />
+            </div>
+
+            <!-- State -->
+            <div class="flex flex-col gap-2">
+              <label for="state" class="text-xs font-black text-slate-500 uppercase tracking-widest">
+                Estado <span class="text-red-500">*</span>
+              </label>
+              <input 
+                id="state"
+                v-model="shippingAddress.state"
+                type="text" 
+                placeholder="Ej. Nuevo León"
+                class="w-full h-12 px-4 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none text-slate-700 text-sm font-semibold"
+                required
+              />
+            </div>
+
+            <!-- Postal Code -->
+            <div class="flex flex-col gap-2">
+              <label for="postal_code" class="text-xs font-black text-slate-500 uppercase tracking-widest">
+                Código Postal <span class="text-red-500">*</span>
+              </label>
+              <input 
+                id="postal_code"
+                v-model="shippingAddress.postal_code"
+                type="text" 
+                placeholder="Ej. 64000"
+                maxlength="5"
+                class="w-full h-12 px-4 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none text-slate-700 text-sm font-semibold"
+                required
+              />
+            </div>
+
+            <!-- Phone -->
+            <div class="flex flex-col gap-2">
+              <label for="phone" class="text-xs font-black text-slate-500 uppercase tracking-widest">
+                Teléfono de Contacto <span class="text-red-500">*</span>
+              </label>
+              <input 
+                id="phone"
+                v-model="shippingAddress.phone"
+                type="tel" 
+                placeholder="Ej. 8112345678"
+                class="w-full h-12 px-4 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 transition-all outline-none text-slate-700 text-sm font-semibold"
+                required
+              />
+            </div>
+          </div>
+        </div>
+
         <div class="flex items-center gap-6 p-6 rounded-[2rem] bg-indigo-50/50 border border-indigo-100/50">
           <span class="text-3xl">🛡️</span>
           <div>
@@ -155,6 +273,21 @@ const selectedAddonIds = ref([]);
 const selectedAddons = ref([]);
 const loading = ref(false);
 
+const shippingAddress = ref({
+  recipient_name: '',
+  address_line1: '',
+  address_line2: '',
+  city: '',
+  state: '',
+  postal_code: '',
+  phone: ''
+});
+
+const hasPhysicalProducts = computed(() => {
+  if (product.value?.is_physical) return true;
+  return selectedAddons.value.some(addon => addon.is_physical);
+});
+
 const addonsTotal = computed(() => {
   return selectedAddons.value.reduce((acc, addon) => acc + parseFloat(addon.base_price), 0);
 });
@@ -203,6 +336,30 @@ const initiateStripePayment = async () => {
     return;
   }
 
+  // 1.5. Validar Dirección de Envío si hay productos físicos
+  if (hasPhysicalProducts.value) {
+    const addr = shippingAddress.value;
+    if (!addr.recipient_name.trim() || 
+        !addr.address_line1.trim() || 
+        !addr.city.trim() || 
+        !addr.state.trim() || 
+        !addr.postal_code.trim() || 
+        !addr.phone.trim()) {
+      toast.error('Por favor, completa todos los campos requeridos de la dirección de envío.');
+      return;
+    }
+    
+    if (!/^\d{5}$/.test(addr.postal_code.trim())) {
+      toast.error('El código postal debe tener exactamente 5 dígitos numéricos.');
+      return;
+    }
+    
+    if (addr.phone.trim().replace(/\D/g, '').length < 10) {
+      toast.error('El teléfono debe incluir al menos 10 dígitos.');
+      return;
+    }
+  }
+
   loading.value = true;
   try {
     // 2. Recuperar ID de diseño si viene de un Sandbox
@@ -225,12 +382,13 @@ const initiateStripePayment = async () => {
       });
     });
     
-    // 4. Crear la Orden vinculada al diseño con múltiples ítems
+    // 4. Crear la Orden vinculada al diseño con dirección de envío si aplica
     const orderRes = await orderService.createOrder(
       items, 
       totalPrice.value,
       null,
-      deploymentId
+      deploymentId,
+      hasPhysicalProducts.value ? shippingAddress.value : null
     );
     const orderId = orderRes.data.id;
     

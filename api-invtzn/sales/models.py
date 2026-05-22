@@ -15,6 +15,12 @@ class Order(models.Model):
         ONLINE = 'ONLINE', 'Tienda Online / B2C'
         POS = 'POS', 'Punto de Venta / B2B'
 
+    class FulfillmentStatusChoices(models.TextChoices):
+        PENDING = 'PENDING', 'Pendiente'
+        IN_PRODUCTION = 'IN_PRODUCTION', 'En Producción'
+        SHIPPED = 'SHIPPED', 'Enviado'
+        DELIVERED = 'DELIVERED', 'Entregado'
+
     user = models.IntegerField(db_index=True, help_text="ID del usuario en api-auth")
     vendor_id = models.IntegerField(null=True, blank=True, help_text="ID del vendedor que registró la orden")
     deployment = models.ForeignKey(Deployment, on_delete=models.SET_NULL, null=True, blank=True)
@@ -28,6 +34,13 @@ class Order(models.Model):
     origin = models.CharField(max_length=20, choices=OriginChoices.choices, default=OriginChoices.ONLINE)
     store = models.ForeignKey('inventory.Store', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
     customer_email = models.EmailField(blank=True, null=True, help_text="Correo electrónico para enviar el recibo")
+    fulfillment_status = models.CharField(
+        max_length=20, 
+        choices=FulfillmentStatusChoices.choices, 
+        default=FulfillmentStatusChoices.PENDING
+    )
+    tracking_number = models.CharField(max_length=100, blank=True, null=True)
+    is_stock_deducted = models.BooleanField(default=False)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -107,3 +120,16 @@ class Invoice(models.Model):
 
     def __str__(self):
         return f"CFDI {self.uuid} - Orden #{self.order.id} ({self.rfc})"
+
+class ShippingAddress(models.Model):
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='shipping_address')
+    recipient_name = models.CharField(max_length=200)
+    address_line1 = models.CharField(max_length=255)
+    address_line2 = models.CharField(max_length=255, blank=True, null=True)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    postal_code = models.CharField(max_length=10)
+    phone = models.CharField(max_length=20)
+
+    def __str__(self):
+        return f"Dirección de envío para Orden #{self.order.id} - {self.recipient_name}"
