@@ -11,7 +11,7 @@
 
     <!-- Sandbox Premium Overlay if Draft status -->
     <DraftWatermarkOverlay 
-      v-if="status === 'DRAFT'" 
+      v-if="status === 'DRAFT' && !isStudioMode" 
       @purchase="handlePurchaseRedirect" 
     />
 
@@ -42,7 +42,8 @@ const props = defineProps({
   status: { type: String, required: true },
   customData: { type: Object, required: true },
   slug: { type: String, required: true },
-  deploymentId: { type: [Number, String], default: null }
+  deploymentId: { type: [Number, String], default: null },
+  isStudioMode: { type: Boolean, default: false }
 });
 
 const emit = defineEmits(['purchase']);

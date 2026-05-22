@@ -36,7 +36,7 @@ class DeploymentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("La música de fondo no está permitida en este plan.")
 
         # 3. Validar metadatos Open Graph personalizados
-        has_custom_og = any(key in value for key in ['og_title', 'og_description', 'og_image'])
+        has_custom_og = any(value.get(key) for key in ['og_title', 'og_description', 'og_image'])
         if has_custom_og and not allowed.get('custom_og'):
             raise serializers.ValidationError("La personalización de metadatos Open Graph requiere plan Premium.")
 

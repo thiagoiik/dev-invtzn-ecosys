@@ -17,9 +17,17 @@
       </div>
     </template>
 
-    <div class="studio-container">
+    <div class="studio-container relative">
+      <!-- Botón Flotante para Móviles -->
+      <button 
+        class="mobile-preview-toggle md:hidden fixed bottom-6 right-6 z-[100] btn btn-primary shadow-2xl shadow-primary/30 rounded-full px-6 font-bold"
+        @click="showMobilePreview = !showMobilePreview"
+      >
+        {{ showMobilePreview ? '✏️ Seguir Editando' : '👁️ Ver Vista Previa' }}
+      </button>
+
       <!-- PANEL IZQUIERDO: CONTROLES -->
-      <aside class="control-panel">
+      <aside class="control-panel" :class="{ 'hidden md:flex': showMobilePreview }">
         <div class="panel-header">
           <h3>Ajustes de Diseño</h3>
         </div>
@@ -490,7 +498,7 @@
       </aside>
 
       <!-- PANEL DERECHO: LIVE PREVIEW -->
-      <section class="preview-panel">
+      <section class="preview-panel" :class="{ 'hidden md:flex': !showMobilePreview }">
         <div class="device-frame">
           <!-- Inyectamos los componentes del Engine en tiempo real -->
           <div v-if="!loading" class="preview-canvas">
@@ -500,6 +508,8 @@
                 :customData="localConfig" 
                 :slug="deploymentSlug" 
                 :deploymentId="deploymentId"
+                :isStudioMode="true"
+                @purchase="goToCatalog"
               />
             </EnvelopeWrapper>
           </div>
@@ -515,7 +525,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import BuilderLayout from '@/layouts/BuilderLayout.vue';
 import { builderService } from '@/modules/builder/services/builderService';
@@ -523,12 +533,21 @@ import RenderEngineMaster from '@/modules/engine/components/RenderEngineMaster.v
 import EnvelopeWrapper from '@/modules/engine/components/EnvelopeWrapper.vue';
 
 const route = useRoute();
+const router = useRouter();
 const toast = useToast();
 const deploymentId = route.params.id;
 
 const loading = ref(true);
 const saveStatus = ref('saved'); // 'saved', 'unsaved', 'saving', 'error'
 const activeTab = ref('cover'); // 'cover', 'rsvp', 'timer', 'timeline', 'music', 'theme', 'og', 'envelope'
+const showMobilePreview = ref(false);
+
+const goToCatalog = () => {
+  if (deploymentId) {
+    localStorage.setItem('claimed_deployment_id', deploymentId);
+  }
+  router.push('/catalog');
+};
 
 const allowedFeatures = ref({
   background_music: false,
