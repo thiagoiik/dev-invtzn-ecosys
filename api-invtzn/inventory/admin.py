@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Product, Template, Store
+from .models import Product, Template, Store, ProductSerialKey
 
 @admin.register(Store)
 class StoreAdmin(admin.ModelAdmin):
@@ -43,3 +43,9 @@ class TemplateAdmin(admin.ModelAdmin):
     # Ayuda a que el JSON se vea mejor en el admin (opcional)
     # Si quieres que se vea como código, puedes usar librerías extra, 
     # pero por defecto Django ya muestra el campo de texto JSON.
+
+@admin.register(ProductSerialKey)
+class ProductSerialKeyAdmin(admin.ModelAdmin):
+    list_display = ('product', 'key_value', 'is_assigned', 'assigned_at', 'created_at')
+    list_filter = ('is_assigned', 'product')
+    search_fields = ('key_value', 'product__name')

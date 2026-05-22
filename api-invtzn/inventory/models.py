@@ -81,4 +81,21 @@ class Template(models.Model):
     )
 
     def __str__(self):
-        return f"Configuración para {self.product.name}"
+        return f"Configuración para {self.product.name}"
+
+class ProductSerialKey(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='serial_keys')
+    key_value = models.CharField(max_length=255, unique=True)
+    is_assigned = models.BooleanField(default=False)
+    order_item = models.ForeignKey(
+        'sales.OrderItem', 
+        null=True, 
+        blank=True, 
+        on_delete=models.SET_NULL, 
+        related_name='serial_keys'
+    )
+    assigned_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.product.name} - {self.key_value} (Asignada: {self.is_assigned})"

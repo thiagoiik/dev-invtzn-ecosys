@@ -28,7 +28,12 @@ class OrderViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='complete-pos')
     def complete_pos_order(self, request, pk=None):
         from django.utils import timezone
+        from django.db import transaction
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        from rest_framework.exceptions import ValidationError
         from .models import PaymentTransaction, CashSession
+        from inventory.models import ProductSerialKey
+        from .tasks import send_receipt_email_task
         
         order = self.get_object()
         if order.status != Order.StatusChoices.PENDING:
@@ -55,33 +60,87 @@ class OrderViewSet(viewsets.ModelViewSet):
             if not session_exists:
                 return Response({'error': 'Debes abrir un turno de caja para registrar pagos en efectivo.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Modificar estado de la orden
-        order.status = Order.StatusChoices.COMPLETED
-        # Si fue en POS, vincular al vendedor y tienda correspondientes si no estaban
-        if not order.vendor_id:
-            order.vendor_id = request.user.id
-            order.origin = Order.OriginChoices.POS
-        if not order.store and profile.assigned_store:
-            order.store = profile.assigned_store
-            
-        order.save()
-        
-        # Registrar transacción
-        PaymentTransaction.objects.update_or_create(
-            order=order,
-            defaults={
-                'provider': 'POS_TERMINAL',
-                'payment_method': payment_method,
-                'success': True,
-                'transaction_id': f"POS-{order.id}-{int(timezone.now().timestamp())}"
-            }
-        )
-        
+        customer_email = request.data.get('customer_email')
+
+        try:
+            with transaction.atomic():
+                # Primero, si hay items digitales, asignamos los seriales usando select_for_update FIFO
+                for item in order.items.all():
+                    if not item.product.is_physical:
+                        # Buscamos seriales sin asignar ordenados por id (FIFO) bloqueándolos
+                        keys = list(
+                            ProductSerialKey.objects.select_for_update()
+                            .filter(product=item.product, is_assigned=False)
+                            .order_by('id')[:item.quantity]
+                        )
+                        if len(keys) < item.quantity:
+                            raise ValidationError({
+                                "error": f"No hay suficientes claves de activación (seriales) para '{item.product.name}'. Requeridos: {item.quantity}, Disponibles: {len(keys)}."
+                            })
+                        
+                        # Asignamos
+                        for key in keys:
+                            key.is_assigned = True
+                            key.order_item = item
+                            key.assigned_at = timezone.now()
+                            key.save()
+
+                # Guardar el correo si fue suministrado
+                if customer_email:
+                    order.customer_email = customer_email
+
+                # Modificar estado de la orden
+                order.status = Order.StatusChoices.COMPLETED
+                
+                # Si fue en POS, vincular al vendedor y tienda correspondientes si no estaban
+                if not order.vendor_id:
+                    order.vendor_id = request.user.id
+                    order.origin = Order.OriginChoices.POS
+                if not order.store and profile.assigned_store:
+                    order.store = profile.assigned_store
+                    
+                order.save()
+                
+                # Registrar transacción
+                PaymentTransaction.objects.update_or_create(
+                    order=order,
+                    defaults={
+                        'provider': 'POS_TERMINAL',
+                        'payment_method': payment_method,
+                        'success': True,
+                        'transaction_id': f"POS-{order.id}-{int(timezone.now().timestamp())}"
+                    }
+                )
+
+                # Si es un item digital (o si tiene diseño asignado), disparar activación de Deployment
+                # Esto ya formaba parte de las especificaciones previas
+                if order.deployment:
+                    order.deployment.status = 'ACTIVE'
+                    order.deployment.save()
+
+        except ValidationError as e:
+            return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': f"Error al procesar la asignación de seriales o guardar orden: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Disparar tarea Celery asíncrona de envío de recibo por correo
+        if order.customer_email:
+            try:
+                send_receipt_email_task.delay(order.id)
+            except Exception as e:
+                # Si Celery falla al encolar, registramos el error pero no bloqueamos la respuesta exitosa del POS
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error al encolar send_receipt_email_task para orden #{order.id}: {str(e)}")
+
+        # Retornamos los datos actualizados incluyendo los seriales asignados
+        # Serializamos usando OrderSerializer para incluir items con sus serial_keys
+        serialized_order = OrderSerializer(order).data
+
         return Response({
             'success': True,
-            'order_id': order.id,
-            'status': order.status,
-            'payment_method': payment_method
+            'order': serialized_order,
+            'message': 'Venta procesada exitosamente y recibo encolado por correo.'
         })
 
     def _get_user_profile(self):
@@ -169,6 +228,131 @@ class OrderViewSet(viewsets.ModelViewSet):
                     amount=commission_amount,
                     percentage=profile.base_commission_rate
                 )
+
+    @action(detail=True, methods=['post'], url_path='send-email')
+    def send_email_receipt(self, request, pk=None):
+        from .tasks import send_receipt_email_task
+        order = self.get_object()
+        
+        email = request.data.get('email')
+        if email:
+            order.customer_email = email
+            order.save()
+            
+        if not order.customer_email:
+            return Response({'error': 'La orden no tiene un correo de cliente asociado y no se proporcionó uno nuevo.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            send_receipt_email_task.delay(order.id)
+            return Response({'success': True, 'message': f'Recibo encolado exitosamente para enviarse a {order.customer_email}'})
+        except Exception as e:
+            return Response({'error': f'No se pudo encolar el correo: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'], url_path='issue-cfdi')
+    def issue_cfdi(self, request, pk=None):
+        import uuid
+        from django.core.exceptions import ValidationError as DjangoValidationError
+        from rest_framework.exceptions import ValidationError
+        from .models import Invoice
+        from .serializers import InvoiceSerializer
+        
+        order = self.get_object()
+        
+        # Validar si ya cuenta con factura
+        if hasattr(order, 'invoice') and order.invoice:
+            return Response({
+                'error': 'Esta orden ya cuenta con una factura CFDI 4.0 timbrada.',
+                'invoice': InvoiceSerializer(order.invoice).data
+            }, status=status.HTTP_400_BAD_REQUEST)
+            
+        rfc = request.data.get('rfc', '').strip().upper()
+        razon_social = request.data.get('razon_social', '').strip()
+        codigo_postal = request.data.get('codigo_postal', '').strip()
+        regimen_fiscal = request.data.get('regimen_fiscal', '').strip()
+        uso_cfdi = request.data.get('uso_cfdi', '').strip()
+        
+        # Validaciones de reglas SAT para CFDI 4.0
+        errors = {}
+        if not rfc or len(rfc) not in [12, 13]:
+            errors['rfc'] = 'El RFC debe tener exactamente 12 (Persona Moral) o 13 (Persona Física) caracteres.'
+        if not razon_social:
+            errors['razon_social'] = 'La Razón Social es requerida.'
+        if not codigo_postal or len(codigo_postal) != 5 or not codigo_postal.isdigit():
+            errors['codigo_postal'] = 'El Código Postal debe ser numérico y tener 5 dígitos.'
+        if not regimen_fiscal or len(regimen_fiscal) != 3 or not regimen_fiscal.isdigit():
+            errors['regimen_fiscal'] = 'El Régimen Fiscal debe ser una clave SAT válida de 3 dígitos.'
+        if not uso_cfdi or len(uso_cfdi) != 3:
+            errors['uso_cfdi'] = 'El Uso de CFDI debe ser una clave SAT válida de 3 caracteres.'
+            
+        if errors:
+            return Response(errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        # ==============================================================================
+        # PROVEEDOR DE FACTURACIÓN (PAC) - INFORMACIÓN PARA EL USUARIO
+        # ==============================================================================
+        # TODO: En producción, para realizar el timbrado real del CFDI 4.0 con el SAT:
+        #
+        # Proveedor Seleccionado: Facturapi (https://www.facturapi.com) u otro PAC (Quadrum/Finkok).
+        # API Endpoint real de Facturapi para crear Facturas:
+        #   POST https://api.facturapi.com/v1/invoices
+        #
+        # Autenticación:
+        #   Mediante Header: Authorization: Bearer <API_KEY_PRIVADA>
+        #
+        # Estructura del payload sugerido para Facturapi:
+        #   {
+        #       "customer": {
+        #           "legal_name": razon_social,
+        #           "tax_id": rfc,
+        #           "tax_system": regimen_fiscal,
+        #           "address": { "zip": codigo_postal }
+        #       },
+        #       "items": [
+        #           {
+        #               "quantity": item.quantity,
+        #               "product": {
+        #                   "description": item.product.name,
+        #                   "price": float(item.price_at_sale),
+        #                   "product_key": "43231500",  # Clave SAT de Software / Licencias Digitales
+        #                   "unit_key": "H87"           # Clave SAT de Unidad de Servicio (Pieza/Servicio)
+        #               }
+        #           } for item in order.items.all()
+        #       ],
+        #       "use": uso_cfdi,
+        #       "payment_form": "01" if order.payment.payment_method == "CASH" else "04", # 01: Efectivo, 04: Tarjeta
+        #       "payment_method": "PUE" # Pago en una sola exhibición
+        #   }
+        #
+        # Al recibir la respuesta exitosa del PAC, se extraería el UUID y las URLs
+        # oficiales del PDF y XML timbrados para guardarlas en la BD de ECOSYS.
+        # ==============================================================================
+
+        # Simulación de Timbrado Mock
+        sat_uuid = str(uuid.uuid4()).upper()
+        pdf_url_mock = f"https://api.invtzn.local/media/invoices/{sat_uuid}.pdf"
+        xml_url_mock = f"https://api.invtzn.local/media/invoices/{sat_uuid}.xml"
+        
+        try:
+            invoice = Invoice.objects.create(
+                order=order,
+                rfc=rfc,
+                razon_social=razon_social,
+                codigo_postal=codigo_postal,
+                regimen_fiscal=regimen_fiscal,
+                uso_cfdi=uso_cfdi,
+                uuid=sat_uuid,
+                pdf_url=pdf_url_mock,
+                xml_url=xml_url_mock
+            )
+            
+            return Response({
+                'success': True,
+                'message': 'Factura timbrada exitosamente (Simulación CFDI 4.0 SAT).',
+                'invoice': InvoiceSerializer(invoice).data
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response({'error': f'Error al registrar la factura en base de datos: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CashSessionViewSet(viewsets.ModelViewSet):
     serializer_class = CashSessionSerializer

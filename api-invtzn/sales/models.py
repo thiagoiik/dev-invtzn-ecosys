@@ -28,6 +28,7 @@ class Order(models.Model):
     status = models.CharField(max_length=20, choices=StatusChoices.choices, default=StatusChoices.PENDING)
     origin = models.CharField(max_length=20, choices=OriginChoices.choices, default=OriginChoices.ONLINE)
     store = models.ForeignKey('inventory.Store', on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
+    customer_email = models.EmailField(blank=True, null=True, help_text="Correo electrónico para enviar el recibo")
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -87,3 +88,18 @@ class Commission(models.Model):
 
     def __str__(self):
         return f"Comisión de ${self.amount} para Vendedor {self.vendor_id}"
+
+class Invoice(models.Model):
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='invoice')
+    rfc = models.CharField(max_length=13)
+    razon_social = models.CharField(max_length=255)
+    codigo_postal = models.CharField(max_length=5)
+    regimen_fiscal = models.CharField(max_length=3)
+    uso_cfdi = models.CharField(max_length=3)
+    uuid = models.CharField(max_length=36, unique=True, help_text="Folio Fiscal SAT (UUID)")
+    pdf_url = models.URLField(max_length=500, blank=True, null=True)
+    xml_url = models.URLField(max_length=500, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"CFDI {self.uuid} - Orden #{self.order.id} ({self.rfc})"

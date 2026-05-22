@@ -1,15 +1,26 @@
 from rest_framework import serializers
-from .models import Order, CashSession, Commission, OrderItem
+from .models import Order, CashSession, Commission, OrderItem, Invoice
 from inventory.models import Product
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    serial_keys = serializers.SerializerMethodField()
+
     class Meta:
         model = OrderItem
-        fields = ('product', 'quantity', 'price_at_sale')
+        fields = ('product', 'quantity', 'price_at_sale', 'serial_keys')
+
+    def get_serial_keys(self, obj):
+        return list(obj.serial_keys.values_list('key_value', flat=True))
+
+class InvoiceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Invoice
+        fields = '__all__'
 
 class OrderSerializer(serializers.ModelSerializer):
     user = serializers.IntegerField(required=False)
     items = OrderItemSerializer(many=True, required=False)
+    invoice = InvoiceSerializer(read_only=True, required=False)
     
     class Meta:
         model = Order

@@ -1,5 +1,26 @@
 <template>
   <div class="space-y-6">
+    <!-- Banner de Estado de Conexión (Online/Offline) -->
+    <div v-if="isOffline" class="flex items-center gap-3 bg-amber-500 text-white p-4 rounded-2xl shadow-md border border-amber-600 animate-pulse">
+      <div class="bg-amber-600/30 p-2 rounded-full">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-3.536 4.978 4.978 0 011.414-3.536m0 0L5.636 5.636M8.464 15.536L5.636 18.364m0 0L3 21m3.636-15.364l2.829 2.829m-2.829-2.829L3 3" />
+        </svg>
+      </div>
+      <div>
+        <h4 class="font-bold">Modo Sin Conexión (Offline) Activo</h4>
+        <p class="text-xs opacity-90">Los cobros están limitados a EFECTIVO (CASH). El catálogo se cargó desde la memoria local. Las ventas se sincronizarán al recuperar la red.</p>
+      </div>
+    </div>
+
+    <div v-if="syncingQueue" class="flex items-center gap-3 bg-indigo-600 text-white p-4 rounded-2xl shadow-md border border-indigo-700">
+      <span class="loading loading-spinner loading-md"></span>
+      <div>
+        <h4 class="font-bold">Sincronizando Ventas Locales</h4>
+        <p class="text-xs opacity-90">Enviando órdenes registradas offline al servidor. Por favor no cierres la ventana.</p>
+      </div>
+    </div>
+
     <!-- Header dinámico con tienda -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
       <div>
@@ -8,8 +29,12 @@
           {{ assignedStore ? `Sucursal: ${assignedStore.name}` : 'Modo Venta a Distancia' }}
         </p>
       </div>
-      <div class="flex gap-3">
-        <button v-if="activeSession" class="btn btn-outline btn-error" @click="closeSession">
+      <div class="flex gap-3 items-center">
+        <!-- Indicador de cola offline pendiente -->
+        <span v-if="offlineQueueLength > 0" class="badge badge-warning font-bold p-3">
+          {{ offlineQueueLength }} Ventas Offline Pendientes
+        </span>
+        <button v-if="activeSession && !isOffline" class="btn btn-outline btn-error" @click="closeSession">
           Cerrar Turno
         </button>
         <div class="badge badge-primary p-4 font-bold uppercase">{{ vendorMode }}</div>
@@ -17,7 +42,7 @@
     </div>
 
     <!-- Pantalla de Bloqueo: Apertura de Turno (Solo para Vendedores Físicos) -->
-    <div v-if="vendorMode === 'PHYSICAL' && !activeSession" class="flex justify-center py-20">
+    <div v-if="vendorMode === 'PHYSICAL' && !activeSession && !isOffline" class="flex justify-center py-20">
       <div class="card w-96 bg-white shadow-xl border border-primary/20">
         <div class="card-body text-center">
           <div class="bg-primary/10 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4 text-primary">
@@ -38,7 +63,7 @@
       </div>
     </div>
 
-    <!-- Interfaz de Venta (Visible si hay sesión o si es remoto) -->
+    <!-- Interfaz de Venta (Visible si hay sesión, si es remoto, o si está offline) -->
     <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-8">
       <!-- Columna Izquierda: Búsqueda y Selección de Producto -->
       <div class="md:col-span-2 space-y-6">
@@ -64,6 +89,9 @@
                 <div>
                   <h3 class="font-bold text-slate-800">{{ prod.name }}</h3>
                   <span v-if="prod.sku" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono font-bold mt-1 inline-block">SKU: {{ prod.sku }}</span>
+                  <span class="ml-1 text-[10px] px-2 py-0.5 rounded font-bold" :class="prod.is_physical ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'">
+                    {{ prod.is_physical ? 'Físico' : 'Digital' }}
+                  </span>
                 </div>
                 <span class="text-primary font-black shrink-0">${{ parseFloat(prod.base_price).toFixed(2) }}</span>
               </div>
@@ -125,37 +153,59 @@
             <h3 class="text-lg font-bold text-slate-800 border-b pb-4 mb-4">Finalizar Venta</h3>
             
             <!-- Buscador de Cliente -->
-            <div class="form-control w-full mb-6">
-              <label class="label">
-                <span class="label-text font-bold">ID del Cliente (api-auth)</span>
+            <div class="form-control w-full mb-4">
+              <label class="label justify-between items-center">
+                <span class="label-text font-bold">Cliente</span>
+                <button 
+                  type="button" 
+                  class="text-xs text-primary font-bold hover:underline"
+                  @click="selectPublicCustomer"
+                >
+                  Público General
+                </button>
               </label>
               <div class="join w-full">
                 <input 
                   v-model="customerSearchId" 
                   type="number" 
-                  placeholder="Ej: 14" 
+                  placeholder="ID Cliente (ej: 14)" 
                   class="input input-bordered join-item w-full" 
+                  :disabled="isOffline"
                 />
                 <button 
-                  class="btn btn-primary join-item" 
+                  class="btn btn-primary join-item animate-hover" 
                   @click="findCustomer" 
-                  :disabled="searching"
+                  :disabled="searching || isOffline"
                 >
                   <span v-if="searching" class="loading loading-spinner loading-xs"></span>
                   Buscar
                 </button>
               </div>
-              <div v-if="customer" class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
+              <div v-if="customer" class="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
                 <div class="bg-green-500 text-white rounded-full p-1">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                   </svg>
                 </div>
-                <div>
-                  <p class="text-sm font-bold text-green-800">{{ customer.full_name || 'Sin Nombre' }}</p>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-bold text-green-800 truncate">{{ customer.full_name || 'Sin Nombre' }}</p>
                   <p class="text-xs text-green-600">ID #{{ customer.remote_auth_id }} - {{ customer.custom_role }}</p>
                 </div>
+                <button @click="clearCustomer" class="btn btn-xs btn-ghost btn-circle text-slate-400">×</button>
               </div>
+            </div>
+
+            <!-- Email de Recibo -->
+            <div class="form-control w-full mb-4">
+              <label class="label">
+                <span class="label-text font-bold text-slate-700">Correo para Recibo</span>
+              </label>
+              <input 
+                v-model="customerEmail" 
+                type="email" 
+                placeholder="correo@ejemplo.com" 
+                class="input input-bordered w-full font-semibold" 
+              />
             </div>
 
             <!-- Método de Pago -->
@@ -165,14 +215,14 @@
               </label>
               <select v-model="paymentMethod" class="select select-bordered w-full font-semibold">
                 <option v-if="vendorMode !== 'REMOTE'" value="CASH">💵 Efectivo (Cierre Inmediato)</option>
-                <option v-if="vendorMode !== 'REMOTE'" value="CARD">💳 Tarjeta (Terminal Física)</option>
-                <option value="BANK_TRANSFER">📲 Transferencia Bancaria (Referenciada)</option>
-                <option value="OXXO">🏪 OXXO Referenciado</option>
+                <option v-if="vendorMode !== 'REMOTE' && !isOffline" value="CARD">💳 Tarjeta (Terminal Física)</option>
+                <option v-if="!isOffline" value="BANK_TRANSFER">📲 Transferencia Bancaria (Referenciada)</option>
+                <option v-if="!isOffline" value="OXXO">🏪 OXXO Referenciado</option>
               </select>
             </div>
 
             <!-- Descuento Directo (Solo ADMIN o FRANCHISEE) -->
-            <div v-if="userRole === 'ADMIN' || userRole === 'FRANCHISEE'" class="form-control w-full mb-6">
+            <div v-if="(userRole === 'ADMIN' || userRole === 'FRANCHISEE') && !isOffline" class="form-control w-full mb-6">
               <label class="label">
                 <span class="label-text font-bold text-slate-700">Descuento Directo ($)</span>
               </label>
@@ -209,14 +259,14 @@
 
             <!-- Botón Acción -->
             <button 
-              class="btn btn-primary btn-block h-16 text-lg" 
+              class="btn btn-primary btn-block h-16 text-lg animate-hover" 
               :disabled="cart.length === 0 || !customer || processing"
               @click="processSale"
             >
               <span v-if="processing" class="loading loading-spinner"></span>
-              Registrar Venta Directa
+              {{ isOffline ? 'Registrar Pago Offline (Efectivo)' : 'Registrar Venta Directa' }}
             </button>
-            <p v-if="!customer" class="text-xs text-center text-slate-400 mt-4 italic">Debes buscar y validar un cliente primero.</p>
+            <p v-if="!customer" class="text-xs text-center text-slate-400 mt-4 italic">Debes seleccionar o buscar un cliente primero.</p>
           </div>
         </div>
       </div>
@@ -323,11 +373,199 @@
         </div>
       </div>
     </div>
+
+    <!-- MODAL DE ÉXITO DE VENTA POS PREMIUM (IMPRESIÓN, CORREO, FACTURACIÓN) -->
+    <div v-if="showSuccessModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-50 animate-fade-in p-4 overflow-y-auto">
+      <div class="card w-full max-w-lg bg-white shadow-2xl border border-slate-200 animate-slide-up my-auto">
+        <div class="card-body p-6">
+          <div class="text-center mb-6">
+            <div class="bg-green-100 text-green-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 class="text-2xl font-black text-slate-800">
+              {{ successOrder?.isOffline ? 'Cobro Registrado (Offline)' : 'Cobro Completado con Éxito' }}
+            </h3>
+            <p class="text-xs text-slate-400 mt-1">Orden ID: {{ successOrder?.id }}</p>
+          </div>
+
+          <!-- Desglose breve -->
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 text-sm space-y-3 mb-6">
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-medium">Cliente:</span>
+              <span class="font-bold text-slate-800">{{ successOrder?.isOffline ? successOrder?.customer_name : (customer?.full_name || 'Mostrador') }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-500 font-medium">Método de Pago:</span>
+              <span class="badge badge-success font-black text-white text-xs">
+                {{ successOrder?.isOffline ? 'CASH (Offline)' : successOrder?.payment?.payment_method || 'CASH' }}
+              </span>
+            </div>
+            <div class="divider my-1"></div>
+            <div class="flex justify-between font-bold text-base text-slate-800">
+              <span>Total Pagado:</span>
+              <span class="text-primary font-black">${{ parseFloat(successOrder?.total_amount).toFixed(2) }} MXN</span>
+            </div>
+
+            <!-- Seriales Digitales Asignados -->
+            <div v-if="hasDigitalProducts" class="mt-4 pt-3 border-t border-slate-200">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wide block mb-2">Claves de Invitación Digital:</span>
+              <div class="space-y-2">
+                <div v-for="item in successOrder.items" :key="item.product">
+                  <div v-if="item.serial_keys && item.serial_keys.length > 0" class="bg-white p-2.5 rounded-lg border border-slate-200">
+                    <span class="text-xs font-bold text-slate-700 block mb-1">
+                      {{ getProductNameById(item.product) }}:
+                    </span>
+                    <div class="flex flex-wrap gap-1.5">
+                      <span v-for="key in item.serial_keys" :key="key" class="bg-slate-100 text-slate-800 border border-slate-200 font-mono font-bold text-xs px-2.5 py-1 rounded">
+                        {{ key }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reenvío de Recibo por Correo -->
+          <div v-if="!successOrder?.isOffline" class="border-t border-slate-100 pt-4 mb-6">
+            <h4 class="font-bold text-slate-800 text-sm mb-2 flex items-center gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              Reenviar Recibo Electrónico
+            </h4>
+            <div class="join w-full">
+              <input 
+                v-model="emailResendInput" 
+                type="email" 
+                placeholder="correo@alternativo.com" 
+                class="input input-sm input-bordered join-item w-full"
+              />
+              <button 
+                class="btn btn-sm btn-indigo join-item text-white bg-indigo-600 hover:bg-indigo-700" 
+                @click="resendReceipt"
+                :disabled="emailSending || !emailResendInput"
+              >
+                <span v-if="emailSending" class="loading loading-spinner loading-xs"></span>
+                Enviar
+              </button>
+            </div>
+          </div>
+
+          <!-- Sección de Facturación CFDI 4.0 -->
+          <div v-if="!successOrder?.isOffline" class="border-t border-slate-100 pt-4 mb-6">
+            <div class="flex justify-between items-center mb-3">
+              <h4 class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Facturación SAT CFDI 4.0 (México)
+              </h4>
+              <button 
+                v-if="!showCFDIForm && !billingInvoice"
+                class="btn btn-xs btn-outline btn-primary"
+                @click="showCFDIForm = true"
+              >
+                Solicitar Factura
+              </button>
+            </div>
+
+            <!-- Formulario de Factura -->
+            <div v-if="showCFDIForm" class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+              <div class="grid grid-cols-2 gap-3">
+                <div class="form-control">
+                  <label class="label py-1"><span class="label-text text-[11px] font-bold text-slate-600">RFC</span></label>
+                  <input v-model="billingRFC" type="text" placeholder="XAXX010101000" class="input input-xs input-bordered font-mono font-bold uppercase" />
+                </div>
+                <div class="form-control">
+                  <label class="label py-1"><span class="label-text text-[11px] font-bold text-slate-600">Código Postal (CP)</span></label>
+                  <input v-model="billingCP" type="text" placeholder="00000" class="input input-xs input-bordered font-mono" />
+                </div>
+              </div>
+              <div class="form-control">
+                <label class="label py-1"><span class="label-text text-[11px] font-bold text-slate-600">Razón Social</span></label>
+                <input v-model="billingRazonSocial" type="text" placeholder="PÚBLICO GENERAL" class="input input-xs input-bordered" />
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div class="form-control">
+                  <label class="label py-1"><span class="label-text text-[11px] font-bold text-slate-600">Régimen Fiscal</span></label>
+                  <select v-model="billingRegimen" class="select select-xs select-bordered font-medium">
+                    <option value="601">601 - General de Ley Personas Morales</option>
+                    <option value="605">605 - Sueldos y Salarios</option>
+                    <option value="616">616 - Sin obligaciones fiscales</option>
+                    <option value="626">626 - Régimen Simplificado de Confianza (RESICO)</option>
+                  </select>
+                </div>
+                <div class="form-control">
+                  <label class="label py-1"><span class="label-text text-[11px] font-bold text-slate-600">Uso de CFDI</span></label>
+                  <select v-model="billingUso" class="select select-xs select-bordered font-medium">
+                    <option value="G03">G03 - Gastos en general</option>
+                    <option value="D01">D01 - Honorarios médicos</option>
+                    <option value="S01">S01 - Sin efectos fiscales</option>
+                    <option value="CP01">CP01 - Pagos</option>
+                  </select>
+                </div>
+              </div>
+              <div class="flex gap-2 pt-2 justify-end">
+                <button class="btn btn-xs btn-ghost" @click="showCFDIForm = false" :disabled="billingLoading">Cancelar</button>
+                <button class="btn btn-xs btn-primary text-white" @click="submitCFDI" :disabled="billingLoading">
+                  <span v-if="billingLoading" class="loading loading-spinner loading-xs"></span>
+                  Timbrar Factura
+                </button>
+              </div>
+            </div>
+
+            <!-- Información de Factura Timbrada -->
+            <div v-if="billingInvoice" class="bg-indigo-50 border border-indigo-200 p-4 rounded-xl space-y-3">
+              <div class="flex items-center gap-2 text-indigo-800">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span class="font-bold text-sm">CFDI 4.0 Timbrado Exitosamente</span>
+              </div>
+              <div class="text-xs text-indigo-700 font-mono space-y-1 bg-white p-2.5 rounded-lg border border-indigo-100">
+                <p><span class="font-bold">RFC:</span> {{ billingInvoice.rfc }}</p>
+                <p><span class="font-bold">UUID:</span> {{ billingInvoice.uuid }}</p>
+              </div>
+              <div class="flex gap-2">
+                <a :href="billingInvoice.xml_url" target="_blank" download class="btn btn-xs bg-indigo-600 hover:bg-indigo-700 text-white border-0 flex-1">
+                  📥 Descargar XML
+                </a>
+                <a :href="billingInvoice.pdf_url" target="_blank" download class="btn btn-xs bg-indigo-600 hover:bg-indigo-700 text-white border-0 flex-1">
+                  📥 Descargar PDF
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botones de Acción Principales -->
+          <div class="flex flex-col sm:flex-row gap-3 border-t border-slate-100 pt-5 mt-4">
+            <button 
+              class="btn btn-neutral flex-1 h-12 text-sm flex items-center justify-center gap-2 animate-hover"
+              @click="handlePrint"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-3a2 2 0 00-2-2H9a2 2 0 00-2 2v3a2 2 0 002 2zm5-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h5z" />
+              </svg>
+              Imprimir Ticket
+            </button>
+            <button 
+              class="btn btn-primary flex-1 h-12 text-sm text-white animate-hover" 
+              @click="closeSuccessModal"
+            >
+              Nueva Venta
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useToast } from 'vue-toastification';
 import { catalogService } from '@/modules/ecommerce/services/catalogService';
 import { crmService } from '@/modules/workspace/services/crmService';
@@ -344,9 +582,15 @@ const cart = ref([]);
 
 const customerSearchId = ref('');
 const customer = ref(null);
+const customerEmail = ref('');
 const searching = ref(false);
 
 const processing = ref(false);
+
+// Conexión y Offline
+const isOffline = ref(!navigator.onLine);
+const syncingQueue = ref(false);
+const offlineQueueLength = ref(0);
 
 // Perfil y Tienda
 const vendorMode = ref('REMOTE');
@@ -373,6 +617,22 @@ const closeResult = ref(null);
 const whatsappMessage = ref('');
 const paymentMethod = ref('CASH');
 
+// Modal de éxito y sus campos
+const showSuccessModal = ref(false);
+const successOrder = ref(null);
+const emailResendInput = ref('');
+const emailSending = ref(false);
+
+// Facturación
+const showCFDIForm = ref(false);
+const billingRFC = ref('');
+const billingRazonSocial = ref('');
+const billingCP = ref('');
+const billingRegimen = ref('601');
+const billingUso = ref('G03');
+const billingInvoice = ref(null);
+const billingLoading = ref(false);
+
 const filteredProducts = computed(() => {
   if (!searchQuery.value) return products.value;
   const q = searchQuery.value.toLowerCase();
@@ -398,6 +658,14 @@ const totalAmount = computed(() => {
   return tot > 0 ? tot : 0;
 });
 
+const hasDigitalProducts = computed(() => {
+  if (!successOrder.value || !successOrder.value.items) return false;
+  return successOrder.value.items.some(item => {
+    const prod = products.value.find(p => p.id === item.product);
+    return prod && !prod.is_physical;
+  });
+});
+
 // Watchers para validar limites de descuento
 watch(subtotalAmount, (newSubtotal) => {
   if (discountAmount.value > newSubtotal) {
@@ -412,6 +680,23 @@ watch(discountAmount, (newDiscount) => {
     discountAmount.value = subtotalAmount.value;
   }
 });
+
+// Listener de estado de conexión
+const updateOnlineStatus = () => {
+  isOffline.value = !navigator.onLine;
+  if (!isOffline.value) {
+    syncOfflineQueue();
+  } else {
+    // Si pasa a offline, forzamos método de pago CASH
+    paymentMethod.value = 'CASH';
+    toast.warning('Te has quedado sin conexión. Los cobros se limitan a EFECTIVO.');
+  }
+};
+
+const updateOfflineQueueLength = () => {
+  const queue = JSON.parse(localStorage.getItem('pos_offline_queue') || '[]');
+  offlineQueueLength.value = queue.length;
+};
 
 const addToCart = (product) => {
   const existing = cart.value.find(item => item.product.id === product.id);
@@ -444,7 +729,33 @@ const removeFromCart = (item) => {
   toast.info(`Quitado del carrito: ${item.product.name}`);
 };
 
+const selectPublicCustomer = () => {
+  customerSearchId.value = '';
+  customer.value = {
+    remote_auth_id: 1,
+    full_name: 'Público General',
+    custom_role: 'CLIENT',
+    email: ''
+  };
+  customerEmail.value = '';
+  toast.success('Cliente Mostrador (Público General) seleccionado.');
+};
+
+const clearCustomer = () => {
+  customer.value = null;
+  customerSearchId.value = '';
+  customerEmail.value = '';
+};
+
 const initProfileData = async () => {
+  if (isOffline.value) {
+    // Modo offline básico
+    vendorMode.value = 'PHYSICAL';
+    userRole.value = 'VENDOR';
+    paymentMethod.value = 'CASH';
+    return;
+  }
+
   try {
     const resProfile = await profileService.fetchMyProfile();
     vendorMode.value = resProfile.data.vendor_mode;
@@ -473,6 +784,10 @@ const initProfileData = async () => {
 };
 
 const startShift = async () => {
+  if (isOffline.value) {
+    toast.error('No puedes abrir turno de caja sin conexión.');
+    return;
+  }
   if (!assignedStore.value) {
     toast.error('No tienes una sucursal asignada. Contacta al Admin.');
     return;
@@ -528,9 +843,22 @@ const copyWhatsappMessage = async () => {
 
 const fetchProducts = async () => {
   loadingProducts.value = true;
+  if (isOffline.value) {
+    const cached = localStorage.getItem('pos_cached_products');
+    if (cached) {
+      products.value = JSON.parse(cached);
+      toast.info('Catálogo cargado desde la memoria caché local.');
+    } else {
+      toast.error('Catálogo no disponible. Conéctate a internet para cargarlo la primera vez.');
+    }
+    loadingProducts.value = false;
+    return;
+  }
+
   try {
     const res = await catalogService.fetchProducts();
     products.value = res.data;
+    localStorage.setItem('pos_cached_products', JSON.stringify(res.data));
   } catch (e) {
     toast.error('Error al cargar productos');
   } finally {
@@ -542,9 +870,12 @@ const findCustomer = async () => {
   if (!customerSearchId.value) return;
   searching.value = true;
   customer.value = null;
+  customerEmail.value = '';
   try {
     const res = await crmService.searchProfile(customerSearchId.value);
     customer.value = res.data;
+    // Autocompletar el email si el cliente tiene uno en api-auth
+    customerEmail.value = res.data.email || '';
     toast.success('Cliente validado');
   } catch (e) {
     toast.error('Cliente no encontrado');
@@ -553,8 +884,117 @@ const findCustomer = async () => {
   }
 };
 
+// Guardar venta en local storage (offline)
+const queueOfflineSale = () => {
+  const tempOrderId = 'OFF-' + Date.now();
+  const offlineOrder = {
+    id: tempOrderId,
+    user: customer.value.remote_auth_id,
+    customer_name: customer.value.full_name,
+    customer_email: customerEmail.value,
+    subtotal_amount: subtotalAmount.value,
+    discount_amount: discountAmount.value,
+    tax_amount: taxAmount.value,
+    total_amount: totalAmount.value,
+    payment_method: 'CASH',
+    items: cart.value.map(item => ({
+      product: item.product.id,
+      quantity: item.quantity,
+      price_at_sale: parseFloat(item.price),
+      serial_keys: [] // Offline no podemos asignar llaves digitales
+    })),
+    created_at: new Date().toISOString(),
+    isOffline: true
+  };
+
+  const queue = JSON.parse(localStorage.getItem('pos_offline_queue') || '[]');
+  queue.push(offlineOrder);
+  localStorage.setItem('pos_offline_queue', JSON.stringify(queue));
+  updateOfflineQueueLength();
+
+  successOrder.value = offlineOrder;
+  showSuccessModal.value = true;
+  
+  toast.success('Cobro en efectivo guardado localmente (Offline).');
+
+  // Limpiar carrito
+  cart.value = [];
+  discountAmount.value = 0;
+  customer.value = null;
+  customerSearchId.value = '';
+  customerEmail.value = '';
+};
+
+// Sincronizar cola offline al volver a internet
+const syncOfflineQueue = async () => {
+  if (isOffline.value || syncingQueue.value) return;
+  const queue = JSON.parse(localStorage.getItem('pos_offline_queue') || '[]');
+  if (queue.length === 0) return;
+
+  syncingQueue.value = true;
+  let successCount = 0;
+
+  for (let i = 0; i < queue.length; i++) {
+    const offlineOrder = queue[i];
+    try {
+      // 1. Crear orden
+      const payload = {
+        user: offlineOrder.user,
+        subtotal_amount: offlineOrder.subtotal_amount.toFixed(2),
+        discount_amount: offlineOrder.discount_amount.toFixed(2),
+        tax_amount: offlineOrder.tax_amount.toFixed(2),
+        total_amount: offlineOrder.total_amount.toFixed(2),
+        status: 'PENDING',
+        customer_email: offlineOrder.customer_email || null,
+        items: offlineOrder.items.map(item => ({
+          product: item.product,
+          quantity: item.quantity,
+          price_at_sale: item.price_at_sale.toFixed(2)
+        }))
+      };
+
+      const orderRes = await orderService.createOrder(payload);
+      const serverOrderId = orderRes.data.id;
+
+      // 2. Completar POS
+      await orderService.completePosOrder(serverOrderId, 'CASH', offlineOrder.customer_email || null);
+      successCount++;
+    } catch (e) {
+      console.error('Error sincronizando orden offline:', offlineOrder, e);
+      toast.error(`No se pudo sincronizar la venta local con fecha ${new Date(offlineOrder.created_at).toLocaleDateString()}. Queda retenida.`);
+    }
+  }
+
+  // Filtrar de la cola las que se sincronizaron con éxito (removiendo las primeras N exitosas)
+  // En caso de que hayan fallado en orden aleatorio, lo más seguro es recrear la cola removiendo las exitosas.
+  // Como lo hicimos de forma secuencial, removemos las primeras exitosas si no falló a la mitad.
+  // Por simplicidad, si todas fueron exitosas vaciamos, de lo contrario dejamos solo las fallidas.
+  const remainingQueue = JSON.parse(localStorage.getItem('pos_offline_queue') || '[]');
+  // Si todas salieron bien:
+  if (successCount === remainingQueue.length) {
+    localStorage.setItem('pos_offline_queue', '[]');
+  } else {
+    // Quitar las exitosas (las primeras N)
+    remainingQueue.splice(0, successCount);
+    localStorage.setItem('pos_offline_queue', JSON.stringify(remainingQueue));
+  }
+
+  updateOfflineQueueLength();
+  syncingQueue.value = false;
+  if (successCount > 0) {
+    toast.success(`Sincronización exitosa: ${successCount} ventas enviadas al servidor.`);
+    initProfileData();
+  }
+};
+
 const processSale = async () => {
   if (cart.value.length === 0 || !customer.value) return;
+
+  if (isOffline.value) {
+    queueOfflineSale();
+    return;
+  }
+
   processing.value = true;
   try {
     // 1. Crear la orden en estado PENDING con múltiples ítems
@@ -565,6 +1005,7 @@ const processSale = async () => {
       tax_amount: taxAmount.value.toFixed(2),
       total_amount: totalAmount.value.toFixed(2),
       status: 'PENDING',
+      customer_email: customerEmail.value || null,
       items: cart.value.map(item => ({
         product: item.product.id,
         quantity: item.quantity,
@@ -577,8 +1018,14 @@ const processSale = async () => {
 
     // 2. Determinar flujo según el método de pago seleccionado
     if (paymentMethod.value === 'CASH' || paymentMethod.value === 'CARD') {
-      // Completar cobro presencial de inmediato
-      await orderService.completePosOrder(orderId, paymentMethod.value);
+      // Completar cobro presencial de inmediato enviando email de recibo si se especificó
+      const completeRes = await orderService.completePosOrder(orderId, paymentMethod.value, customerEmail.value || null);
+      
+      // La respuesta exitosa contiene la orden con seriales
+      successOrder.value = completeRes.data.order;
+      emailResendInput.value = customerEmail.value;
+      showSuccessModal.value = true;
+
       toast.success(`Venta completada con éxito en ${paymentMethod.value === 'CASH' ? 'Efectivo' : 'Tarjeta'}`);
     } else if (paymentMethod.value === 'OXXO') {
       // Generar mensaje OXXO referenciado
@@ -602,25 +1049,209 @@ const processSale = async () => {
       toast.success('Orden registrada. En espera de transferencia.');
     }
 
+    // Limpiar campos de venta actual
     cart.value = [];
     discountAmount.value = 0;
     customer.value = null;
     customerSearchId.value = '';
+    customerEmail.value = '';
     
     // Recargar comisiones y estado de caja
     initProfileData();
   } catch (e) {
     console.error(e);
-    const errorMsg = e.response?.data?.error || 'Error al procesar la venta.';
+    const errorMsg = e.response?.data?.error || e.response?.data?.message || 'Error al procesar la venta.';
     toast.error(errorMsg);
   } finally {
     processing.value = false;
   }
 };
 
+const getProductNameById = (id) => {
+  const prod = products.value.find(p => p.id === id);
+  return prod ? prod.name : `Producto #${id}`;
+};
+
+// Reenviar Recibo Manual
+const resendReceipt = async () => {
+  if (!successOrder.value || !emailResendInput.value) return;
+  emailSending.value = true;
+  try {
+    await orderService.sendReceiptEmail(successOrder.value.id, emailResendInput.value);
+    toast.success(`Recibo enviado exitosamente a ${emailResendInput.value}`);
+  } catch (e) {
+    toast.error('Error al enviar el recibo por correo.');
+  } finally {
+    emailSending.value = false;
+  }
+};
+
+// Timbrar Factura CFDI 4.0
+const submitCFDI = async () => {
+  if (!successOrder.value) return;
+  billingLoading.value = true;
+  try {
+    const payload = {
+      rfc: billingRFC.value,
+      razon_social: billingRazonSocial.value,
+      codigo_postal: billingCP.value,
+      regimen_fiscal: billingRegimen.value,
+      uso_cfdi: billingUso.value
+    };
+    const res = await orderService.issueCFDI(successOrder.value.id, payload);
+    billingInvoice.value = res.data.invoice;
+    showCFDIForm.value = false;
+    toast.success('Factura CFDI 4.0 generada correctamente.');
+  } catch (e) {
+    console.error(e);
+    const errObj = e.response?.data || {};
+    // Mostrar el primer error de validación
+    const keys = Object.keys(errObj);
+    if (keys.length > 0) {
+      toast.error(errObj[keys[0]]);
+    } else {
+      toast.error('Error al generar la factura CFDI.');
+    }
+  } finally {
+    billingLoading.value = false;
+  }
+};
+
+// Cierre del modal de éxito
+const closeSuccessModal = () => {
+  showSuccessModal.value = false;
+  successOrder.value = null;
+  emailResendInput.value = '';
+  showCFDIForm.value = false;
+  billingInvoice.value = null;
+  billingRFC.value = '';
+  billingRazonSocial.value = '';
+  billingCP.value = '';
+};
+
+// Imprimir Ticket Courier 80mm
+const handlePrint = () => {
+  if (!successOrder.value) return;
+  
+  const printWindow = window.open('', '_blank', 'width=350,height=600');
+  const storeName = assignedStore.value ? assignedStore.value.name : 'ECOSYS CENTRAL';
+  const storeAddress = assignedStore.value ? assignedStore.value.address : 'Calle Principal #123';
+  
+  // Recopilar items
+  let itemsHtml = '';
+  successOrder.value.items.forEach(item => {
+    const prodName = getProductNameById(item.product);
+    itemsHtml += `
+      <tr>
+        <td colspan="2" style="font-weight:bold; padding-top:6px;">${prodName}</td>
+      </tr>
+      <tr>
+        <td style="font-size:11px;">${item.quantity}x $${parseFloat(item.price_at_sale).toFixed(2)}</td>
+        <td style="text-align:right; font-size:11px;">$${(item.quantity * item.price_at_sale).toFixed(2)}</td>
+      </tr>
+    `;
+    if (item.serial_keys && item.serial_keys.length > 0) {
+      itemsHtml += `
+        <tr>
+          <td colspan="2" style="font-size:9px; font-family:monospace; padding-left:10px; color:#555; word-break:break-all;">
+            Claves:<br>
+            ${item.serial_keys.map(k => `&nbsp;- ${k}`).join('<br>')}
+          </td>
+        </tr>
+      `;
+    }
+  });
+
+  const formattedDate = new Date(successOrder.value.created_at).toLocaleString('es-MX');
+
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Ticket #${successOrder.value.id}</title>
+        <style>
+          @page { margin: 0; }
+          body {
+            font-family: 'Courier New', Courier, monospace;
+            width: 72mm;
+            margin: 0 auto;
+            padding: 10px;
+            font-size: 11px;
+            color: #000;
+            line-height: 1.2;
+          }
+          .text-center { text-align: center; }
+          .header { margin-bottom: 12px; border-bottom: 1px dashed #000; padding-bottom: 8px; }
+          .header h2 { margin: 0; font-size: 15px; font-weight: bold; }
+          .header p { margin: 2px 0; font-size: 9px; }
+          .table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+          .table td { padding: 2px 0; vertical-align: top; }
+          .totals { border-top: 1px dashed #000; padding-top: 5px; margin-bottom: 12px; }
+          .totals table { width: 100%; }
+          .totals td { padding: 2px 0; }
+          .footer { border-top: 1px dashed #000; padding-top: 8px; font-size: 9px; margin-top: 15px; }
+        </style>
+      </head>
+      <body>
+        <div class="header text-center">
+          <h2>ECOSYS</h2>
+          <p>${storeName}</p>
+          <p>${storeAddress}</p>
+          <p>----------------------------</p>
+          <p>Ticket de Venta: #${successOrder.value.id}</p>
+          <p>Fecha: ${formattedDate}</p>
+        </div>
+        <table class="table">
+          ${itemsHtml}
+        </table>
+        <div class="totals">
+          <table>
+            <tr>
+              <td>Subtotal:</td>
+              <td style="text-align:right;">$${parseFloat(successOrder.value.subtotal_amount).toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td>Descuento:</td>
+              <td style="text-align:right;">-$${parseFloat(successOrder.value.discount_amount).toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td>Impuestos:</td>
+              <td style="text-align:right;">$${parseFloat(successOrder.value.tax_amount).toFixed(2)}</td>
+            </tr>
+            <tr style="font-weight:bold; font-size:12px;">
+              <td>TOTAL:</td>
+              <td style="text-align:right;">$${parseFloat(successOrder.value.total_amount).toFixed(2)}</td>
+            </tr>
+          </table>
+        </div>
+        <div class="footer text-center">
+          <p>¡Gracias por tu compra!</p>
+          <p>Este recibo no es deducible.</p>
+          <p>ECOSYS 2026</p>
+        </div>
+        \x3cscript\x3e
+          window.onload = function() {
+            window.print();
+            setTimeout(function() { window.close(); }, 500);
+          }
+        \x3c/script\x3e
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
+
 onMounted(() => {
+  window.addEventListener('online', updateOnlineStatus);
+  window.addEventListener('offline', updateOnlineStatus);
+  updateOfflineQueueLength();
   initProfileData();
   fetchProducts();
+  syncOfflineQueue();
+});
+
+onUnmounted(() => {
+  window.removeEventListener('online', updateOnlineStatus);
+  window.removeEventListener('offline', updateOnlineStatus);
 });
 </script>
 
@@ -630,6 +1261,12 @@ onMounted(() => {
 }
 .animate-slide-up {
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.animate-hover {
+  transition: all 0.2s ease;
+}
+.animate-hover:hover {
+  transform: translateY(-1px);
 }
 @keyframes fadeIn {
   from { opacity: 0; }

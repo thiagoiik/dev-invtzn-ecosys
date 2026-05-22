@@ -116,3 +116,12 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
+
+# Email Configurations
+EMAIL_BACKEND = os.environ.get('AUTH_EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.environ.get('AUTH_EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(os.environ.get('AUTH_EMAIL_PORT', 25))
+EMAIL_HOST_USER = os.environ.get('AUTH_EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('AUTH_EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('AUTH_EMAIL_USE_TLS', 'True') == 'True'
+DEFAULT_FROM_EMAIL = os.environ.get('AUTH_DEFAULT_FROM_EMAIL', 'ECOSYS <no-reply@send.invitazyon.online>')

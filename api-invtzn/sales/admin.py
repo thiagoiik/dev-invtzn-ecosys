@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Order, PaymentTransaction, CashSession, Commission
+from .models import Order, PaymentTransaction, CashSession, Commission, Invoice
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
@@ -23,3 +23,9 @@ class CashSessionAdmin(admin.ModelAdmin):
 class CommissionAdmin(admin.ModelAdmin):
     list_display = ('order', 'vendor_id', 'amount', 'percentage', 'is_paid', 'created_at')
     list_filter = ('is_paid', 'created_at')
+
+@admin.register(Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = ('id', 'order', 'rfc', 'razon_social', 'uuid', 'created_at')
+    list_filter = ('created_at',)
+    search_fields = ('order__id', 'rfc', 'razon_social', 'uuid')

@@ -25,9 +25,17 @@ export const orderService = {
     });
   },
 
-  completePosOrder(orderId, paymentMethod) {
-    return invtznClient.post(`orders/${orderId}/complete-pos/`, {
-      payment_method: paymentMethod
-    });
+  completePosOrder(orderId, paymentMethod, customerEmail = null) {
+    const payload = { payment_method: paymentMethod };
+    if (customerEmail) payload.customer_email = customerEmail;
+    return invtznClient.post(`orders/${orderId}/complete-pos/`, payload);
+  },
+
+  sendReceiptEmail(orderId, email) {
+    return invtznClient.post(`orders/${orderId}/send-email/`, { email });
+  },
+
+  issueCFDI(orderId, billingData) {
+    return invtznClient.post(`orders/${orderId}/issue-cfdi/`, billingData);
   }
 };

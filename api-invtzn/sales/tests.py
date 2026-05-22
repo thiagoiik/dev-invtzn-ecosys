@@ -305,3 +305,161 @@ class TestStage2Features:
         assert 'discount_amount' in response.data
 
 
+@pytest.mark.django_db
+class TestStage3Features:
+    def setup_method(self):
+        from inventory.models import Store, ProductSerialKey
+        from decimal import Decimal
+
+        self.client = APIClient()
+        self.product = Product.objects.create(name='Invitacion Premium Digital', base_price=150.00, product_type='DIGITAL', is_physical=False)
+
+        # Admin
+        self.admin_user = User.objects.create_user(username='admin_stage3', password='password123')
+        self.admin_profile = UserProfile.objects.create(
+            remote_auth_id=self.admin_user.id,
+            custom_role=UserProfile.Role.ADMIN
+        )
+
+        self.client_user = User.objects.create_user(username='client_stage3', password='password123')
+        self.client_profile = UserProfile.objects.create(
+            remote_auth_id=self.client_user.id,
+            custom_role=UserProfile.Role.CLIENT
+        )
+
+        # Crear keys
+        self.key1 = ProductSerialKey.objects.create(product=self.product, key_value='INV-PREM-0001', is_assigned=False)
+        self.key2 = ProductSerialKey.objects.create(product=self.product, key_value='INV-PREM-0002', is_assigned=False)
+        self.key3 = ProductSerialKey.objects.create(product=self.product, key_value='INV-PREM-0003', is_assigned=False)
+
+    def test_complete_pos_order_fifo_serial_keys_allocation(self):
+        self.client.force_authenticate(user=self.admin_user)
+        # Crear orden con cantidad = 2 del producto digital
+        payload = {
+            'total_amount': 300.00,
+            'subtotal_amount': 300.00,
+            'user': self.client_user.id,
+            'customer_email': 'test@invitazyon.online',
+            'items': [
+                {'product': self.product.id, 'quantity': 2, 'price_at_sale': 150.00}
+            ]
+        }
+        res_create = self.client.post('/api/v1/orders/', payload, format='json')
+        assert res_create.status_code == 201
+        order_id = res_create.data['id']
+
+        # Completar cobro
+        response = self.client.post(f'/api/v1/orders/{order_id}/complete-pos/', {
+            'payment_method': 'CARD',
+            'customer_email': 'buyer@invitazyon.online'
+        })
+        assert response.status_code == 200
+        
+        # Verificar asignación FIFO
+        self.key1.refresh_from_db()
+        self.key2.refresh_from_db()
+        self.key3.refresh_from_db()
+
+        assert self.key1.is_assigned is True
+        assert self.key2.is_assigned is True
+        assert self.key3.is_assigned is False  # Queda libre
+
+        order = Order.objects.get(id=order_id)
+        assert order.customer_email == 'buyer@invitazyon.online'
+        assert order.status == Order.StatusChoices.COMPLETED
+
+    def test_complete_pos_order_insufficient_serial_keys(self):
+        self.client.force_authenticate(user=self.admin_user)
+        # Crear orden solicitando 4 seriales (solo tenemos 3 disponibles)
+        payload = {
+            'total_amount': 600.00,
+            'subtotal_amount': 600.00,
+            'user': self.client_user.id,
+            'items': [
+                {'product': self.product.id, 'quantity': 4, 'price_at_sale': 150.00}
+            ]
+        }
+        res_create = self.client.post('/api/v1/orders/', payload, format='json')
+        assert res_create.status_code == 201
+        order_id = res_create.data['id']
+
+        # Completar cobro debe fallar con un error semántico de negocio
+        response = self.client.post(f'/api/v1/orders/{order_id}/complete-pos/', {
+            'payment_method': 'CARD'
+        })
+        assert response.status_code == 400
+        assert 'No hay suficientes claves' in response.data['error']
+
+    def test_issue_cfdi_mock_success_and_duplicate_error(self):
+        self.client.force_authenticate(user=self.admin_user)
+        # Crear orden ya completada
+        payload = {
+            'total_amount': 150.00,
+            'subtotal_amount': 150.00,
+            'user': self.client_user.id,
+            'items': [
+                {'product': self.product.id, 'quantity': 1, 'price_at_sale': 150.00}
+            ]
+        }
+        res_create = self.client.post('/api/v1/orders/', payload, format='json')
+        order_id = res_create.data['id']
+
+        self.client.post(f'/api/v1/orders/{order_id}/complete-pos/', {
+            'payment_method': 'CARD'
+        })
+
+        # Datos de facturación
+        billing_payload = {
+            'rfc': 'HELT880211AAA',
+            'razon_social': 'THIAGO HELGUERA',
+            'codigo_postal': '06600',
+            'regimen_fiscal': '605',
+            'uso_cfdi': 'G03'
+        }
+
+        # Timbrar
+        response = self.client.post(f'/api/v1/orders/{order_id}/issue-cfdi/', billing_payload)
+        assert response.status_code == 201
+        assert response.data['success'] is True
+        assert 'invoice' in response.data
+        assert response.data['invoice']['rfc'] == 'HELT880211AAA'
+        assert response.data['invoice']['uuid'] is not None
+
+        # Re-timbrar la misma orden debe fallar
+        res_duplicate = self.client.post(f'/api/v1/orders/{order_id}/issue-cfdi/', billing_payload)
+        assert res_duplicate.status_code == 400
+        assert 'ya cuenta con una factura' in res_duplicate.data['error']
+
+    def test_issue_cfdi_validation_errors(self):
+        self.client.force_authenticate(user=self.admin_user)
+        # Crear orden
+        payload = {
+            'total_amount': 150.00,
+            'subtotal_amount': 150.00,
+            'user': self.client_user.id,
+            'items': [
+                {'product': self.product.id, 'quantity': 1, 'price_at_sale': 150.00}
+            ]
+        }
+        res_create = self.client.post('/api/v1/orders/', payload, format='json')
+        order_id = res_create.data['id']
+
+        self.client.post(f'/api/v1/orders/{order_id}/complete-pos/', {
+            'payment_method': 'CARD'
+        })
+
+        # CP inválido, RFC inválido
+        billing_payload = {
+            'rfc': 'CORTO',
+            'razon_social': 'TEST CP',
+            'codigo_postal': 'NO_NUM',
+            'regimen_fiscal': '605',
+            'uso_cfdi': 'G03'
+        }
+        response = self.client.post(f'/api/v1/orders/{order_id}/issue-cfdi/', billing_payload)
+        assert response.status_code == 400
+        assert 'rfc' in response.data
+        assert 'codigo_postal' in response.data
+
+
+
