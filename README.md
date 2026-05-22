@@ -169,6 +169,22 @@ Hemos diseñado e implementado una arquitectura de telemetría **self-hosted, no
 
 ---
 
+## 🛒 Terminal Punto de Venta (POS) - Etapas 1, 2 y 3
+
+Hemos diseñado e implementado una arquitectura de Punto de Venta (POS / TPV) robusta y de alto rendimiento para tiendas físicas y vendedores remotos, cubriendo tres etapas de reingeniería:
+
+*   **Gestión de Cajas Físicas:** Restricción estricta de cobros en físico (Efectivo/Tarjeta) requiriendo una sesión de caja abierta (`CashSession`) asignada al vendedor y a la sucursal física. Las transacciones remotas ocultan de forma inteligente estos métodos presenciales.
+*   **Búsqueda Avanzada de Clientes:** Buscador flexible e interactivo que permite filtrar perfiles de clientes registrados por ID, nombre completo, teléfono o correo electrónico. En caso de múltiples coincidencias, despliega un listado interactivo y autocompleta automáticamente el correo de envío del recibo en el checkout.
+*   **Venta Multi-producto y Carrito Reactivo:** Carrito de compras que permite la agregación de múltiples productos (tanto físicos como digitales), control de cantidades, cálculo automático de impuestos (`tax_rate`) y subtotal.
+*   **Control de Descuentos por Rol:** Los descuentos directos aplicados a nivel de orden se restringen a nivel de backend y de frontend exclusivamente a los roles `ADMIN` y `FRANCHISEE`. Los vendedores estándar tienen bloqueado este acceso.
+*   **Asignación de Claves Seriales Digitales:** Entrega automatizada y segura en modo FIFO de licencias/claves digitales (`ProductSerialKey`). La asignación de seriales utiliza un bloqueo transaccional (`select_for_update`) a nivel de base de datos para evitar la colisión de claves concurrentes.
+*   **Modo Offline Inteligente:** En caso de pérdida de red, el POS opera de forma local leyendo el catálogo desde `localStorage` y restringiendo cobros a efectivo (`CASH`). Las ventas se encolan secuencialmente y se sincronizan de forma transparente en segundo plano al recuperar la conexión.
+*   **Impresión de Tickets Térmicos:** Formato minimalista de 80mm de ancho estilizado en tipografía `Courier` optimizado para impresoras térmicas de caja usando `window.print()` con fallback nativo a PDF.
+*   **Recibos de Correo Asíncronos:** Plantilla premium y responsive enviada en segundo plano a través de Celery Workers para no interferir con la velocidad de la terminal de venta.
+*   **Facturación CFDI 4.0 Simulado:** Formulario de facturación incorporado en el flujo post-venta alineado con las reglas de validación del SAT, con descarga directa de archivos XML y PDF mock.
+
+---
+
 ## 🧪 Comandos Útiles
 
 ### Desarrollo y Base de Datos

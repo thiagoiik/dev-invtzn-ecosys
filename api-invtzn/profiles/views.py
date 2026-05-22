@@ -70,14 +70,29 @@ class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewset
     def search(self, request):
         try:
             profile = UserProfile.objects.get(remote_auth_id=request.user.id)
-            if profile.custom_role not in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR]:
+            if profile.custom_role not in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR, UserProfile.Role.FRANCHISEE]:
                 return Response({'error': 'No tienes permisos.'}, status=403)
         except UserProfile.DoesNotExist:
             return Response({'error': 'No tienes perfil asignado.'}, status=403)
 
+        query = request.query_params.get('query')
         user_id = request.query_params.get('remote_auth_id')
+
+        if query:
+            from django.db.models import Q
+            queryset = UserProfile.objects.filter(
+                Q(full_name__icontains=query) |
+                Q(phone_number__icontains=query) |
+                Q(email__icontains=query)
+            )
+            if query.isdigit():
+                queryset = queryset | UserProfile.objects.filter(remote_auth_id=int(query))
+            
+            serializer = self.get_serializer(queryset[:10], many=True)
+            return Response(serializer.data)
+
         if not user_id:
-            return Response({'error': 'remote_auth_id es requerido'}, status=400)
+            return Response({'error': 'Debe proporcionar query o remote_auth_id'}, status=400)
             
         try:
             user_profile = UserProfile.objects.get(remote_auth_id=user_id)

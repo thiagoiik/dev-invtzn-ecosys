@@ -21,8 +21,8 @@ export const crmService = {
     return invtznClient.patch(`profiles/${profileId}/`, data);
   },
 
-  searchProfile(remoteAuthId) {
-    return invtznClient.get('profiles/search/', { params: { remote_auth_id: remoteAuthId } });
+  searchProfile(query) {
+    return invtznClient.get('profiles/search/', { params: { query } });
   },
 
   // Tiendas

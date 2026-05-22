@@ -167,10 +167,11 @@
               <div class="join w-full">
                 <input 
                   v-model="customerSearchId" 
-                  type="number" 
-                  placeholder="ID Cliente (ej: 14)" 
-                  class="input input-bordered join-item w-full" 
+                  type="text" 
+                  placeholder="Buscar por ID, Nombre o Teléfono" 
+                  class="input input-bordered join-item w-full font-semibold" 
                   :disabled="isOffline"
+                  @keyup.enter="findCustomer"
                 />
                 <button 
                   class="btn btn-primary join-item animate-hover" 
@@ -181,6 +182,25 @@
                   Buscar
                 </button>
               </div>
+
+              <!-- Resultados de búsqueda múltiples -->
+              <div v-if="matchingCustomers.length > 1" class="mt-2 p-2 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto z-10 flex flex-col gap-1">
+                <p class="text-xs font-bold text-slate-500 px-2 py-1">Selecciona un cliente:</p>
+                <button 
+                  v-for="c in matchingCustomers" 
+                  :key="c.remote_auth_id"
+                  type="button"
+                  class="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg flex justify-between items-center text-sm transition"
+                  @click="selectCustomer(c)"
+                >
+                  <div>
+                    <span class="font-bold text-slate-800">{{ c.full_name || 'Sin Nombre' }}</span>
+                    <span class="text-xs text-slate-500 block">Tel: {{ c.phone_number || 'No registrado' }}</span>
+                  </div>
+                  <span class="badge badge-neutral text-xs">ID #{{ c.remote_auth_id }}</span>
+                </button>
+              </div>
+
               <div v-if="customer" class="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl flex items-center gap-3">
                 <div class="bg-green-500 text-white rounded-full p-1">
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
@@ -583,6 +603,7 @@ const cart = ref([]);
 const customerSearchId = ref('');
 const customer = ref(null);
 const customerEmail = ref('');
+const matchingCustomers = ref([]);
 const searching = ref(false);
 
 const processing = ref(false);
@@ -738,6 +759,7 @@ const selectPublicCustomer = () => {
     email: ''
   };
   customerEmail.value = '';
+  matchingCustomers.value = [];
   toast.success('Cliente Mostrador (Público General) seleccionado.');
 };
 
@@ -745,6 +767,7 @@ const clearCustomer = () => {
   customer.value = null;
   customerSearchId.value = '';
   customerEmail.value = '';
+  matchingCustomers.value = [];
 };
 
 const initProfileData = async () => {
@@ -866,19 +889,37 @@ const fetchProducts = async () => {
   }
 };
 
+const selectCustomer = (c) => {
+  customer.value = c;
+  customerEmail.value = c.email || '';
+  customerSearchId.value = c.full_name || `${c.remote_auth_id}`;
+  matchingCustomers.value = [];
+  toast.success('Cliente seleccionado');
+};
+
 const findCustomer = async () => {
   if (!customerSearchId.value) return;
   searching.value = true;
   customer.value = null;
   customerEmail.value = '';
+  matchingCustomers.value = [];
   try {
     const res = await crmService.searchProfile(customerSearchId.value);
-    customer.value = res.data;
-    // Autocompletar el email si el cliente tiene uno en api-auth
-    customerEmail.value = res.data.email || '';
-    toast.success('Cliente validado');
+    const results = res.data;
+    if (Array.isArray(results)) {
+      if (results.length === 0) {
+        toast.error('Ningún cliente coincide con la búsqueda');
+      } else if (results.length === 1) {
+        selectCustomer(results[0]);
+      } else {
+        matchingCustomers.value = results;
+        toast.info(`${results.length} clientes encontrados`);
+      }
+    } else if (results && typeof results === 'object') {
+      selectCustomer(results);
+    }
   } catch (e) {
-    toast.error('Cliente no encontrado');
+    toast.error('Error al buscar cliente');
   } finally {
     searching.value = false;
   }

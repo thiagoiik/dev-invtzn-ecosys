@@ -13,6 +13,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = [
             'remote_auth_id', 
             'full_name',
+            'email',
             'custom_role', 
             'phone_number', 
             'customer_type', 

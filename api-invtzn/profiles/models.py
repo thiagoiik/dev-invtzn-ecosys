@@ -25,6 +25,7 @@ class UserProfile(models.Model):
     
     # Campos de perfil y CRM
     full_name = models.CharField(max_length=255, blank=True, null=True, help_text="Nombre completo sincronizado desde api-auth")
+    email = models.EmailField(blank=True, null=True, help_text="Correo electrónico del usuario")
     custom_role = models.CharField(max_length=20, choices=Role.choices, default=Role.CLIENT)
     phone_number = models.CharField(max_length=20, blank=True, null=True)
     customer_type = models.CharField(max_length=20, choices=CustomerType.choices, default=CustomerType.LEAD)
