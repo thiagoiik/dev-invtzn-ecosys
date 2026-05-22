@@ -169,6 +169,7 @@ const handleSandboxSuccess = (deployment) => {
 };
 
 const buyNow = () => {
+  localStorage.setItem('selected_addon_ids', JSON.stringify(selectedAddonIds.value));
   router.push({ name: 'checkout', params: { id: product.value.id } });
 };
 </script>

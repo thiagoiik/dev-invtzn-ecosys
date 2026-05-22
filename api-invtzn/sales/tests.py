@@ -17,11 +17,17 @@ class TestSales:
         self.client.force_authenticate(user=self.user)
 
     def test_create_order_model(self):
+        from sales.models import OrderItem
         order = Order.objects.create(
             user=self.user.id,
-            product=self.product,
             total_amount=50.00,
             status=Order.StatusChoices.PENDING
+        )
+        OrderItem.objects.create(
+            order=order,
+            product=self.product,
+            quantity=1,
+            price_at_sale=50.00
         )
         assert order.user == self.user.id
         assert order.total_amount == 50.00
@@ -37,7 +43,9 @@ class TestSales:
         assert payment.success is True
 
     def test_order_viewset_list(self):
-        Order.objects.create(user=self.user.id, product=self.product, total_amount=10.00)
+        from sales.models import OrderItem
+        order = Order.objects.create(user=self.user.id, total_amount=10.00)
+        OrderItem.objects.create(order=order, product=self.product, quantity=1, price_at_sale=10.00)
         response = self.client.get('/api/v1/orders/')
         assert response.status_code == 200
         assert len(response.data) == 1
@@ -56,11 +64,14 @@ class TestSales:
 @pytest.mark.django_db
 class TestPOSAndCashSessions:
     def setup_method(self):
-        from inventory.models import Store
+        from inventory.models import Store, ProductSerialKey
         from decimal import Decimal
 
         self.client = APIClient()
         self.product = Product.objects.create(name='Test Invitation POS', base_price=100.00, product_type='DIGITAL')
+        ProductSerialKey.objects.create(product=self.product, key_value='KEY-POS-1', is_assigned=False)
+        ProductSerialKey.objects.create(product=self.product, key_value='KEY-POS-2', is_assigned=False)
+        ProductSerialKey.objects.create(product=self.product, key_value='KEY-POS-3', is_assigned=False)
 
         # Vendedor y Admin
         self.vendor_user = User.objects.create_user(username='vendor1', password='password123')

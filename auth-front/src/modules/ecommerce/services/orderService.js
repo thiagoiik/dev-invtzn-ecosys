@@ -1,19 +1,25 @@
 import invtznClient from '@/core/api/invtznClient';
 
 export const orderService = {
-  createOrder(productIdOrPayload, totalAmount = null, userId = null, deploymentId = null) {
-    if (typeof productIdOrPayload === 'object' && productIdOrPayload !== null) {
-      return invtznClient.post('orders/', productIdOrPayload);
+  createOrder(items, totalAmount, userId = null, deploymentId = null) {
+    // Si se pasa un objeto de payload completo, enviarlo directamente
+    if (items && typeof items === 'object' && !Array.isArray(items)) {
+      return invtznClient.post('orders/', items);
     }
-    
-    // Fallback compatibility
+
     const payload = {
-      product: productIdOrPayload,
       total_amount: totalAmount,
       status: 'PENDING'
     };
     if (userId) payload.user = userId;
     if (deploymentId) payload.deployment = deploymentId;
+
+    if (Array.isArray(items)) {
+      payload.items = items;
+    } else {
+      // Legacy compatibility: si se pasa un ID único de producto, usar la llave 'product'
+      payload.product = items;
+    }
     
     return invtznClient.post('orders/', payload);
   },

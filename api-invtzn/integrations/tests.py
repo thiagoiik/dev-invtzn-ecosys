@@ -32,10 +32,16 @@ class TestIntegrations:
         self.deployment = Deployment.objects.create(user=self.client_user.id, product=self.product, status=Deployment.StatusChoices.DRAFT, is_paid=False)
         self.order = Order.objects.create(
             user=self.client_user.id,
-            product=self.product,
             deployment=self.deployment,
             total_amount=200.00,
             status=Order.StatusChoices.PENDING
+        )
+        from sales.models import OrderItem
+        OrderItem.objects.create(
+            order=self.order,
+            product=self.product,
+            quantity=1,
+            price_at_sale=200.00
         )
 
         # 3. Crear registros bancarios

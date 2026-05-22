@@ -47,18 +47,35 @@ class StripeProvider:
         Si la orden pertenece a una tienda con Connect, se configura la transferencia.
         """
         store = order.store
-        checkout_params = {
-            "payment_method_types": ["card"],
-            "line_items": [{
+        
+        line_items = []
+        for item in order.items.all():
+            line_items.append({
                 "price_data": {
                     "currency": "mxn",
                     "product_data": {
-                        "name": f"Orden #{order.id} - {order.product.name}",
+                        "name": item.product.name,
+                    },
+                    "unit_amount": int(item.price_at_sale * 100),
+                },
+                "quantity": item.quantity,
+            })
+            
+        if not line_items:
+            line_items.append({
+                "price_data": {
+                    "currency": "mxn",
+                    "product_data": {
+                        "name": f"Orden #{order.id}",
                     },
                     "unit_amount": int(order.total_amount * 100),
                 },
                 "quantity": 1,
-            }],
+            })
+            
+        checkout_params = {
+            "payment_method_types": ["card"],
+            "line_items": line_items,
             "mode": "payment",
             "success_url": success_url,
             "cancel_url": cancel_url,

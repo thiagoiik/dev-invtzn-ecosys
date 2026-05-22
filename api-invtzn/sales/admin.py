@@ -1,5 +1,9 @@
 from django.contrib import admin
-from .models import Order, PaymentTransaction, CashSession, Commission, Invoice
+from .models import Order, PaymentTransaction, CashSession, Commission, Invoice, OrderItem
+
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 0
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
@@ -7,6 +11,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ('status', 'origin', 'store', 'created_at')
     search_fields = ('id', 'user', 'store__name')
     readonly_fields = ('created_at', 'updated_at')
+    inlines = [OrderItemInline]
 
 @admin.register(PaymentTransaction)
 class PaymentTransactionAdmin(admin.ModelAdmin):

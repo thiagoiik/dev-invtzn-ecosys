@@ -21,6 +21,9 @@ class OrderSerializer(serializers.ModelSerializer):
     user = serializers.IntegerField(required=False)
     items = OrderItemSerializer(many=True, required=False)
     invoice = InvoiceSerializer(read_only=True, required=False)
+    product = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.all(), write_only=True, required=False
+    )
     
     class Meta:
         model = Order
@@ -51,24 +54,26 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         items_data = validated_data.pop('items', [])
+        legacy_product = validated_data.pop('product', None)
         
         order = Order.objects.create(**validated_data)
         
-        first_product = None
-        for item_data in items_data:
-            product = item_data['product']
-            if not first_product:
-                first_product = product
+        if items_data:
+            for item_data in items_data:
+                product = item_data['product']
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=item_data['quantity'],
+                    price_at_sale=item_data['price_at_sale']
+                )
+        elif legacy_product:
             OrderItem.objects.create(
                 order=order,
-                product=product,
-                quantity=item_data['quantity'],
-                price_at_sale=item_data['price_at_sale']
+                product=legacy_product,
+                quantity=1,
+                price_at_sale=order.total_amount
             )
-            
-        if first_product and not order.product:
-            order.product = first_product
-            order.save()
             
         return order
 
