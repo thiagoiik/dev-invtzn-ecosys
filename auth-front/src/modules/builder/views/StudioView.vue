@@ -75,6 +75,13 @@
           >
             ⚙️ SEO/OG
           </button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'envelope' }" 
+            @click="activeTab = 'envelope'"
+          >
+            ✉️ Sobre 3D
+          </button>
         </div>
         
         <div v-if="loading" class="loading-state">
@@ -454,6 +461,31 @@
               </div>
             </div>
           </div>
+
+          <!-- TAB SOBRE 3D -->
+          <div v-if="activeTab === 'envelope'" class="tab-content fade-in">
+            <div class="form-group">
+              <label>Tipo de Apertura (Sobre 3D)</label>
+              <select v-model="localConfig.envelope_type" class="select-input">
+                <option :value="null">Sin sobre (Apertura directa)</option>
+                <option value="1">Sobre Clásico y Lacre</option>
+                <option value="2">Tríptico Imperial</option>
+                <option value="3">Pliegue Cruzado Origami</option>
+                <option value="4">Comuerta Cyber-Neon</option>
+                <option value="5">Telón de Seda Mágico</option>
+              </select>
+              <span class="help-text">Elige la animación de apertura que verán tus invitados al abrir la invitación digital.</span>
+            </div>
+
+            <!-- Envelope preview info -->
+            <div class="envelope-info-card mt-2">
+              <div class="info-icon">💡</div>
+              <p class="info-text">
+                Haz clic en el lacre o en la pantalla de la vista previa para interactuar con la animación del sobre. 
+                Si cambias de sobre, la vista previa se reiniciará automáticamente.
+              </p>
+            </div>
+          </div>
         </form>
       </aside>
 
@@ -462,12 +494,14 @@
         <div class="device-frame">
           <!-- Inyectamos los componentes del Engine en tiempo real -->
           <div v-if="!loading" class="preview-canvas">
-            <RenderEngineMaster 
-              :status="deploymentStatus" 
-              :customData="localConfig" 
-              :slug="deploymentSlug" 
-              :deploymentId="deploymentId"
-            />
+            <EnvelopeWrapper :type="localConfig.envelope_type || localConfig.envelope">
+              <RenderEngineMaster 
+                :status="deploymentStatus" 
+                :customData="localConfig" 
+                :slug="deploymentSlug" 
+                :deploymentId="deploymentId"
+              />
+            </EnvelopeWrapper>
           </div>
           <div v-else class="loading-state">
             <div class="loading-spinner"></div>
@@ -486,6 +520,7 @@ import { useToast } from 'vue-toastification';
 import BuilderLayout from '@/layouts/BuilderLayout.vue';
 import { builderService } from '@/modules/builder/services/builderService';
 import RenderEngineMaster from '@/modules/engine/components/RenderEngineMaster.vue';
+import EnvelopeWrapper from '@/modules/engine/components/EnvelopeWrapper.vue';
 
 const route = useRoute();
 const toast = useToast();
@@ -493,7 +528,7 @@ const deploymentId = route.params.id;
 
 const loading = ref(true);
 const saveStatus = ref('saved'); // 'saved', 'unsaved', 'saving', 'error'
-const activeTab = ref('cover'); // 'cover', 'rsvp', 'timer', 'timeline', 'music', 'theme', 'og'
+const activeTab = ref('cover'); // 'cover', 'rsvp', 'timer', 'timeline', 'music', 'theme', 'og', 'envelope'
 
 const allowedFeatures = ref({
   background_music: false,
@@ -551,7 +586,9 @@ const localConfig = ref({
   },
   og_title: '',
   og_description: '',
-  og_image: ''
+  og_image: '',
+  envelope_type: null,
+  envelope: null
 });
 
 onMounted(async () => {
@@ -591,6 +628,8 @@ onMounted(async () => {
         localConfig.value.og_title = custom.og_title ?? '';
         localConfig.value.og_description = custom.og_description ?? '';
         localConfig.value.og_image = custom.og_image ?? '';
+        localConfig.value.envelope_type = custom.envelope_type ?? custom.envelope ?? null;
+        localConfig.value.envelope = custom.envelope_type ?? custom.envelope ?? null;
       }
     }
   } catch (error) {
@@ -629,6 +668,11 @@ const syncAudioUrl = () => {
   }
   localConfig.value.music.audioUrl = localConfig.value.audioUrl;
 };
+
+// Sincronizar el envelope heredado
+watch(() => localConfig.value.envelope_type, (newVal) => {
+  localConfig.value.envelope = newVal;
+});
 
 // Mecanismo de Auto-guardado reactivo (Debounce 2000ms)
 let saveTimeout = null;
@@ -1057,6 +1101,26 @@ watch(localConfig, () => {
     hsl(300, 80%, 50%), 
     hsl(360, 80%, 50%)
   );
+}
+
+/* Envelope Info Card */
+.envelope-info-card {
+  background: #0f172a;
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.info-icon {
+  font-size: 1.25rem;
+}
+.info-text {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  line-height: 1.4;
+  margin: 0;
 }
 
 .help-text {

@@ -37,6 +37,10 @@ const mountOptions = {
         template: '<div class="render-engine-master-stub">RenderEngineMaster Mock</div>',
         props: ['status', 'customData', 'slug', 'deploymentId']
       },
+      EnvelopeWrapper: {
+        template: '<div class="envelope-wrapper-stub"><slot /></div>',
+        props: ['type']
+      },
       'router-link': {
         template: '<a><slot /></a>'
       }
@@ -88,5 +92,47 @@ describe('StudioView.vue', () => {
     // Check features state
     expect(wrapper.vm.allowedFeatures.countdown_timer).toBe(true);
     expect(wrapper.vm.allowedFeatures.timeline).toBe(false);
+  });
+
+  it('debería manejar y propagar envelope_type / envelope correctamente', async () => {
+    builderService.getDeployment.mockResolvedValueOnce({
+      data: {
+        slug: 'mi-boda-test',
+        status: 'DRAFT',
+        allowed_features: {
+          background_music: true,
+          custom_audio_url: false,
+          countdown_timer: true,
+          timeline: false,
+          custom_theme: true,
+          custom_og: false
+        },
+        custom_data: {
+          envelope_type: '1'
+        }
+      }
+    });
+
+    const wrapper = mount(StudioView, mountOptions);
+
+    // Wait for async hooks to resolve
+    await new Promise(resolve => setTimeout(resolve, 50));
+    await wrapper.vm.$nextTick();
+
+    expect(builderService.getDeployment).toHaveBeenCalledWith('test-id-123');
+
+    // Check loaded envelope settings
+    expect(wrapper.vm.localConfig.envelope_type).toBe('1');
+    expect(wrapper.vm.localConfig.envelope).toBe('1');
+
+    // Change envelope_type and check reactive sync to envelope
+    wrapper.vm.localConfig.envelope_type = '2';
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.localConfig.envelope).toBe('2');
+
+    // Set to null
+    wrapper.vm.localConfig.envelope_type = null;
+    await wrapper.vm.$nextTick();
+    expect(wrapper.vm.localConfig.envelope).toBeNull();
   });
 });
