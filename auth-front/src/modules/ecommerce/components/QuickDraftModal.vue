@@ -85,17 +85,26 @@ const close = () => {
   if (!loading.value) emit('close');
 };
 
+const formatDate = (dateString) => {
+  if (!dateString) return '';
+  const dateObj = new Date(dateString + 'T00:00:00');
+  const options = { day: 'numeric', month: 'long', year: 'numeric' };
+  return dateObj.toLocaleDateString('es-ES', options).toUpperCase();
+};
+
 const handleSubmit = async () => {
   loading.value = true;
   try {
+    const formattedDate = formatDate(formData.date);
     // Estructura de datos personalizada para el motor de renderizado
     const customData = {
       cover: {
-        names: formData.names,
-        date: formData.date
+        title: formData.names,
+        date: formattedDate
       },
       rsvp: {
-        event_date: formData.date
+        eventTitle: formData.names,
+        eventDate: formattedDate
       }
     };
 
