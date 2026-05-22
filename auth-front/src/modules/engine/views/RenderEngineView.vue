@@ -22,14 +22,15 @@
     </div>
 
     <!-- MOTOR DE RENDER INTELIGENTE -->
-    <RenderEngineMaster 
-      v-else 
-      :status="status" 
-      :customData="customData" 
-      :slug="route.params.slug" 
-      :deploymentId="deploymentId"
-      @purchase="goToCheckout"
-    />
+    <EnvelopeWrapper v-else :type="customData.envelope_type || customData.envelope">
+      <RenderEngineMaster 
+        :status="status" 
+        :customData="customData" 
+        :slug="route.params.slug" 
+        :deploymentId="deploymentId"
+        @purchase="goToCheckout"
+      />
+    </EnvelopeWrapper>
   </div>
 </template>
 
@@ -40,6 +41,7 @@ import { engineService } from '@/modules/engine/services/engineService';
 import DataLoaderLoader from '@/modules/engine/components/DataLoaderLoader.vue';
 import ExpiredEventScreen from '@/modules/engine/components/ExpiredEventScreen.vue';
 import RenderEngineMaster from '@/modules/engine/components/RenderEngineMaster.vue';
+import EnvelopeWrapper from '@/modules/engine/components/EnvelopeWrapper.vue';
 
 const route = useRoute();
 const router = useRouter();
