@@ -13,6 +13,7 @@
           <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[50] p-3 shadow-2xl bg-white rounded-2xl w-52 border border-slate-100 font-bold text-slate-700">
             <li><router-link to="/catalog" class="py-3">Catálogo</router-link></li>
             <li v-if="authStore.isAuthenticated"><router-link to="/dashboard" class="py-3">Mis Diseños</router-link></li>
+            <li v-if="authStore.isAuthenticated"><router-link to="/dashboard/orders" class="py-3">Mis Pedidos</router-link></li>
           </ul>
         </div>
 
@@ -25,6 +26,7 @@
       <div class="hidden md:flex gap-8 items-center">
         <router-link to="/catalog" class="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Catálogo</router-link>
         <router-link v-if="authStore.isAuthenticated" to="/dashboard" class="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Mis Diseños</router-link>
+        <router-link v-if="authStore.isAuthenticated" to="/dashboard/orders" class="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Mis Pedidos</router-link>
       </div>
 
       <!-- Right: User Avatar / Login Buttons -->
@@ -42,6 +44,7 @@
                 <p class="text-sm font-bold text-slate-800 truncate">{{ authStore.user?.email }}</p>
               </div>
               <li><router-link to="/profile" class="py-3 rounded-xl">👤 Mi Perfil</router-link></li>
+              <li><router-link to="/dashboard/orders" class="py-3 rounded-xl">📦 Mis Pedidos</router-link></li>
               <li><a @click="handleLogout" class="py-3 rounded-xl text-error hover:bg-error/10">🔌 Cerrar Sesión</a></li>
             </ul>
           </div>

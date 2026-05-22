@@ -44,5 +44,15 @@ export const orderService = {
 
   issueCFDI(orderId, billingData) {
     return invtznClient.post(`orders/${orderId}/issue-cfdi/`, billingData);
+  },
+
+  getMyOrders() {
+    return invtznClient.get('orders/');
+  },
+
+  resendInvoice(orderId, email = null) {
+    const payload = {};
+    if (email) payload.email = email;
+    return invtznClient.post(`orders/${orderId}/resend-invoice/`, payload);
   }
 };

@@ -4,7 +4,8 @@ import invtznClient from '@/core/api/invtznClient';
 
 vi.mock('@/core/api/invtznClient', () => ({
   default: {
-    post: vi.fn()
+    post: vi.fn(),
+    get: vi.fn()
   }
 }));
 
@@ -66,5 +67,27 @@ describe('orderService', () => {
       payment_method: 'CASH'
     });
     expect(response.data).toEqual(mockPosResponse);
+  });
+
+  it('getMyOrders hace un GET a orders/', async () => {
+    const mockOrders = [{ id: 10 }, { id: 11 }];
+    invtznClient.get.mockResolvedValue({ data: mockOrders });
+
+    const response = await orderService.getMyOrders();
+
+    expect(invtznClient.get).toHaveBeenCalledWith('orders/');
+    expect(response.data).toEqual(mockOrders);
+  });
+
+  it('resendInvoice hace un POST a orders/:id/resend-invoice/', async () => {
+    const mockRes = { success: true };
+    invtznClient.post.mockResolvedValue({ data: mockRes });
+
+    const response = await orderService.resendInvoice(10, 'test@example.com');
+
+    expect(invtznClient.post).toHaveBeenCalledWith('orders/10/resend-invoice/', {
+      email: 'test@example.com'
+    });
+    expect(response.data).toEqual(mockRes);
   });
 });

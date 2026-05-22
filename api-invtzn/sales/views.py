@@ -255,6 +255,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         from rest_framework.exceptions import ValidationError
         from .models import Invoice
         from .serializers import InvoiceSerializer
+        from .tasks import send_invoice_email_task
         
         order = self.get_object()
         
@@ -354,9 +355,18 @@ class OrderViewSet(viewsets.ModelViewSet):
                     xml_url=xml_url_mock
                 )
                 
+                # Intentar enviar correo con la factura
+                if order.customer_email:
+                    try:
+                        send_invoice_email_task.delay(invoice.id)
+                    except Exception as email_err:
+                        import logging
+                        logger = logging.getLogger(__name__)
+                        logger.error(f"Error al encolar correo de factura simulada: {str(email_err)}")
+
                 return Response({
                     'success': True,
-                    'message': 'Factura timbrada exitosamente (Simulación CFDI 4.0 SAT).',
+                    'message': 'Factura timbrada exitosamente (Simulación CFDI 4.0 SAT) y recibo de factura encolado por correo.',
                     'invoice': InvoiceSerializer(invoice).data
                 }, status=status.HTTP_201_CREATED)
                 
@@ -466,13 +476,45 @@ class OrderViewSet(viewsets.ModelViewSet):
                 pdf_url=pdf_url,
                 xml_url=xml_url
             )
+            
+            # Enviar correo con la factura
+            if order.customer_email:
+                try:
+                    send_invoice_email_task.delay(invoice.id)
+                except Exception as email_err:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error al encolar correo de factura real: {str(email_err)}")
+
             return Response({
                 'success': True,
-                'message': 'Factura timbrada exitosamente con Facturapi.',
+                'message': 'Factura timbrada exitosamente con Facturapi y recibo de factura encolado por correo.',
                 'invoice': InvoiceSerializer(invoice).data
             }, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({'error': f'Error al registrar la factura en base de datos: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @action(detail=True, methods=['post'], url_path='resend-invoice')
+    def resend_invoice(self, request, pk=None):
+        from .tasks import send_invoice_email_task
+        order = self.get_object()
+        
+        if not hasattr(order, 'invoice') or not order.invoice:
+            return Response({'error': 'Esta orden no cuenta con una factura emitida para reenviar.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        email = request.data.get('email')
+        if email:
+            order.customer_email = email
+            order.save()
+            
+        if not order.customer_email:
+            return Response({'error': 'La orden no tiene un correo de cliente asociado y no se proporcionó uno nuevo.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        try:
+            send_invoice_email_task.delay(order.invoice.id)
+            return Response({'success': True, 'message': f'Factura encolada para reenviarse al correo {order.customer_email}'})
+        except Exception as e:
+            return Response({'error': f'No se pudo encolar el reenvío de factura: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class CashSessionViewSet(viewsets.ModelViewSet):
     serializer_class = CashSessionSerializer

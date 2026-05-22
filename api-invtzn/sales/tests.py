@@ -474,10 +474,11 @@ class TestStage3Features:
 
     def test_shipping_address_creation(self):
         from sales.models import ShippingAddress
+        self.client.force_authenticate(user=self.admin_user)
         payload = {
             'total_amount': 100.00,
             'subtotal_amount': 100.00,
-            'user': self.user.id,
+            'user': self.client_user.id,
             'items': [
                 {'product': self.product.id, 'quantity': 2, 'price_at_sale': 50.00}
             ],
@@ -521,7 +522,7 @@ class TestStage3Features:
         payload = {
             'total_amount': 160.00,
             'subtotal_amount': 160.00,
-            'user': self.user.id,
+            'user': self.client_user.id,
             'store': store.id,
             'origin': 'POS',
             'items': [
@@ -561,7 +562,7 @@ class TestStage3Features:
         payload = {
             'total_amount': 150.00,
             'subtotal_amount': 150.00,
-            'user': self.user.id,
+            'user': self.client_user.id,
             'items': [
                 {'product': self.product.id, 'quantity': 1, 'price_at_sale': 150.00}
             ]
@@ -579,8 +580,8 @@ class TestStage3Features:
         }
         
         with override_settings(FACTURAPI_API_KEY='sk_live_real_key_mock_123'):
-            with patch('sales.views.sys.argv', ['manage.py', 'runserver']):
-                with patch('sales.views.requests.post') as mock_post:
+            with patch('sys.argv', ['manage.py', 'runserver']):
+                with patch('requests.post') as mock_post:
                     mock_response = MagicMock()
                     mock_response.status_code = 201
                     mock_response.json.return_value = {
@@ -606,5 +607,67 @@ class TestStage3Features:
                     assert len(sent_payload['items']) == 1
                     assert sent_payload['items'][0]['product']['tax_included'] is True
 
+    def test_send_invoice_email_task(self):
+        from unittest.mock import patch, MagicMock
+        from django.test import override_settings
+        from django.core import mail
+        from sales.models import Invoice
+        from sales.tasks import send_invoice_email_task
 
+        # Crear orden con email
+        order = Order.objects.create(
+            user=self.client_user.id,
+            total_amount=150.00,
+            subtotal_amount=150.00,
+            customer_email='buyer_email@example.com'
+        )
 
+        # Crear invoice
+        invoice = Invoice.objects.create(
+            order=order,
+            rfc='HELT880211AAA',
+            razon_social='THIAGO HELGUERA',
+            codigo_postal='06600',
+            regimen_fiscal='605',
+            uso_cfdi='G03',
+            uuid='SAT-UUID-EMAIL-TEST',
+            pdf_url='https://api.facturapi.com/v2/invoices/inv_123/pdf',
+            xml_url='https://api.facturapi.com/v2/invoices/inv_123/xml'
+        )
+
+        # Mock requests.get para descargar adjuntos de Facturapi
+        with override_settings(FACTURAPI_API_KEY='sk_live_real_key_mock_123'):
+            with patch('requests.get') as mock_get:
+                mock_pdf = MagicMock()
+                mock_pdf.status_code = 200
+                mock_pdf.content = b"PDF-CONTENT-TEST"
+                
+                mock_xml = MagicMock()
+                mock_xml.status_code = 200
+                mock_xml.content = b"XML-CONTENT-TEST"
+                
+                mock_get.side_effect = [mock_pdf, mock_xml]
+
+                # Ejecutar la tarea de Celery de forma sincrónica
+                result = send_invoice_email_task(invoice.id)
+                assert result is True
+
+                # Verificar que se envió el correo
+                assert len(mail.outbox) == 1
+                sent_mail = mail.outbox[0]
+                assert sent_mail.to == ['buyer_email@example.com']
+                assert "Factura Electrónica CFDI 4.0" in sent_mail.subject
+                assert len(sent_mail.attachments) == 2
+                
+                # Verificar nombre de los adjuntos y su contenido
+                pdf_attach = sent_mail.attachments[0]
+                assert pdf_attach[0].startswith("Factura-")
+                assert pdf_attach[0].endswith(".pdf")
+                assert pdf_attach[1] == b"PDF-CONTENT-TEST"
+                assert pdf_attach[2] == "application/pdf"
+
+                xml_attach = sent_mail.attachments[1]
+                assert xml_attach[0].startswith("Factura-")
+                assert xml_attach[0].endswith(".xml")
+                assert xml_attach[1] == b"XML-CONTENT-TEST"
+                assert xml_attach[2] == "application/xml"

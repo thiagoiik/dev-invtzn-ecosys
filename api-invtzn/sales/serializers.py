@@ -9,10 +9,12 @@ class ShippingAddressSerializer(serializers.ModelSerializer):
 
 class OrderItemSerializer(serializers.ModelSerializer):
     serial_keys = serializers.SerializerMethodField()
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    product_is_physical = serializers.BooleanField(source='product.is_physical', read_only=True)
 
     class Meta:
         model = OrderItem
-        fields = ('product', 'quantity', 'price_at_sale', 'serial_keys')
+        fields = ('product', 'quantity', 'price_at_sale', 'serial_keys', 'product_name', 'product_is_physical')
 
     def get_serial_keys(self, obj):
         return list(obj.serial_keys.values_list('key_value', flat=True))

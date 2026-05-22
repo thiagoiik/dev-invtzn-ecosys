@@ -10,6 +10,12 @@ export default [
         meta: { requiresAuth: true }
       },
       { 
+        path: '/dashboard/orders', 
+        name: 'orders-history', 
+        component: () => import('@/modules/dashboard/views/OrdersHistoryView.vue'),
+        meta: { requiresAuth: true }
+      },
+      { 
         path: '/profile', 
         name: 'profile', 
         component: () => import('@/modules/dashboard/views/ProfileView.vue'),
