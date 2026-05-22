@@ -32,6 +32,62 @@ class Deployment(models.Model):
     def __str__(self):
         return f"{self.slug or 'Draft'} - User {self.user} ({self.status})"
 
+    @property
+    def allowed_features(self):
+        # Características mínimas por defecto (Sandbox / Gratis sin pagar)
+        features = {
+            'background_music': False,
+            'custom_audio_url': False,
+            'countdown_timer': False,
+            'timeline': False,
+            'custom_theme': False,
+            'custom_og': False,
+        }
+
+        # Si no ha sido pagada, se mantiene con las limitaciones de Sandbox
+        if not self.is_paid:
+            return features
+
+        if not self.product:
+            return features
+
+        tier = self.product.tier_level
+        
+        # Mapeo de características heredadas por Tier comercial
+        if tier == 'PREMIUM':
+            features.update({
+                'background_music': True,
+                'custom_audio_url': True,
+                'countdown_timer': True,
+                'timeline': True,
+                'custom_theme': True,
+                'custom_og': True,
+            })
+        elif tier == 'STANDARD':
+            features.update({
+                'background_music': True,
+                'custom_audio_url': False,
+                'countdown_timer': True,
+                'timeline': False,
+                'custom_theme': True,
+                'custom_og': False,
+            })
+        elif tier == 'BASIC':
+            features.update({
+                'background_music': False,
+                'custom_audio_url': False,
+                'countdown_timer': False,
+                'timeline': False,
+                'custom_theme': True,
+                'custom_og': False,
+            })
+
+        # Si el JSON 'features' de Product contiene sobrescrituras específicas, las aplicamos
+        if isinstance(self.product.features, dict):
+            features.update(self.product.features)
+
+        return features
+
 class Guest(models.Model):
     deployment = models.ForeignKey(Deployment, on_delete=models.CASCADE, related_name='guests')
     full_name = models.CharField(max_length=150)

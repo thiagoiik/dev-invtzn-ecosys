@@ -47,6 +47,23 @@ class Product(models.Model):
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0.16, help_text="Porcentaje de impuesto ej. 0.16")
     min_stock = models.IntegerField(default=0, help_text="Stock mínimo para alertas")
 
+    class TierLevel(models.TextChoices):
+        BASIC = 'BASIC', 'Básico / Gratis'
+        STANDARD = 'STANDARD', 'Standard'
+        PREMIUM = 'PREMIUM', 'Premium'
+
+    tier_level = models.CharField(
+        max_length=20, 
+        choices=TierLevel.choices, 
+        default=TierLevel.BASIC,
+        help_text="Nivel comercial de suscripción o tier del producto"
+    )
+    features = models.JSONField(
+        default=dict, 
+        blank=True, 
+        help_text="Configuración de bloques y flags permitidos"
+    )
+
     def __str__(self):
         return f"{self.name} (${self.base_price})"
 
@@ -61,27 +78,59 @@ class StoreStock(models.Model):
     def __str__(self):
         return f"Stock de {self.product.name} en {self.store.name}: {self.quantity}"
 
-class Template(models.Model):
+class DesignTemplate(models.Model):
     """
-    Define el 'diseño' base que se usará en Vue.
-    Ejemplo: 'Template Boda Clásica' -> apunta al componente Vue 'BodaOro.vue'
+    Define un diseño visual/estética independiente que puede ser utilizado por
+    las invitaciones según el nivel de tier contratado.
     """
-    product = models.OneToOneField(
-        Product, 
-        on_delete=models.CASCADE, 
-        related_name='template_config'
+    class TierRequired(models.TextChoices):
+        BASIC = 'BASIC', 'Básico / Gratis'
+        STANDARD = 'STANDARD', 'Standard'
+        PREMIUM = 'PREMIUM', 'Premium'
+
+    name = models.CharField(max_length=150)
+    slug = models.SlugField(max_length=100, unique=True, help_text="Slug único de identificación para la URL")
+    
+    tier_required = models.CharField(
+        max_length=20, 
+        choices=TierRequired.choices, 
+        default=TierRequired.BASIC,
+        help_text="Tier mínimo requerido para poder usar este diseño"
     )
+    
     vue_component_name = models.CharField(
         max_length=100, 
-        help_text="Nombre del componente en el Front (ej: 'ClassicGold')"
+        help_text="Nombre del componente layout en el Frontend (ej: 'ClassicGold')"
     )
+    
     default_config = models.JSONField(
         default=dict, 
-        help_text="Configuración inicial: colores, fuentes, etc."
+        blank=True,
+        help_text="Configuración inicial del diseño: colores, fuentes, etc."
     )
+    
+    thumbnail_url = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Miniatura visual para el catálogo de selección"
+    )
+    
+    demo_slug = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Slug de una invitación demo real para ver este diseño en vivo"
+    )
+    
+    is_active = models.BooleanField(default=True)
+    is_featured_on_landing = models.BooleanField(default=False, help_text="Destacar este diseño en la landing page")
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Configuración para {self.product.name}"
+        return f"{self.name} (Requiere {self.tier_required})"
 
 class ProductSerialKey(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='serial_keys')

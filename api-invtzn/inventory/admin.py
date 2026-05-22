@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Product, Template, Store, ProductSerialKey
+from .models import Product, DesignTemplate, Store, ProductSerialKey
 
 @admin.register(Store)
 class StoreAdmin(admin.ModelAdmin):
@@ -18,31 +18,29 @@ class StoreAdmin(admin.ModelAdmin):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     # Columnas visibles en la lista
-    list_display = ('name', 'product_type', 'base_price', 'is_active', 'is_physical', 'stock_quantity', 'has_template')
+    list_display = ('name', 'product_type', 'tier_level', 'base_price', 'is_active', 'is_physical', 'stock_quantity', 'has_template')
     # Filtros laterales
-    list_filter = ('product_type', 'is_active', 'is_physical', 'has_template')
+    list_filter = ('product_type', 'tier_level', 'is_active', 'is_physical', 'has_template')
     # Buscador
     search_fields = ('name', 'description')
     # Organizar el formulario de edición
     fieldsets = (
         ('Información General', {
-            'fields': ('name', 'description', 'product_type', 'base_price', 'is_active')
+            'fields': ('name', 'description', 'product_type', 'tier_level', 'base_price', 'is_active')
         }),
         ('Control de Stock e Inventario', {
             'fields': ('is_physical', 'stock_quantity')
         }),
         ('Configuración Digital', {
-            'fields': ('has_template',)
+            'fields': ('has_template', 'features')
         }),
     )
 
-@admin.register(Template)
-class TemplateAdmin(admin.ModelAdmin):
-    list_display = ('product', 'vue_component_name')
-    search_fields = ('product__name', 'vue_component_name')
-    # Ayuda a que el JSON se vea mejor en el admin (opcional)
-    # Si quieres que se vea como código, puedes usar librerías extra, 
-    # pero por defecto Django ya muestra el campo de texto JSON.
+@admin.register(DesignTemplate)
+class DesignTemplateAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug', 'tier_required', 'vue_component_name', 'is_active', 'is_featured_on_landing')
+    list_filter = ('tier_required', 'is_active', 'is_featured_on_landing')
+    search_fields = ('name', 'slug', 'vue_component_name')
 
 @admin.register(ProductSerialKey)
 class ProductSerialKeyAdmin(admin.ModelAdmin):

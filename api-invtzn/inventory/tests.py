@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
-from inventory.models import Store, Product, Template
+from inventory.models import Store, Product, DesignTemplate
 from profiles.models import UserProfile
 
 User = get_user_model()
@@ -40,8 +40,10 @@ class TestInventory:
             product_type=Product.ProductType.DIGITAL,
             has_template=True
         )
-        self.template = Template.objects.create(
-            product=self.product_digital,
+        self.template = DesignTemplate.objects.create(
+            name="Classic Boda",
+            slug="classic-boda",
+            tier_required=DesignTemplate.TierRequired.BASIC,
             vue_component_name="ClassicBoda",
             default_config={"color": "gold", "font": "serif"}
         )
@@ -50,7 +52,7 @@ class TestInventory:
         """Verifica la correcta representación en cadena (__str__) de los modelos."""
         assert str(self.store_1) == "Store Uno (CDMX)"
         assert str(self.product_digital) == "Digital Invitation ($150.0)"
-        assert str(self.template) == "Configuración para Digital Invitation"
+        assert str(self.template) == "Classic Boda (Requiere BASIC)"
 
     def test_product_viewset_list_public(self):
         """Verifica que cualquier usuario pueda ver el catálogo de productos activos."""
