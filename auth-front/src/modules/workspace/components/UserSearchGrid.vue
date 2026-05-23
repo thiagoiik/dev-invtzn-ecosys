@@ -55,7 +55,7 @@
               ${{ profile.current_balance }}
             </td>
             <td class="text-right pr-6">
-              <button class="btn btn-ghost btn-xs text-primary font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+              <button @click="$emit('select', profile)" class="btn btn-ghost btn-xs text-primary font-bold opacity-0 group-hover:opacity-100 transition-opacity">
                 Ver Detalles →
               </button>
             </td>
@@ -96,7 +96,7 @@
             <div class="text-[9px] text-slate-400 font-black uppercase tracking-wider">Saldo</div>
             <div class="font-black text-slate-700 text-base">${{ profile.current_balance }}</div>
           </div>
-          <button class="btn btn-primary btn-sm rounded-xl font-bold text-xs">
+          <button @click="$emit('select', profile)" class="btn btn-primary btn-sm rounded-xl font-bold text-xs">
             Detalles →
           </button>
         </div>

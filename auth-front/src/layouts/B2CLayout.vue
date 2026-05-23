@@ -45,6 +45,9 @@
               </div>
               <li><router-link to="/profile" class="py-3 rounded-xl">👤 Mi Perfil</router-link></li>
               <li><router-link to="/dashboard/orders" class="py-3 rounded-xl">📦 Mis Pedidos</router-link></li>
+              <li v-if="['ADMIN', 'VENDOR'].includes(authStore.role)">
+                <router-link to="/workspace" class="py-3 rounded-xl text-primary font-bold">🏢 Ir al Workspace POS</router-link>
+              </li>
               <li><a @click="handleLogout" class="py-3 rounded-xl text-error hover:bg-error/10">🔌 Cerrar Sesión</a></li>
             </ul>
           </div>

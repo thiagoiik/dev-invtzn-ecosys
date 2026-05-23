@@ -57,12 +57,20 @@
                 <span class="text-xs text-slate-400 font-bold uppercase tracking-wider">Desde</span>
                 <span class="text-3xl font-black text-slate-900">${{ product.base_price }}</span>
               </div>
-              <button 
-                class="btn btn-primary rounded-2xl px-6 shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform"
-                @click="handleBuy(product)"
-              >
-                Personalizar
-              </button>
+              <div class="flex gap-2">
+                <button 
+                  class="btn btn-outline btn-sm rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50"
+                  @click="handlePreview(product)"
+                >
+                  Ver Preview
+                </button>
+                <button 
+                  class="btn btn-primary btn-sm rounded-xl px-4 shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform"
+                  @click="handleBuy(product)"
+                >
+                  Personalizar
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -118,6 +126,11 @@ const translateType = (type) => {
 
 const handleBuy = (product) => {
   router.push({ name: 'product-detail', params: { id: product.id } });
+};
+
+const handlePreview = (product) => {
+  // Aquí podemos usar un slug si el backend lo retorna, por ahora pasamos el ID o un placeholder
+  window.open(`/demo/${product.id}`, '_blank');
 };
 </script>
 
