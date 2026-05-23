@@ -88,14 +88,50 @@ class Deployment(models.Model):
 
         return features
 
-class Guest(models.Model):
-    deployment = models.ForeignKey(Deployment, on_delete=models.CASCADE, related_name='guests')
-    full_name = models.CharField(max_length=150)
-    attending = models.BooleanField(default=True)
+class Event(models.Model):
+    title = models.CharField(max_length=200, help_text="Ej: Boda de Ana y Jorge")
+    owner = models.IntegerField(db_index=True, help_text="ID del usuario en api-auth")
+    event_date = models.DateTimeField(null=True, blank=True)
+    location_name = models.CharField(max_length=200, blank=True)
+    
+    deployments = models.ManyToManyField(Deployment, blank=True, related_name='linked_events')
+    
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.full_name} - {'Asiste' if self.attending else 'No asiste'} ({self.deployment.slug})"
+        return f"{self.title} - {self.event_date.strftime('%Y-%m-%d') if self.event_date else 'Sin fecha'}"
+
+class Guest(models.Model):
+    class StatusChoices(models.TextChoices):
+        PENDING = 'PENDING', 'Pendiente de Aprobación'
+        APPROVED = 'APPROVED', 'Aprobado (QR Emitido)'
+        DENIED = 'DENIED', 'Denegado'
+
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='guests', null=True, blank=True)
+    deployment = models.ForeignKey(Deployment, on_delete=models.CASCADE, related_name='guests', null=True, blank=True)
+    full_name = models.CharField(max_length=150)
+    phone_number = models.CharField(max_length=20, blank=True, null=True, help_text="Para enviar el QR por WhatsApp")
+    email = models.EmailField(blank=True, null=True)
+    
+    attending = models.BooleanField(default=True)
+    companions_count = models.IntegerField(default=0, help_text="Número de acompañantes extra")
+    
+    status = models.CharField(max_length=20, choices=StatusChoices.choices, default=StatusChoices.PENDING)
+    
+    qr_code_token = models.CharField(max_length=64, unique=True, blank=True, null=True, help_text="Token seguro para generar el QR")
+    qr_scanned = models.BooleanField(default=False, help_text="¿Ya ingresó al salón?")
+    scanned_at = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if self.status == self.StatusChoices.APPROVED and not self.qr_code_token:
+            import secrets
+            self.qr_code_token = secrets.token_hex(16)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.full_name} ({self.status})"
 
 class DeploymentMetric(models.Model):
     class MetricType(models.TextChoices):

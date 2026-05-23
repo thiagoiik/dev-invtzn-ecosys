@@ -94,7 +94,7 @@ const loadProducts = async () => {
     const response = await catalogService.fetchProducts();
     // Filtramos solo los productos activos, plantillas y físicos (ocultando Tiers/Servicios)
     products.value = response.data.filter(p => 
-      p.is_active && ['DIGITAL', 'PHYSICAL'].includes(p.product_type)
+      p.is_active && ['DIGITAL', 'PHYSICAL', 'SERVICE'].includes(p.product_type)
     );
   } catch (error) {
     toast.error('Ocurrió un error al cargar el catálogo de productos.');
@@ -108,12 +108,12 @@ onMounted(() => {
 });
 
 const translateType = (type) => {
-  const types = {
+  const typeMap = {
     'DIGITAL': 'Digital',
-    'PHYSICAL': 'Impreso',
-    'SERVICE': 'Servicio'
+    'SERVICE': 'Servicio a Medida',
+    'PHYSICAL': 'Físico'
   };
-  return types[type] || type;
+  return typeMap[type] || type;
 };
 
 const handleBuy = (product) => {

@@ -133,3 +133,33 @@ class ShippingAddress(models.Model):
 
     def __str__(self):
         return f"Dirección de envío para Orden #{self.order.id} - {self.recipient_name}"
+
+class Coupon(models.Model):
+    code = models.CharField(max_length=50, unique=True, help_text="Ej: BLACKFRIDAY2026")
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0, help_text="Ej: 15.00 para 15%")
+    discount_fixed = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Ej: 500.00 para descontar 500 MXN")
+    
+    valid_from = models.DateTimeField()
+    valid_to = models.DateTimeField()
+    active = models.BooleanField(default=True)
+    
+    max_uses = models.IntegerField(default=100, help_text="Límite de usos totales")
+    current_uses = models.IntegerField(default=0)
+
+    def is_valid(self):
+        from django.utils import timezone
+        now = timezone.now()
+        return self.active and self.valid_from <= now <= self.valid_to and self.current_uses < self.max_uses
+
+    def __str__(self):
+        return self.code
+
+class DirectDiscount(models.Model):
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='direct_discount')
+    authorized_by = models.IntegerField(help_text="ID del Franquiciatario/Admin que autorizó")
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    reason = models.TextField(help_text="Justificación del descuento (Cortesía, Cliente VIP, etc.)")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Descuento de {self.amount} autorizado por {self.authorized_by}"

@@ -89,8 +89,8 @@
                 <div>
                   <h3 class="font-bold text-slate-800">{{ prod.name }}</h3>
                   <span v-if="prod.sku" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono font-bold mt-1 inline-block">SKU: {{ prod.sku }}</span>
-                  <span class="ml-1 text-[10px] px-2 py-0.5 rounded font-bold" :class="prod.is_physical ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'">
-                    {{ prod.is_physical ? 'Físico (Entrega)' : 'Digital (Tier)' }}
+                  <span class="text-[10px] font-black uppercase tracking-widest bg-slate-100 text-slate-500 px-2 py-0.5 rounded ml-2">
+                    {{ prod.product_type === 'PHYSICAL' ? 'Físico (Entrega)' : prod.product_type === 'SERVICE' ? 'Servicio a Medida' : 'Digital (Tier)' }}
                   </span>
                 </div>
                 <span class="text-primary font-black shrink-0">${{ parseFloat(prod.base_price).toFixed(2) }}</span>
@@ -122,8 +122,8 @@
                 <div class="flex-1 min-w-0">
                   <p class="font-bold text-sm text-slate-800 truncate">{{ item.product.name }}</p>
                   <div class="flex items-center gap-2 mt-0.5">
-                    <span class="text-[10px] px-1.5 py-0.5 rounded font-bold" :class="item.product.is_physical ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'">
-                      {{ item.product.is_physical ? 'Físico (Entrega)' : 'Digital (Tier)' }}
+                    <span class="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md" :class="item.product.product_type === 'PHYSICAL' ? 'bg-amber-100 text-amber-700' : item.product.product_type === 'SERVICE' ? 'bg-emerald-100 text-emerald-700' : 'bg-indigo-100 text-indigo-700'">
+                      {{ item.product.product_type === 'PHYSICAL' ? 'Físico (Entrega)' : item.product.product_type === 'SERVICE' ? 'Servicio' : 'Digital (Tier)' }}
                     </span>
                     <p class="text-xs text-slate-500">${{ parseFloat(item.price).toFixed(2) }} c/u</p>
                   </div>
