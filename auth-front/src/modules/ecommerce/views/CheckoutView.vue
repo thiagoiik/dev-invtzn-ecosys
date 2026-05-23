@@ -199,13 +199,49 @@
               </div>
               <div v-if="selectedAddons.length > 0" class="flex justify-between text-sm text-slate-500 font-medium">
                 <span>Servicios Adicionales ({{ selectedAddons.length }})</span>
-                <span>${{ addonsTotal }} MXN</span>
+                <span>${{ addonsTotal.toFixed(2) }} MXN</span>
               </div>
               
+              <!-- SECCIÓN DE CUPÓN -->
+              <div class="pt-4 border-t border-slate-100">
+                <div v-if="!appliedCoupon" class="flex gap-2">
+                  <input 
+                    v-model="couponCode" 
+                    type="text" 
+                    placeholder="Código de Descuento" 
+                    class="input input-sm input-bordered w-full uppercase font-bold text-slate-700" 
+                    :disabled="validatingCoupon"
+                    @keyup.enter="validateCoupon"
+                  />
+                  <button 
+                    class="btn btn-sm btn-neutral" 
+                    @click="validateCoupon" 
+                    :disabled="!couponCode || validatingCoupon"
+                  >
+                    <span v-if="validatingCoupon" class="loading loading-spinner loading-xs"></span>
+                    Aplicar
+                  </button>
+                </div>
+                <div v-if="couponError" class="text-xs text-error mt-1 font-semibold">{{ couponError }}</div>
+                
+                <div v-if="appliedCoupon" class="flex justify-between items-center bg-green-50 text-green-700 p-3 rounded-xl border border-green-200 mt-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-green-500">✅</span>
+                    <span class="font-bold text-sm">{{ appliedCoupon.code }}</span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span class="font-black text-sm">
+                      - ${{ discountAmount.toFixed(2) }} MXN
+                    </span>
+                    <button @click="removeCoupon" class="text-xs text-green-600 hover:text-green-800 underline">Quitar</button>
+                  </div>
+                </div>
+              </div>
+
               <div class="flex justify-between items-center pt-6 border-t border-slate-100">
                 <span class="text-slate-900 font-black uppercase tracking-widest text-xs">Total del pedido</span>
                 <div class="text-right">
-                  <span class="text-3xl font-black text-slate-900">${{ totalPrice }}</span>
+                  <span class="text-3xl font-black text-slate-900">${{ totalPrice.toFixed(2) }}</span>
                   <span class="text-slate-400 font-bold block text-[10px] tracking-wider mt-0.5">MXN</span>
                 </div>
               </div>
@@ -273,6 +309,11 @@ const selectedAddonIds = ref([]);
 const selectedAddons = ref([]);
 const loading = ref(false);
 
+const couponCode = ref('');
+const appliedCoupon = ref(null);
+const validatingCoupon = ref(false);
+const couponError = ref('');
+
 const shippingAddress = ref({
   recipient_name: '',
   address_line1: '',
@@ -292,9 +333,24 @@ const addonsTotal = computed(() => {
   return selectedAddons.value.reduce((acc, addon) => acc + parseFloat(addon.base_price), 0);
 });
 
-const totalPrice = computed(() => {
+const subtotalAmount = computed(() => {
   if (!product.value) return 0;
   return parseFloat(product.value.base_price) + addonsTotal.value;
+});
+
+const discountAmount = computed(() => {
+  if (!appliedCoupon.value) return 0;
+  let discount = 0;
+  if (appliedCoupon.value.discount_fixed > 0) {
+    discount = appliedCoupon.value.discount_fixed;
+  } else if (appliedCoupon.value.discount_percentage > 0) {
+    discount = subtotalAmount.value * (appliedCoupon.value.discount_percentage / 100);
+  }
+  return discount > subtotalAmount.value ? subtotalAmount.value : discount;
+});
+
+const totalPrice = computed(() => {
+  return subtotalAmount.value - discountAmount.value;
 });
 
 onMounted(async () => {
@@ -325,6 +381,29 @@ onMounted(async () => {
     toast.error('Error al cargar la orden');
   }
 });
+
+const validateCoupon = async () => {
+  couponError.value = '';
+  if (!couponCode.value.trim()) return;
+  
+  validatingCoupon.value = true;
+  try {
+    const response = await catalogService.validateCoupon(couponCode.value);
+    appliedCoupon.value = response.data;
+    toast.success('¡Cupón aplicado correctamente!');
+  } catch (error) {
+    couponError.value = error.response?.data?.error || 'Cupón inválido o expirado.';
+    appliedCoupon.value = null;
+  } finally {
+    validatingCoupon.value = false;
+  }
+};
+
+const removeCoupon = () => {
+  appliedCoupon.value = null;
+  couponCode.value = '';
+  couponError.value = '';
+};
 
 const initiateStripePayment = async () => {
   // 1. Verificación de Autenticación
@@ -381,15 +460,28 @@ const initiateStripePayment = async () => {
         price_at_sale: addon.base_price
       });
     });
+
+    const orderPayload = {
+      subtotal_amount: subtotalAmount.value,
+      total_amount: totalPrice.value,
+      origin: 'ONLINE',
+      items: items
+    };
+
+    if (appliedCoupon.value) {
+      orderPayload.coupon_code = appliedCoupon.value.code;
+    }
+
+    if (deploymentId) {
+      orderPayload.deployment = deploymentId;
+    }
+    
+    if (hasPhysicalProducts.value && shippingAddress.value) {
+      orderPayload.shipping_address = shippingAddress.value;
+    }
     
     // 4. Crear la Orden vinculada al diseño con dirección de envío si aplica
-    const orderRes = await orderService.createOrder(
-      items, 
-      totalPrice.value,
-      null,
-      deploymentId,
-      hasPhysicalProducts.value ? shippingAddress.value : null
-    );
+    const orderRes = await orderService.createOrder(orderPayload);
     const orderId = orderRes.data.id;
     
     // Limpiar el sandbox y addons pendientes una vez que ya se creó la orden

@@ -25,6 +25,28 @@ class OrderViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=400)
 
+    @action(detail=False, methods=['post'], url_path='validate-coupon')
+    def validate_coupon(self, request):
+        from .models import Coupon
+        code = request.data.get('code', '').strip()
+        if not code:
+            return Response({'error': 'El código del cupón es requerido.'}, status=400)
+            
+        try:
+            coupon = Coupon.objects.get(code__iexact=code)
+            if not coupon.is_valid():
+                return Response({'error': 'Este cupón ha expirado, está inactivo o superó su límite de usos.'}, status=400)
+                
+            return Response({
+                'id': coupon.id,
+                'code': coupon.code,
+                'discount_percentage': float(coupon.discount_percentage),
+                'discount_fixed': float(coupon.discount_fixed),
+                'message': 'Cupón válido aplicado'
+            })
+        except Coupon.DoesNotExist:
+            return Response({'error': 'Cupón no encontrado o inválido.'}, status=404)
+
     @action(detail=True, methods=['post'], url_path='complete-pos')
     def complete_pos_order(self, request, pk=None):
         from django.utils import timezone
@@ -216,8 +238,44 @@ class OrderViewSet(viewsets.ModelViewSet):
             except Deployment.DoesNotExist:
                 pass
 
+        # Lógica de Cupones B2C
+        coupon_code = self.request.data.get('coupon_code')
+        coupon_obj = None
+        if coupon_code:
+            from .models import Coupon
+            try:
+                coupon_obj = Coupon.objects.get(code__iexact=coupon_code)
+                if coupon_obj.is_valid():
+                    save_kwargs['coupon'] = coupon_obj
+                else:
+                    coupon_obj = None
+            except Coupon.DoesNotExist:
+                pass
+
         order = serializer.save(**save_kwargs)
         
+        # Registrar y aplicar cálculo de descuento al Order si hubo cupón
+        if coupon_obj:
+            subtotal = float(order.subtotal_amount)
+            discount_amount = 0.0
+            if coupon_obj.discount_fixed > 0:
+                discount_amount = float(coupon_obj.discount_fixed)
+            elif coupon_obj.discount_percentage > 0:
+                discount_amount = subtotal * (float(coupon_obj.discount_percentage) / 100.0)
+            
+            # Evitar descuentos mayores al subtotal
+            if discount_amount > subtotal:
+                discount_amount = subtotal
+
+            order.discount_amount = discount_amount
+            # Recalcular total (asumiendo que el frontend mandó el total original o debemos recalcular)
+            order.total_amount = float(order.subtotal_amount) - discount_amount + float(order.tax_amount)
+            order.save()
+            
+            # Incrementar uso del cupón
+            coupon_obj.current_uses += 1
+            coupon_obj.save()
+
         # Lógica de Comisiones: Solo si es POS y hay un vendedor diferente al cliente
         if order.origin == Order.OriginChoices.POS and order.vendor_id:
             if profile and profile.base_commission_rate > 0:

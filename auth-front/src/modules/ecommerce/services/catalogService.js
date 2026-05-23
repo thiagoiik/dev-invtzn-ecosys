@@ -4,5 +4,8 @@ export const catalogService = {
   // Obtener el catálogo público de productos
   fetchProducts() {
     return invtznClient.get('products/');
+  },
+  validateCoupon(code) {
+    return invtznClient.post('orders/validate-coupon/', { code });
   }
 };
