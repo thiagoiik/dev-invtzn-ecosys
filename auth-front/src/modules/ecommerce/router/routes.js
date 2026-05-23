@@ -1,6 +1,11 @@
 export default [
   {
     path: '/',
+    name: 'home',
+    component: () => import('@/modules/ecommerce/views/HomeView.vue')
+  },
+  {
+    path: '/',
     component: () => import('@/layouts/B2CLayout.vue'),
     children: [
       { 
