@@ -1,49 +1,56 @@
 <template>
   <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h1 class="text-3xl font-bold text-white tracking-tight">Herramientas de Desarrollador</h1>
-      <div class="flex gap-2">
-        <button @click="fetchLogs" class="btn btn-outline border-slate-700 text-slate-300">
-          <i class="fas fa-sync-alt mr-2"></i> Refrescar Logs
+    <!-- Header Card -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-800">Herramientas de Desarrollador</h2>
+        <p class="text-slate-500 text-sm">Monitorea integraciones de pago, visualiza webhooks y realiza simulaciones en el sandbox.</p>
+      </div>
+      <div>
+        <button @click="fetchLogs" class="btn btn-outline border-slate-300 text-slate-600 hover:bg-slate-50">
+          🔄 Refrescar Logs
         </button>
       </div>
     </div>
 
     <!-- Webhook Logs -->
-    <div class="card bg-slate-800/50 border border-slate-700">
-      <div class="card-body">
-        <h2 class="card-title text-xl text-white mb-4">
-          <i class="fas fa-satellite-dish text-indigo-400 mr-2"></i> Visor de Webhooks (Stripe)
+    <div class="card bg-white border border-slate-200 shadow-sm rounded-2xl">
+      <div class="card-body p-6">
+        <h2 class="card-title text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+          <span>📡</span> Visor de Webhooks (Stripe)
         </h2>
         <div class="overflow-x-auto">
           <table class="table w-full">
             <thead>
-              <tr class="text-slate-400 border-b border-slate-700">
-                <th>Fecha</th>
-                <th>Proveedor</th>
-                <th>Estado</th>
-                <th>Mensaje</th>
-                <th>Acciones</th>
+              <tr class="text-slate-500 border-b border-slate-200">
+                <th class="font-bold text-slate-700">Fecha</th>
+                <th class="font-bold text-slate-700">Proveedor</th>
+                <th class="font-bold text-slate-700">Estado</th>
+                <th class="font-bold text-slate-700">Mensaje</th>
+                <th class="font-bold text-slate-700">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="log in webhookLogs" :key="log.id" class="border-b border-slate-700 hover:bg-slate-800/80 transition-colors">
-                <td class="text-slate-300">{{ new Date(log.created_at).toLocaleString() }}</td>
-                <td><span class="badge badge-outline badge-primary">{{ log.provider }}</span></td>
+              <tr v-for="log in webhookLogs" :key="log.id" class="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+                <td class="text-slate-700 text-sm font-medium">{{ new Date(log.created_at).toLocaleString() }}</td>
+                <td><span class="badge badge-outline badge-primary font-semibold">{{ log.provider }}</span></td>
                 <td>
-                  <span class="badge" :class="{
-                    'badge-success': log.status === 'success',
-                    'badge-error': log.status === 'failed',
-                    'badge-warning': log.status === 'received'
+                  <span class="badge font-semibold" :class="{
+                    'badge-success text-white': log.status === 'success',
+                    'badge-error text-white': log.status === 'failed',
+                    'badge-warning text-white': log.status === 'received'
                   }">{{ log.status }}</span>
                 </td>
-                <td class="text-slate-400 truncate max-w-xs">{{ log.message }}</td>
+                <td class="text-slate-600 text-xs truncate max-w-xs font-mono">{{ log.message }}</td>
                 <td>
-                  <button @click="viewPayload(log)" class="btn btn-sm btn-ghost text-indigo-400">Ver Payload</button>
+                  <button @click="viewPayload(log)" class="btn btn-sm btn-ghost text-xs text-primary hover:bg-primary/5">Ver Payload</button>
                 </td>
               </tr>
               <tr v-if="webhookLogs.length === 0">
-                <td colspan="5" class="text-center text-slate-500 py-8">No se han recibido webhooks aún.</td>
+                <td colspan="5" class="text-center text-slate-400 py-12">
+                  <div class="text-3xl mb-2">📡</div>
+                  No se han recibido webhooks aún.
+                </td>
               </tr>
             </tbody>
           </table>
@@ -52,15 +59,15 @@
     </div>
 
     <!-- Simulador de Pagos -->
-    <div class="card bg-slate-800/50 border border-slate-700">
-      <div class="card-body">
-        <h2 class="card-title text-xl text-white mb-4">
-          <i class="fas fa-magic text-fuchsia-400 mr-2"></i> Simular Activación de Orden
+    <div class="card bg-white border border-slate-200 shadow-sm rounded-2xl">
+      <div class="card-body p-6">
+        <h2 class="card-title text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+          <span>⚡</span> Simular Activación de Orden
         </h2>
-        <p class="text-slate-400 text-sm mb-4">Forza el pago y la activación de una orden que se quedó pendiente porque el webhook no llegó.</p>
-        <div class="flex gap-4 items-center">
+        <p class="text-slate-500 text-sm mb-4">Fuerza el pago y la activación de una orden que se quedó pendiente porque el webhook no llegó.</p>
+        <div class="flex gap-4 items-center flex-wrap sm:flex-nowrap">
           <div class="form-control flex-1 max-w-xs">
-            <input v-model="orderIdToForce" type="number" placeholder="ID de la Orden" class="input input-bordered bg-slate-900 border-slate-700 text-white w-full" />
+            <input v-model="orderIdToForce" type="number" placeholder="ID de la Orden" class="input input-bordered bg-white border-slate-300 text-slate-800 w-full" />
           </div>
           <button @click="forceActivation" :disabled="!orderIdToForce || isLoading" class="btn btn-primary">
             <span v-if="isLoading" class="loading loading-spinner loading-sm"></span>
@@ -72,14 +79,16 @@
 
     <!-- Modal Payload -->
     <dialog id="payload_modal" class="modal">
-      <div class="modal-box bg-slate-800 border border-slate-700 w-11/12 max-w-5xl">
-        <h3 class="font-bold text-lg text-white mb-4">Payload del Webhook</h3>
+      <div class="modal-box bg-white border border-slate-200 rounded-2xl w-11/12 max-w-5xl shadow-2xl">
+        <h3 class="font-bold text-xl text-slate-800 mb-4 flex items-center gap-2">
+          <span>📦</span> Payload del Webhook
+        </h3>
         <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 overflow-x-auto">
-          <pre class="text-green-400 text-sm"><code>{{ selectedPayload }}</code></pre>
+          <pre class="text-emerald-400 text-xs font-mono"><code>{{ selectedPayload }}</code></pre>
         </div>
-        <div class="modal-action">
+        <div class="modal-action border-t border-slate-100 pt-4 mt-6">
           <form method="dialog">
-            <button class="btn btn-outline text-slate-300 border-slate-600">Cerrar</button>
+            <button class="btn btn-outline border-slate-300 text-slate-600 hover:bg-slate-50">Cerrar</button>
           </form>
         </div>
       </div>
@@ -100,7 +109,7 @@ const selectedPayload = ref('');
 
 const fetchLogs = async () => {
   try {
-    const res = await invtznClient.get('integrations/webhook-logs/');
+    const res = await invtznClient.get('webhook-logs/');
     webhookLogs.value = res.data.results || res.data;
   } catch (error) {
     console.error(error);
@@ -115,7 +124,7 @@ const viewPayload = (log) => {
 const forceActivation = async () => {
   isLoading.value = true;
   try {
-    const res = await invtznClient.post(`sales/orders/${orderIdToForce.value}/force-activation/`);
+    const res = await invtznClient.post(`orders/${orderIdToForce.value}/force-activation/`);
     toast.success(res.data.message || 'Orden activada con éxito');
     orderIdToForce.value = '';
   } catch (error) {
