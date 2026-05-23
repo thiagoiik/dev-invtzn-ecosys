@@ -696,3 +696,28 @@ class CommissionViewSet(viewsets.ReadOnlyModelViewSet):
                 return Commission.objects.all()
         except: pass
         return Commission.objects.filter(vendor_id=self.request.user.id)
+
+from .models import Coupon
+from .serializers import CouponSerializer
+
+class CouponViewSet(viewsets.ModelViewSet):
+    """
+    CRUD completo para la gestión de Cupones desde el panel B2B.
+    Solo ADMIN y FRANCHISEE pueden acceder.
+    """
+    queryset = Coupon.objects.all().order_by('-created_at')
+    serializer_class = CouponSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        profile = self._get_user_profile()
+        if profile and profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.FRANCHISEE]:
+            return Coupon.objects.all().order_by('-created_at')
+        return Coupon.objects.none()
+
+    def _get_user_profile(self):
+        try:
+            from profiles.models import UserProfile
+            return UserProfile.objects.get(remote_auth_id=self.request.user.id)
+        except:
+            return None
