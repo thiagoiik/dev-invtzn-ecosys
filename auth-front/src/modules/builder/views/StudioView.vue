@@ -27,7 +27,7 @@
       </button>
 
       <!-- PANEL IZQUIERDO: CONTROLES -->
-      <aside class="control-panel" :class="{ 'hidden md:flex': showMobilePreview }">
+      <aside class="control-panel" :class="{ 'is-hidden-mobile': showMobilePreview }">
         <div class="panel-header">
           <h3>Ajustes de Diseño</h3>
         </div>
@@ -187,7 +187,7 @@
             <div v-if="!allowedFeatures.countdown_timer" class="upgrade-block-overlay">
               <div class="lock-icon">🔒</div>
               <p class="lock-text">El bloque de Cuenta Regresiva requiere un plan <strong>Standard</strong> o superior.</p>
-              <router-link to="/catalog" class="upgrade-btn">Mejorar Plan</router-link>
+              <button @click="showUpgradeModal = true" class="upgrade-btn">Mejorar Plan</button>
             </div>
 
             <!-- Fields wrapper -->
@@ -236,7 +236,7 @@
             <div v-if="!allowedFeatures.timeline" class="upgrade-block-overlay">
               <div class="lock-icon">🔒</div>
               <p class="lock-text">El bloque de Itinerario requiere un plan <strong>Premium</strong>.</p>
-              <router-link to="/catalog" class="upgrade-btn">Mejorar Plan</router-link>
+              <button @click="showUpgradeModal = true" class="upgrade-btn">Mejorar Plan</button>
             </div>
 
             <!-- Fields wrapper -->
@@ -345,7 +345,7 @@
             <div v-if="!allowedFeatures.background_music" class="upgrade-block-overlay">
               <div class="lock-icon">🔒</div>
               <p class="lock-text">La Música de Fondo requiere un plan <strong>Standard</strong> o superior.</p>
-              <router-link to="/catalog" class="upgrade-btn">Mejorar Plan</router-link>
+              <button @click="showUpgradeModal = true" class="upgrade-btn">Mejorar Plan</button>
             </div>
 
             <!-- Fields wrapper -->
@@ -380,7 +380,7 @@
             <div v-if="!allowedFeatures.custom_theme" class="upgrade-block-overlay">
               <div class="lock-icon">🔒</div>
               <p class="lock-text">La paleta de color personalizada requiere un plan <strong>Standard</strong> o superior.</p>
-              <router-link to="/catalog" class="upgrade-btn">Mejorar Plan</router-link>
+              <button @click="showUpgradeModal = true" class="upgrade-btn">Mejorar Plan</button>
             </div>
 
             <!-- Fields wrapper -->
@@ -430,7 +430,7 @@
             <div v-if="!allowedFeatures.custom_og" class="upgrade-block-overlay">
               <div class="lock-icon">🔒</div>
               <p class="lock-text">La personalización de metadatos para redes sociales requiere un plan <strong>Premium</strong>.</p>
-              <router-link to="/catalog" class="upgrade-btn">Mejorar Plan</router-link>
+              <button @click="showUpgradeModal = true" class="upgrade-btn">Mejorar Plan</button>
             </div>
 
             <!-- Fields wrapper -->
@@ -498,7 +498,7 @@
       </aside>
 
       <!-- PANEL DERECHO: LIVE PREVIEW -->
-      <section class="preview-panel" :class="{ 'hidden md:flex': !showMobilePreview }">
+      <section class="preview-panel" :class="{ 'is-hidden-mobile': !showMobilePreview }">
         <div class="device-frame">
           <!-- Inyectamos los componentes del Engine en tiempo real -->
           <div v-if="!loading" class="preview-canvas">
@@ -509,7 +509,7 @@
                 :slug="deploymentSlug" 
                 :deploymentId="deploymentId"
                 :isStudioMode="true"
-                @purchase="goToCatalog"
+                @purchase="showUpgradeModal = true"
               />
             </EnvelopeWrapper>
           </div>
@@ -520,6 +520,13 @@
         </div>
       </section>
     </div>
+
+    <!-- Modal de Upgrade (Glassmorphism) -->
+    <UpgradeModal 
+      v-if="showUpgradeModal" 
+      @close="showUpgradeModal = false" 
+      @select-tier="handleTierSelection" 
+    />
   </BuilderLayout>
 </template>
 
@@ -531,6 +538,7 @@ import BuilderLayout from '@/layouts/BuilderLayout.vue';
 import { builderService } from '@/modules/builder/services/builderService';
 import RenderEngineMaster from '@/modules/engine/components/RenderEngineMaster.vue';
 import EnvelopeWrapper from '@/modules/engine/components/EnvelopeWrapper.vue';
+import UpgradeModal from '@/modules/builder/components/UpgradeModal.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -541,12 +549,14 @@ const loading = ref(true);
 const saveStatus = ref('saved'); // 'saved', 'unsaved', 'saving', 'error'
 const activeTab = ref('cover'); // 'cover', 'rsvp', 'timer', 'timeline', 'music', 'theme', 'og', 'envelope'
 const showMobilePreview = ref(false);
+const showUpgradeModal = ref(false);
 
-const goToCatalog = () => {
+const handleTierSelection = (productId) => {
   if (deploymentId) {
-    localStorage.setItem('claimed_deployment_id', deploymentId);
+    localStorage.setItem('pending_sandbox_id', deploymentId);
   }
-  router.push('/catalog');
+  showUpgradeModal.value = false;
+  router.push(`/checkout/${productId}`);
 };
 
 const allowedFeatures = ref({
@@ -1186,14 +1196,39 @@ watch(localConfig, () => {
 }
 .device-frame {
   width: 380px;
-  height: 760px;
-  background: white;
+  height: 800px;
+  max-width: 100%;
+  max-height: 100%;
   border-radius: 40px;
-  box-shadow: 0 25px 70px -10px rgba(0, 0, 0, 0.7);
+  border: 12px solid #1e293b;
   overflow: hidden;
   position: relative;
-  border: 12px solid #334155;
-  outline: 1px solid rgba(255, 255, 255, 0.05);
+  background: white;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 767px) {
+  .studio-container {
+    height: 100vh; /* Ocupar toda la pantalla en móvil */
+    overflow: hidden;
+  }
+  .control-panel {
+    width: 100%;
+    height: 100%;
+  }
+  .preview-panel {
+    padding: 0;
+    height: 100%;
+  }
+  .device-frame {
+    width: 100%;
+    height: 100%;
+    border-radius: 0;
+    border: none;
+  }
+  .is-hidden-mobile {
+    display: none !important;
+  }
 }
 .preview-canvas {
   width: 100%;
