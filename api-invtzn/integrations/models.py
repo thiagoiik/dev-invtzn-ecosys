@@ -16,3 +16,14 @@ class BankSyncLog(models.Model):
 
     def __str__(self):
         return f"Movimiento {self.external_id} - ${self.amount}"
+
+class WebhookLog(models.Model):
+    provider = models.CharField(max_length=50, default='Stripe')
+    payload = models.JSONField(blank=True, null=True, help_text="Cuerpo de la petición recibida")
+    headers = models.JSONField(blank=True, null=True, help_text="Cabeceras HTTP recibidas")
+    status = models.CharField(max_length=50, help_text="success, failed, ignored")
+    message = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Webhook {self.provider} - {self.status} ({self.created_at})"

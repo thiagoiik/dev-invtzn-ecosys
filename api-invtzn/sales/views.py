@@ -47,6 +47,34 @@ class OrderViewSet(viewsets.ModelViewSet):
         except Coupon.DoesNotExist:
             return Response({'error': 'Cupón no encontrado o inválido.'}, status=404)
 
+    @action(detail=True, methods=['post'], url_path='force-activation')
+    def force_activation(self, request, pk=None):
+        """
+        DevTool: Simula la llegada de un Webhook de Stripe y fuerza el pago y activación de la orden.
+        """
+        profile = self._get_user_profile()
+        if not profile or profile.custom_role not in ['ADMIN', 'FRANCHISEE']:
+            return Response({'error': 'No autorizado'}, status=403)
+            
+        order = self.get_object()
+        if order.status == Order.StatusChoices.COMPLETED:
+            return Response({'error': 'La orden ya está completada'}, status=400)
+            
+        order.status = Order.StatusChoices.COMPLETED
+        order.save()
+        
+        if order.deployment:
+            from deployments.models import Deployment
+            order.deployment.is_paid = True
+            order.deployment.status = Deployment.StatusChoices.LIVE
+            order.deployment.save()
+            
+        if hasattr(order, 'payment') and order.payment:
+            order.payment.success = True
+            order.payment.save()
+            
+        return Response({'success': True, 'message': 'Orden forzada a completada y despliegue activado.'})
+
     @action(detail=True, methods=['post'], url_path='complete-pos')
     def complete_pos_order(self, request, pk=None):
         from django.utils import timezone

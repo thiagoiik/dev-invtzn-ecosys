@@ -2,8 +2,66 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import BankSyncLog
+from .models import BankSyncLog, WebhookLog
 from .serializers import BankSyncLogSerializer
+
+# ... skipping down to StripeWebhookView ...
+class StripeWebhookView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        payload = request.body
+        sig_header = request.META.get('HTTP_STRIPE_SIGNATURE', '')
+        
+        # Guardar todo en WebhookLog primero para auditoría
+        import json
+        payload_dict = {}
+        try:
+            payload_dict = json.loads(payload.decode('utf-8'))
+        except:
+            payload_dict = {'raw': str(payload)}
+            
+        headers_dict = {k: v for k, v in request.META.items() if k.startswith('HTTP_')}
+        
+        log = WebhookLog.objects.create(
+            provider='Stripe',
+            payload=payload_dict,
+            headers=headers_dict,
+            status='received',
+            message='Procesando...'
+        )
+        
+        success, message = StripeProvider.handle_webhook(payload, sig_header)
+        
+        log.status = 'success' if success else 'failed'
+        log.message = message
+        log.save()
+        
+        if success:
+            return Response({'status': 'success'}, status=200)
+        else:
+            return Response({'error': message}, status=400)
+
+from rest_framework import serializers
+
+class WebhookLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WebhookLog
+        fields = '__all__'
+
+class WebhookLogViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = WebhookLog.objects.all().order_by('-created_at')
+    serializer_class = WebhookLogSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
+            if profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.FRANCHISEE]:
+                return WebhookLog.objects.all().order_by('-created_at')
+        except: pass
+        return WebhookLog.objects.none()
 from sales.models import Order, PaymentTransaction
 from django.utils import timezone
 from integrations.stripe_provider import StripeProvider
@@ -98,16 +156,4 @@ class ReconciliationViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response({'error': str(e)}, status=400)
 
-class StripeWebhookView(APIView):
-    permission_classes = [permissions.AllowAny]
 
-    def post(self, request):
-        payload = request.body
-        sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
-        
-        success, message = StripeProvider.handle_webhook(payload, sig_header)
-        
-        if success:
-            return Response({'status': 'success'}, status=200)
-        else:
-            return Response({'error': message}, status=400)

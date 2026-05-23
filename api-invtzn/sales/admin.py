@@ -43,3 +43,16 @@ class InvoiceAdmin(admin.ModelAdmin):
 class ShippingAddressAdmin(admin.ModelAdmin):
     list_display = ('id', 'order', 'recipient_name', 'city', 'state', 'phone')
     search_fields = ('order__id', 'recipient_name', 'city', 'state', 'phone')
+
+from .models import Coupon, DirectDiscount
+
+@admin.register(Coupon)
+class CouponAdmin(admin.ModelAdmin):
+    list_display = ('code', 'discount_percentage', 'discount_fixed', 'active', 'current_uses', 'max_uses', 'valid_from', 'valid_to')
+    list_filter = ('active', 'valid_from', 'valid_to')
+    search_fields = ('code',)
+
+@admin.register(DirectDiscount)
+class DirectDiscountAdmin(admin.ModelAdmin):
+    list_display = ('order', 'authorized_by', 'amount')
+    search_fields = ('order__id', 'authorized_by')

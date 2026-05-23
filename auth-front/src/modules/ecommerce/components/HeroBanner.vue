@@ -14,29 +14,29 @@
             ✨ EL FUTURO DE LOS EVENTOS
           </div>
           
-          <h1 class="text-5xl lg:text-7xl font-black text-white leading-tight animate-in fade-in slide-in-from-bottom-6 duration-700">
+          <h1 class="text-5xl lg:text-7xl font-black text-white leading-tight">
             Invitaciones que <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary to-indigo-400">cobran vida</span>
           </h1>
           
-          <p class="text-lg text-slate-400 leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
+          <p class="text-lg text-slate-400 leading-relaxed transition-opacity duration-700 ease-in-out">
             Crea experiencias digitales únicas para tus momentos más especiales. Gestión de invitados, RSVP interactivo y diseños de alta gama en un solo lugar.
           </p>
 
-          <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500">
-            <button @click="$emit('explore')" class="btn btn-primary btn-lg shadow-xl shadow-primary/20 hover:scale-105 transition-all">
+          <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4 transition-transform duration-700 ease-in-out">
+            <router-link to="/catalog" class="btn btn-primary btn-lg shadow-xl shadow-primary/20 hover:scale-105 transition-all">
               Explorar Catálogo
-            </button>
-            <a href="/demo/sample" target="_blank" class="btn btn-outline border-slate-700 text-slate-300 hover:bg-slate-900 btn-lg">
+            </router-link>
+            <a href="/catalog" class="btn btn-outline border-slate-700 text-slate-300 hover:bg-slate-900 btn-lg">
               Ver Demo Live
             </a>
           </div>
         </div>
 
-        <div class="flex-1 w-full max-w-lg lg:max-w-none animate-in zoom-in duration-1000">
+        <div class="flex-1 w-full max-w-lg lg:max-w-none transition-transform duration-700 ease-in-out">
           <div class="relative">
             <div class="absolute -inset-1 bg-gradient-to-r from-primary to-indigo-500 rounded-3xl blur opacity-25 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
             <img 
-              src="/hero_invitation_banner_1778918688451.png" 
+              src="/hero_premium_mockup.png" 
               alt="Premium Invitations" 
               class="relative rounded-3xl shadow-2xl border border-slate-800/50 hover:scale-[1.02] transition-transform duration-500"
             />

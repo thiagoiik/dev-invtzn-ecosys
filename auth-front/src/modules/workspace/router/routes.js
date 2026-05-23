@@ -40,6 +40,16 @@ export default [
         name: 'workspace-finance',
         component: () => import('@/modules/workspace/views/FinanceReconciliationView.vue'),
         meta: { requiresRole: ['ADMIN', 'FRANCHISEE', 'MANAGER'] }
+      },
+      {
+        path: 'tools',
+        name: 'workspace-tools',
+        component: () => import('../views/DevToolsView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: ['ADMIN', 'FRANCHISEE'],
+          title: 'Herramientas Dev'
+        }
       }
     ]
   }

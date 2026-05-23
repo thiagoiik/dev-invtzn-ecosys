@@ -14,9 +14,9 @@ const invtznClient = axios.create({
 // Interceptor de Petición: Inyectamos el token dinámicamente
 invtznClient.interceptors.request.use(async (config) => {
   try {
-    // Si la URL es pública (ej. ver invitación por slug), NO enviamos el token
+    // Si la URL es pública (ej. ver invitación por slug, o catálogo de productos), NO enviamos el token
     // Esto evita errores de "Token Expirado" en vistas que no lo requieren
-    const isPublic = config.url.includes('/slug/');
+    const isPublic = config.url.includes('/slug/') || config.url.includes('/products/');
     
     if (!isPublic) {
       const { useAuthStore } = await import('@/modules/auth/store/auth');
