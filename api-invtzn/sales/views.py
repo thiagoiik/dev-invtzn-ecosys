@@ -705,14 +705,14 @@ class CouponViewSet(viewsets.ModelViewSet):
     CRUD completo para la gestión de Cupones desde el panel B2B.
     Solo ADMIN y FRANCHISEE pueden acceder.
     """
-    queryset = Coupon.objects.all().order_by('-created_at')
+    queryset = Coupon.objects.all().order_by('-id')
     serializer_class = CouponSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         profile = self._get_user_profile()
         if profile and profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.FRANCHISEE]:
-            return Coupon.objects.all().order_by('-created_at')
+            return Coupon.objects.all().order_by('-id')
         return Coupon.objects.none()
 
     def _get_user_profile(self):
