@@ -90,7 +90,7 @@
                   <h3 class="font-bold text-slate-800">{{ prod.name }}</h3>
                   <span v-if="prod.sku" class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono font-bold mt-1 inline-block">SKU: {{ prod.sku }}</span>
                   <span class="ml-1 text-[10px] px-2 py-0.5 rounded font-bold" :class="prod.is_physical ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'">
-                    {{ prod.is_physical ? 'Físico' : 'Digital' }}
+                    {{ prod.is_physical ? 'Físico (Entrega)' : 'Digital (Tier)' }}
                   </span>
                 </div>
                 <span class="text-primary font-black shrink-0">${{ parseFloat(prod.base_price).toFixed(2) }}</span>
@@ -121,7 +121,12 @@
               <div v-for="item in cart" :key="item.product.id" class="flex items-center justify-between gap-2 pb-3 border-b border-slate-100 last:border-0 last:pb-0">
                 <div class="flex-1 min-w-0">
                   <p class="font-bold text-sm text-slate-800 truncate">{{ item.product.name }}</p>
-                  <p class="text-xs text-slate-500">${{ parseFloat(item.price).toFixed(2) }} c/u</p>
+                  <div class="flex items-center gap-2 mt-0.5">
+                    <span class="text-[10px] px-1.5 py-0.5 rounded font-bold" :class="item.product.is_physical ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'">
+                      {{ item.product.is_physical ? 'Físico (Entrega)' : 'Digital (Tier)' }}
+                    </span>
+                    <p class="text-xs text-slate-500">${{ parseFloat(item.price).toFixed(2) }} c/u</p>
+                  </div>
                 </div>
                 <div class="flex items-center gap-2">
                   <button class="btn btn-xs btn-circle btn-outline btn-neutral" @click.stop="decrementQty(item)">-</button>
