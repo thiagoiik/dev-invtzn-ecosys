@@ -13,6 +13,11 @@ import builderRoutes from '@/modules/builder/router/routes';
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: '/',
+      name: 'home',
+      component: () => import('@/modules/ecommerce/views/HomeView.vue')
+    },
     ...authRoutes,
     ...dashboardRoutes,
     ...eventsRoutes,
