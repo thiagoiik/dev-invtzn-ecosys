@@ -99,3 +99,9 @@ class CommissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Commission
         fields = '__all__'
+
+from .models import Coupon
+class CouponSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Coupon
+        fields = '__all__'

@@ -50,6 +50,16 @@ export default [
           roles: ['ADMIN', 'FRANCHISEE'],
           title: 'Herramientas Dev'
         }
+      },
+      {
+        path: 'coupons',
+        name: 'workspace-coupons',
+        component: () => import('../views/CouponsView.vue'),
+        meta: { 
+          requiresAuth: true,
+          roles: ['ADMIN', 'FRANCHISEE'],
+          title: 'Gestión de Cupones'
+        }
       }
     ]
   }
