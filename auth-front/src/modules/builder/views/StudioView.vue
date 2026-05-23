@@ -15,6 +15,9 @@
           ❌ Error al guardar en base de datos
         </span>
       </div>
+      <button v-if="deploymentSlug" @click="openLiveDemo" class="btn btn-outline-primary ml-4">
+        👀 Ver en Vivo / Compartir
+      </button>
     </template>
 
     <div class="studio-container relative">
@@ -667,6 +670,12 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+const openLiveDemo = () => {
+  if (deploymentSlug.value) {
+    window.open(`/demo/${deploymentSlug.value}`, '_blank');
+  }
+};
 
 const addScheduleItem = () => {
   if (!localConfig.value.timeline.schedule) {

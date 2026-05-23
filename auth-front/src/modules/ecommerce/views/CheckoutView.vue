@@ -397,7 +397,9 @@ const initiateStripePayment = async () => {
     localStorage.removeItem('selected_addon_ids');
     
     // 5. Generar Link de Stripe
-    const successUrl = `${window.location.origin}/dashboard?payment=success`;
+    const successUrl = deploymentId 
+      ? `${window.location.origin}/studio/${deploymentId}?payment=success`
+      : `${window.location.origin}/dashboard?payment=success`;
     const cancelUrl = `${window.location.origin}/checkout/${product.value.id}?payment=cancel`;
     
     const stripeRes = await orderService.createStripeCheckout(orderId, successUrl, cancelUrl);
