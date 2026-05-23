@@ -199,6 +199,17 @@ Hemos diseñado e implementado el canal de ventas digital B2C y el portal postve
 
 ---
 
+## 🎉 Cierre de la Versión 0.6.x (Motor de Cupones y Estabilización UI/UX)
+
+La estabilización de la fase 0.6.x incorpora la unión definitiva entre las áreas B2C y B2B del ecosistema, eliminando silos de navegación y empoderando estrategias de marketing:
+
+*   **Motor de Cupones B2C (Promociones):** Conexión total del modelo `Coupon` de Django al flujo de Checkout de Vue. Soporta validación de vigencia, límites máximos de uso, cálculo matemático de descuentos (fijos y porcentuales) y recalibración de pasarela de pagos (Stripe) en tiempo real.
+*   **El Puente B2B Unificado:** Integración total del Layout de E-commerce B2C con el Navbar B2B, inyectando accesos directos al Punto de Venta (POS) para `ADMIN` y `FRANCHISEE`, eliminando componentes duplicados.
+*   **Auditoría y Corrección UI/UX:** Limpieza agresiva de "botones fantasmas", asignación de lógica CRM interactiva en listados de usuarios, mejoras de rutas estrictas de Vue Router, e inyección de Mockups Premium 4K (Glassmorphism) para las áreas públicas.
+*   **Redirección Continua (Cero Puntos Ciegos):** Tras un pago exitoso de una Plantilla, el sistema enruta directamente al usuario hacia la Suite de Diseño (`/studio`) con su nueva orden instanciada, evitando confusiones post-compra.
+
+---
+
 ## 🧪 Comandos Útiles
 
 ### Desarrollo y Base de Datos
