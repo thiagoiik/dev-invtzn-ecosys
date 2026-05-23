@@ -26,9 +26,9 @@
             <button @click="$emit('explore')" class="btn btn-primary btn-lg shadow-xl shadow-primary/20 hover:scale-105 transition-all">
               Explorar Catálogo
             </button>
-            <button class="btn btn-outline border-slate-700 text-slate-300 hover:bg-slate-900 btn-lg">
+            <router-link to="/auth/registration" class="btn btn-outline border-slate-700 text-slate-300 hover:bg-slate-900 btn-lg">
               Ver Demo Live
-            </button>
+            </router-link>
           </div>
         </div>
 

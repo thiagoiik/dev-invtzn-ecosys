@@ -79,11 +79,17 @@
               <div class="absolute inset-0 bg-gradient-to-br from-white/60 to-white/10 z-0"></div>
               
               <!-- Simulación de UI dentro del teléfono -->
-              <div class="relative z-10 w-full h-full flex flex-col p-6">
-                <div class="h-1/2 bg-slate-100 rounded-2xl mb-4 animate-pulse"></div>
-                <div class="h-6 w-3/4 bg-slate-200 rounded-md mb-2"></div>
-                <div class="h-4 w-1/2 bg-slate-200 rounded-md mb-6"></div>
-                <div class="h-12 w-full bg-primary/20 rounded-xl mt-auto border border-primary/30 flex items-center justify-center">
+              <div class="relative z-10 w-full h-full flex flex-col p-6 bg-white rounded-[2.5rem]">
+                <!-- Imagen de Invitación -->
+                <div class="h-1/2 w-full rounded-2xl mb-4 overflow-hidden bg-slate-100 flex items-center justify-center relative">
+                   <div class="absolute inset-0 bg-gradient-to-tr from-amber-100 to-rose-100 opacity-50"></div>
+                   <span class="text-4xl relative z-10">💍</span>
+                </div>
+                <!-- Textos -->
+                <h3 class="font-serif text-2xl text-slate-800 text-center mb-1 font-bold">Carlos & María</h3>
+                <p class="text-xs text-slate-500 text-center mb-6 uppercase tracking-widest">24 Dic 2026</p>
+                <!-- Botón -->
+                <div class="h-12 w-full bg-primary/10 rounded-xl mt-auto border border-primary/20 flex items-center justify-center">
                   <span class="text-primary font-bold text-sm">RSVP Abierto</span>
                 </div>
               </div>
