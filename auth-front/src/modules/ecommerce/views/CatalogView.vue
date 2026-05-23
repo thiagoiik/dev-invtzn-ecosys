@@ -92,8 +92,10 @@ const loadProducts = async () => {
   loading.value = true;
   try {
     const response = await catalogService.fetchProducts();
-    // Filtramos solo los productos activos
-    products.value = response.data.filter(p => p.is_active);
+    // Filtramos solo los productos activos, plantillas y físicos (ocultando Tiers/Servicios)
+    products.value = response.data.filter(p => 
+      p.is_active && ['DIGITAL', 'PHYSICAL'].includes(p.product_type)
+    );
   } catch (error) {
     toast.error('Ocurrió un error al cargar el catálogo de productos.');
   } finally {
