@@ -33,6 +33,11 @@ schema_view = get_schema_view(
    permission_classes=(permissions.AllowAny,),
 )
 
+# Personalización del Admin de Django (Header y Títulos)
+admin.site.site_header = "Invitazyon.online Administration"
+admin.site.site_title = "Invitazyon.online Admin"
+admin.site.index_title = "Core Business Control Panel"
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     

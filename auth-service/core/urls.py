@@ -25,6 +25,11 @@ def password_reset_redirect(request, uidb64, token):
     frontend_url = f"http://localhost:5173/password-reset-confirm/{uidb64}/{token}/"
     return HttpResponseRedirect(frontend_url)
 
+# Personalización del Admin de Django (Header y Títulos)
+admin.site.site_header = "Invitazyon Auth Administration"
+admin.site.site_title = "Invitazyon Auth Admin"
+admin.site.index_title = "Auth Control Panel"
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/', include('dj_rest_auth.urls')),
