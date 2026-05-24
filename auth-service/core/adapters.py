@@ -7,7 +7,7 @@ class CustomAccountAdapter(DefaultAccountAdapter):
     def get_email_confirmation_url(self, request, emailconfirmation):
         # Aquí se construye la URL que apunta a  VUE APP.
         # Cambia 'http://localhost:5173' por el dominio real del frontend.
-        frontend_url = "http://front.auth.local/verify-email" 
+        frontend_url = "https://app.sandbox.invitazyon.online/verify-email" 
         return f"{frontend_url}/{emailconfirmation.key}/"
 
 
