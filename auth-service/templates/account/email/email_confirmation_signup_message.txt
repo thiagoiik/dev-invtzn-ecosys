@@ -1,0 +1,13 @@
+Hola {{ user.username }},
+
+¡Gracias por registrarte en Invitazyon!
+
+Por favor, confirma tu dirección de correo electrónico para activar tu cuenta haciendo clic en el siguiente enlace:
+
+{{ activate_url }}
+
+Si no has creado una cuenta en nuestra plataforma, puedes ignorar este correo de forma segura.
+
+Saludos,
+El equipo de Invitazyon
+invitazyon.online
