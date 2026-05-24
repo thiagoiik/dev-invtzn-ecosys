@@ -22,7 +22,7 @@ from django.http import HttpResponseRedirect
 
 # Funcion para Password reset confirm
 def password_reset_redirect(request, uidb64, token):
-    frontend_url = f"http://localhost:5173/password-reset-confirm/{uidb64}/{token}/"
+    frontend_url = f"https://app.sandbox.invytazyon.online/password-reset-confirm/{uidb64}/{token}/"
     return HttpResponseRedirect(frontend_url)
 
 # Personalización del Admin de Django (Header y Títulos)
