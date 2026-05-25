@@ -124,11 +124,34 @@ const premiumProducts = ref([]);
 onMounted(async () => {
   try {
     const res = await catalogService.fetchProducts();
-    // Suponemos que los productos tienen is_physical=false o ciertos nombres
-    // Para no mostrar complementos físicos en el tier, filtramos los principales
-    const mainProducts = res.data.filter(p => !p.is_physical && parseFloat(p.base_price) > 0);
-    // Tomamos hasta 2 productos (Standard y Premium) para la demo
-    premiumProducts.value = mainProducts.slice(0, 2);
+    // Encontrar los pases de edición específicos en lugar de jalar plantillas de invitaciones
+    const standard = res.data.find(p => !p.is_physical && !p.has_template && p.tier_level === 'STANDARD');
+    const premium = res.data.find(p => !p.is_physical && !p.has_template && p.tier_level === 'PREMIUM');
+    
+    const list = [];
+    if (standard) {
+      list.push(standard);
+    } else {
+      list.push({
+        id: 998,
+        name: 'Pase Standard (Demo)',
+        base_price: '149.00',
+        description: 'Desbloquea música de fondo, cuenta regresiva y temas personalizados.'
+      });
+    }
+    
+    if (premium) {
+      list.push(premium);
+    } else {
+      list.push({
+        id: 999,
+        name: 'Pase Premium (Demo)',
+        base_price: '299.00',
+        description: 'Desbloquea itinerario completo, sobres 3D premium, música de fondo y OG tags.'
+      });
+    }
+    
+    premiumProducts.value = list;
   } catch (error) {
     console.error("Error cargando productos de catálogo", error);
   } finally {

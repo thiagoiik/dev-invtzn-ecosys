@@ -100,9 +100,9 @@ const loadProducts = async () => {
   loading.value = true;
   try {
     const response = await catalogService.fetchProducts();
-    // Filtramos solo los productos activos, plantillas y físicos (ocultando Tiers/Servicios)
+    // Filtramos solo los productos activos. Si es DIGITAL, debe tener plantilla (has_template = true) para mostrarse en el catálogo principal de diseños.
     products.value = response.data.filter(p => 
-      p.is_active && ['DIGITAL', 'PHYSICAL', 'SERVICE'].includes(p.product_type)
+      p.is_active && ['DIGITAL', 'PHYSICAL', 'SERVICE'].includes(p.product_type) && (p.product_type !== 'DIGITAL' || p.has_template)
     );
   } catch (error) {
     toast.error('Ocurrió un error al cargar el catálogo de productos.');
