@@ -50,8 +50,8 @@
                   🛠️
                 </router-link>
                 
-                <button v-if="!dep.is_paid" @click="onPay(dep)" class="btn btn-sm btn-success" title="Pagar">
-                  💰 Pagar
+                <button v-if="!dep.is_paid" @click="onPay(dep)" class="btn btn-sm btn-success" title="Activar Pase">
+                  ✨ Activar Pase
                 </button>
 
                 <button @click="onDelete(dep.id)" class="btn btn-sm btn-danger" title="Eliminar">
@@ -112,8 +112,8 @@
               🛠️ Editar
             </router-link>
             
-            <button v-if="!dep.is_paid" @click="onPay(dep)" class="btn btn-sm btn-success flex-1 py-2 flex items-center justify-center gap-1">
-              💰 Pagar
+            <button v-if="!dep.is_paid" @click="onPay(dep)" class="btn btn-sm btn-success flex-1 py-2 flex items-center justify-center gap-1 font-bold">
+              ✨ Activar Pase
             </button>
 
             <button @click="onDelete(dep.id)" class="btn btn-sm btn-danger flex-1 py-2 flex items-center justify-center gap-1">

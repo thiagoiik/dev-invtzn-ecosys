@@ -12,7 +12,7 @@
         class="btn btn-primary rounded-2xl shadow-2xl shadow-primary/45 border-2 border-white/25 px-6 h-14 font-black flex items-center gap-3 hover:scale-105 active:scale-95 transition-transform duration-300"
       >
         <span>🛒</span>
-        <span>Eliminar Marca de Agua</span>
+        <span>Comprar</span>
       </button>
     </div>
   </div>

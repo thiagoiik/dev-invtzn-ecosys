@@ -5,7 +5,11 @@ import { builderService } from '../../services/builderService';
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({
-    params: { id: 'test-id-123' }
+    params: { id: 'test-id-123' },
+    query: {}
+  }),
+  useRouter: () => ({
+    replace: vi.fn()
   }),
   RouterLink: {
     template: '<a><slot /></a>'
