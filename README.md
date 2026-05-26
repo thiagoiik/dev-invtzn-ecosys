@@ -208,6 +208,23 @@ La estabilización de la fase 0.6.x incorpora la unión definitiva entre las ár
 *   **Auditoría y Corrección UI/UX:** Limpieza agresiva de "botones fantasmas", asignación de lógica CRM interactiva en listados de usuarios, mejoras de rutas estrictas de Vue Router, e inyección de Mockups Premium 4K (Glassmorphism) para las áreas públicas.
 *   **Redirección Continua (Cero Puntos Ciegos):** Tras un pago exitoso de una Plantilla, el sistema enruta directamente al usuario hacia la Suite de Diseño (`/studio`) con su nueva orden instanciada, evitando confusiones post-compra.
 
+*   **Estabilización v0.6.3:** Resolución del 100% de bugs críticos del tester-1 (Interceptor Axios F5, links de registro correctos, RSVP básico a WhatsApp y flujos de previsualización con redirección directa de Stripe).
+
+---
+
+## 🛠️ Resolución de Bugs & Cierre Versión v0.6.3
+
+La versión `v0.6.3` estabiliza el ecosistema resolviendo los problemas críticos reportados por QA y testers:
+
+*   **Filtro de Rutas Públicas (Axios Interceptor):** Solución definitiva al error 401 en recargas (F5) en el catálogo público al omitir cabeceras de autorización en URLs relativas (`products` y `slug`).
+*   **Aumento de Vida de Sesión JWT:** Incremento del tiempo de vida del access token a **1 día** en entornos locales/sandbox para mejorar la experiencia de depuración y desarrollo.
+*   **Enlace de Registro y Rutas Corregidas:** Reparación del redireccionamiento roto a `/register` en el navbar (corregido a `/auth/registration/`).
+*   **Bifurcación de Inicio de Diseño y Lienzos Básicos:** El flujo de "Comenzar a Diseñar" crea automáticamente un borrador básico con el producto digital base (`display_pcard = True`) o permite al usuario con invitaciones previas elegir entre continuar o crear una nueva.
+*   **RSVP Básico por WhatsApp:** El bloque RSVP para invitaciones de plan Básico evita escrituras en la base de datos y redirige a los invitados directamente al WhatsApp del organizador (`whatsappPhone`).
+*   **Flujo de Checkout Directo:** El botón "Comprar" en previsualización de borradores anónimos redirige directamente al checkout del producto base de la plantilla tras registrarse/iniciar sesión.
+*   **Páginas Legales y Soporte:** Integración de rutas del footer a páginas estáticas de Términos (`/terminos`), Privacidad (`/privacidad`), Devoluciones (`/devoluciones`), Precios (`/precios`) y Ayuda (`/ayuda`).
+*   **Imagen Hero Premium:** Generación e integración del banner visual `/hero_phone_invitation.png` mostrando la invitación de *Andrea y Joaquín*.
+
 ---
 
 ## 🧪 Comandos Útiles
