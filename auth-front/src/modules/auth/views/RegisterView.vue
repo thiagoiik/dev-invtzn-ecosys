@@ -31,19 +31,21 @@
     </form>
     
     <div class="mt-6 text-center text-sm">
-      <router-link to="/login" class="link link-primary">¿Ya tienes cuenta? Inicia sesión</router-link>
+      <router-link :to="redirectQuery ? { name: 'login', query: { redirect: redirectQuery } } : { name: 'login' }" class="link link-primary">¿Ya tienes cuenta? Inicia sesión</router-link>
     </div>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue';
+import { reactive, ref, computed } from 'vue';
 import { authService } from '@/modules/auth/services/authService';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useToast } from 'vue-toastification';
 
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
+const redirectQuery = computed(() => route.query.redirect);
 const loading = ref(false);
 
 // Reflejamos estrictamente los parámetros que espera el backend: username, email, password1, password2

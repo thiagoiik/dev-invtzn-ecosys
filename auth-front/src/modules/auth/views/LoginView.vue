@@ -23,21 +23,23 @@
     </form>
     
     <div class="mt-6 flex flex-col gap-2 text-center text-sm">
-      <router-link to="/auth/registration" class="link link-primary">¿No tienes cuenta? Regístrate aquí</router-link>
+      <router-link :to="redirectQuery ? { name: 'register', query: { redirect: redirectQuery } } : { name: 'register' }" class="link link-primary">¿No tienes cuenta? Regístrate aquí</router-link>
       <router-link to="/password-reset" class="link link-hover text-slate-500">¿Olvidaste tu contraseña?</router-link>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useAuthStore } from '@/modules/auth/store/auth';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useToast } from 'vue-toastification';
 
 const authStore = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
+const redirectQuery = computed(() => route.query.redirect);
 
 const usernameOrEmail = ref('');
 const password = ref('');
@@ -58,8 +60,20 @@ const handleLogin = async () => {
     toast.success('¡Bienvenido de vuelta!');
     
     // Si hay una URL de redirección, la usamos. Si no, al dashboard.
-    const redirectTo = router.currentRoute.value.query.redirect || '/dashboard';
-    router.push(redirectTo);
+    const redirectTo = route.query.redirect || '/dashboard';
+    if (redirectTo === 'create-basic') {
+      try {
+        const { deploymentService } = await import('@/modules/ecommerce/services/deploymentService');
+        const res = await deploymentService.createSandbox(1);
+        toast.success('¡Lienzo básico creado!');
+        router.push(`/builder/${res.data.id}`);
+      } catch (err) {
+        toast.error('No se pudo iniciar el lienzo básico.');
+        router.push('/dashboard');
+      }
+    } else {
+      router.push(redirectTo);
+    }
   } catch (err) {
     error.value = "Error al iniciar sesión. Revisa tus credenciales.";
     toast.error("Las credenciales no coinciden.");

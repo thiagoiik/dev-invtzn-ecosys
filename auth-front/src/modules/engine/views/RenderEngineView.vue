@@ -28,6 +28,7 @@
         :customData="customData" 
         :slug="route.params.slug" 
         :deploymentId="deploymentId"
+        :tierLevel="tierLevel"
         @purchase="goToCheckout"
       />
     </EnvelopeWrapper>
@@ -38,6 +39,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { engineService } from '@/modules/engine/services/engineService';
+import { useAuthStore } from '@/modules/auth/store/auth';
 import DataLoaderLoader from '@/modules/engine/components/DataLoaderLoader.vue';
 import ExpiredEventScreen from '@/modules/engine/components/ExpiredEventScreen.vue';
 import RenderEngineMaster from '@/modules/engine/components/RenderEngineMaster.vue';
@@ -50,15 +52,26 @@ const errorMsg = ref('');
 const customData = ref({});
 const status = ref('');
 const deploymentId = ref(null);
+const tierLevel = ref('BASIC');
+const productId = ref(null);
+
+const authStore = useAuthStore();
 
 const goToCheckout = () => {
-  // Guardamos en localStorage que venimos de este sandbox para que el registro sepa qué reclamar
   if (deploymentId.value) {
     localStorage.setItem('claimed_deployment_id', deploymentId.value);
   }
-  // Redirigimos al catálogo o directamente al checkout si tenemos el producto
-  // Por ahora al catálogo para que elija bien, o al login si no tiene sesión
-  router.push('/catalog');
+  
+  const targetProductId = productId.value || 1;
+  
+  if (authStore.isAuthenticated) {
+    router.push({ name: 'checkout', params: { id: targetProductId } });
+  } else {
+    router.push({ 
+      name: 'register', 
+      query: { redirect: `/checkout/${targetProductId}` } 
+    });
+  }
 };
 
 onMounted(async () => {
@@ -67,6 +80,8 @@ onMounted(async () => {
     const response = await engineService.fetchDeploymentBySlug(slug);
     status.value = response.data.status;
     deploymentId.value = response.data.id;
+    tierLevel.value = response.data.tier_level || 'BASIC';
+    productId.value = response.data.product_id || null;
     
     if (['EXPIRED', 'INACTIVE'].includes(status.value)) {
       // El template se encargará de mostrar ExpiredEventScreen basándose en el status

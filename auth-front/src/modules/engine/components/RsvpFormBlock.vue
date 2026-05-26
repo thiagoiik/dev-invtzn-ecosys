@@ -27,7 +27,7 @@
         </p>
       </header>
 
-      <form @submit.prevent="submitRSVP" class="space-y-6">
+      <form @submit.prevent="handleFormSubmit" class="space-y-6">
         <!-- Full Name input -->
         <div class="space-y-2">
           <label class="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Tu Nombre Completo</label>
@@ -82,8 +82,8 @@
           class="btn btn-primary btn-lg w-full h-16 rounded-2xl text-lg font-black shadow-lg shadow-primary/20 mt-4"
           :disabled="loading || !form.attending"
         >
-          <span v-if="loading" class="loading loading-spinner"></span>
-          {{ loading ? 'Enviando...' : 'Confirmar Asistencia' }}
+          <span v-if="loading && tierLevel !== 'BASIC'" class="loading loading-spinner"></span>
+          {{ tierLevel === 'BASIC' ? 'Confirmar por WhatsApp 🟢' : (loading ? 'Enviando...' : 'Confirmar Asistencia') }}
         </button>
       </form>
     </div>
@@ -99,7 +99,8 @@ import RsvpSuccessMessage from './RsvpSuccessMessage.vue';
 
 const props = defineProps({
   slug: { type: String, required: true },
-  config: { type: Object, default: () => ({}) }
+  config: { type: Object, default: () => ({}) },
+  tierLevel: { type: String, default: 'BASIC' }
 });
 
 const toast = useToast();
@@ -111,6 +112,42 @@ const form = ref({
   full_name: '',
   attending: ''
 });
+
+const handleFormSubmit = () => {
+  if (props.tierLevel === 'BASIC') {
+    sendWhatsAppRSVP();
+  } else {
+    submitRSVP();
+  }
+};
+
+const sendWhatsAppRSVP = () => {
+  if (!form.value.full_name || !form.value.attending) {
+    return toast.warning('Por favor completa todos los campos.');
+  }
+  
+  const rawPhone = props.config.whatsappPhone || '';
+  const cleanPhone = rawPhone.replace(/\D/g, '');
+  
+  if (!cleanPhone) {
+    toast.error('El organizador aún no ha configurado su número de WhatsApp de confirmación.');
+    return;
+  }
+
+  const isAttending = form.value.attending === 'yes';
+  const attendanceText = isAttending ? '¡Sí, asistiré!' : 'Lamentablemente no podré asistir.';
+  
+  const text = `¡Hola! Quiero confirmar mi asistencia a tu evento.\n\nNombre: ${form.value.full_name}\nAsistencia: ${attendanceText}`;
+  
+  // Track telemetry metric for basic RSVP button click
+  telemetry.trackRsvpSubmit(props.slug).catch(() => {});
+  
+  // Open WhatsApp in a new tab
+  window.open(`https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`, '_blank');
+  
+  // Mark as submitted locally to show success view
+  submitted.value = true;
+};
 
 const submitRSVP = async () => {
   if (!form.value.full_name || !form.value.attending) {

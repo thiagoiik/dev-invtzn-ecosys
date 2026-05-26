@@ -12,6 +12,9 @@ vi.mock('vue-router', () => ({
     push: mockPush,
     currentRoute: mockCurrentRoute
   }),
+  useRoute: () => ({
+    query: mockCurrentRoute.value.query
+  }),
   RouterLink: {
     template: '<a><slot /></a>'
   }

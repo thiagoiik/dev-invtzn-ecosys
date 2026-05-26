@@ -22,7 +22,7 @@
         :key="block.id"
         :is="block.component"
         :config="block.config"
-        v-bind="block.component === RsvpFormBlock ? { slug: slug } : {}"
+        v-bind="block.component === RsvpFormBlock ? { slug: slug, tierLevel: tierLevel } : {}"
       />
     </div>
   </div>
@@ -43,7 +43,8 @@ const props = defineProps({
   customData: { type: Object, required: true },
   slug: { type: String, required: true },
   deploymentId: { type: [Number, String], default: null },
-  isStudioMode: { type: Boolean, default: false }
+  isStudioMode: { type: Boolean, default: false },
+  tierLevel: { type: String, default: 'BASIC' }
 });
 
 const emit = defineEmits(['purchase']);

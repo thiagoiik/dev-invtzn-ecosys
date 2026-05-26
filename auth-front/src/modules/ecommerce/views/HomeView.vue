@@ -14,9 +14,10 @@
           <a href="#servicios" class="hover:text-slate-900 transition-colors">Servicios a Medida</a>
           <router-link to="/login" class="hover:text-slate-900 transition-colors">Iniciar Sesión</router-link>
         </nav>
-        <router-link to="/auth/registration" class="hidden md:flex btn btn-primary rounded-full px-6 py-2.5 font-bold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all hover:-translate-y-0.5">
+        <button @click="handleStartDesigning" class="hidden md:flex btn btn-primary rounded-full px-6 py-2.5 font-bold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all hover:-translate-y-0.5" :disabled="loadingAction">
+          <span v-if="loadingAction" class="loading loading-spinner loading-xs mr-1"></span>
           Crear Invitación Gratis
-        </router-link>
+        </button>
         <!-- Mobile Menu Toggle -->
         <button class="md:hidden text-slate-900 p-2" @click="isMobileMenuOpen = !isMobileMenuOpen">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
@@ -54,9 +55,10 @@
             </p>
             
             <div class="flex flex-col sm:flex-row gap-4 animate-fade-in-up" style="animation-delay: 300ms;">
-              <router-link to="/auth/registration" class="btn btn-primary text-lg rounded-full px-8 py-4 font-bold shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-all hover:-translate-y-1 text-center">
+              <button @click="handleStartDesigning" class="btn btn-primary text-lg rounded-full px-8 py-4 font-bold shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-all hover:-translate-y-1 text-center animate-pulse-subtle" :disabled="loadingAction">
+                <span v-if="loadingAction" class="loading loading-spinner mr-2"></span>
                 Comenzar a Diseñar
-              </router-link>
+              </button>
               <router-link to="/catalog" class="btn bg-white text-slate-900 border border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-lg rounded-full px-8 py-4 font-bold shadow-sm transition-all hover:-translate-y-1 text-center">
                 Ver Catálogo
               </router-link>
@@ -121,14 +123,49 @@
       </section>
     </main>
 
+    <!-- Modal de Selección de Flujo al Iniciar Diseño -->
+    <div v-if="showResumePrompt" class="fixed inset-0 z-[100] flex items-center justify-center px-4">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" @click="showResumePrompt = false"></div>
+      <div class="relative bg-white w-full max-w-md rounded-[2.5rem] p-10 shadow-2xl border border-slate-100 overflow-hidden transform scale-100 transition-transform duration-300 space-y-6 text-center">
+        <div class="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-sm">
+          ✨
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-2xl font-black text-slate-900">Diseños Existentes</h3>
+          <p class="text-slate-500 text-sm">Hemos detectado que ya tienes invitaciones guardadas en tu cuenta. ¿Qué deseas hacer?</p>
+        </div>
+        <div class="flex flex-col gap-3 pt-2">
+          <button @click="goToMyDashboard" class="btn btn-primary h-14 rounded-2xl font-black shadow-lg shadow-primary/20 text-sm hover:scale-[1.02] transition-transform">
+            📂 Ver Mis Diseños Existentes
+          </button>
+          <button @click="createNewBasicDesign" class="btn btn-outline border-slate-200 hover:border-slate-300 hover:bg-slate-50 h-14 rounded-2xl font-bold text-slate-700 text-sm hover:scale-[1.02] transition-transform">
+            ➕ Crear Nuevo Borrador Básico
+          </button>
+          <button @click="showResumePrompt = false" class="btn btn-ghost text-slate-400 font-bold uppercase tracking-wider text-[10px] mt-2">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/modules/auth/store/auth';
+import { deploymentService } from '@/modules/ecommerce/services/deploymentService';
+import { useToast } from 'vue-toastification';
+
+const router = useRouter();
+const authStore = useAuthStore();
+const toast = useToast();
 
 const scrolled = ref(false);
 const isMobileMenuOpen = ref(false);
+const showResumePrompt = ref(false);
+const loadingAction = ref(false);
 
 const handleScroll = () => {
   scrolled.value = window.scrollY > 20;
@@ -141,6 +178,49 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll);
 });
+
+const handleStartDesigning = async () => {
+  if (!authStore.isAuthenticated) {
+    // Si no está logueado, redirigir a registro con redirección para crear borrador básico
+    router.push({ name: 'register', query: { redirect: 'create-basic' } });
+    return;
+  }
+  
+  loadingAction.value = true;
+  try {
+    const res = await deploymentService.fetchMyDeployments();
+    if (res.data && res.data.length > 0) {
+      // Tiene diseños existentes, mostrar modal interactivo
+      showResumePrompt.value = true;
+    } else {
+      // No tiene diseños, crear uno nuevo de tipo BASIC (ID = 1)
+      await createNewBasicDesign();
+    }
+  } catch (error) {
+    toast.error('Error al verificar tus diseños.');
+  } finally {
+    loadingAction.value = false;
+  }
+};
+
+const createNewBasicDesign = async () => {
+  loadingAction.value = true;
+  try {
+    const res = await deploymentService.createSandbox(1);
+    const newId = res.data.id;
+    toast.success('¡Lienzo básico creado!');
+    router.push(`/builder/${newId}`);
+  } catch (error) {
+    toast.error('No se pudo crear el lienzo básico.');
+  } finally {
+    loadingAction.value = false;
+    showResumePrompt.value = false;
+  }
+};
+
+const goToMyDashboard = () => {
+  router.push('/dashboard');
+};
 </script>
 
 <style scoped>

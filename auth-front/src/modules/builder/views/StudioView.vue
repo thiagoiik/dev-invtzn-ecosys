@@ -1,23 +1,41 @@
 <template>
   <BuilderLayout>
     <template #actions>
-      <div class="save-status-container">
-        <span v-if="saveStatus === 'saved'" class="status-indicator text-success">
-          ✔ Todos los cambios guardados
-        </span>
-        <span v-else-if="saveStatus === 'saving'" class="status-indicator text-warning animate-pulse">
-          ◌ Guardando cambios de forma segura...
-        </span>
-        <span v-else-if="saveStatus === 'unsaved'" class="status-indicator text-info">
-          ● Cambios sin guardar
-        </span>
-        <span v-else-if="saveStatus === 'error'" class="status-indicator text-error">
-          ❌ Error al guardar en base de datos
-        </span>
-      </div>
-      <button v-if="deploymentSlug" @click="openLiveDemo" class="btn btn-outline-primary ml-4">
-        👀 Ver en Vivo / Compartir
-      </button>
+        <div class="save-status-container flex items-center gap-4">
+          <!-- Badge de Estado de la Invitación -->
+          <span v-if="deploymentStatus === 'LIVE'" class="badge bg-emerald-500 text-white font-bold text-xs uppercase px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
+            🟢 En Vivo
+          </span>
+          <span v-else class="badge bg-amber-500 text-white font-bold text-xs uppercase px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
+            🧪 Borrador
+          </span>
+
+          <span v-if="saveStatus === 'saved'" class="status-indicator text-success text-xs">
+            ✔ Guardado
+          </span>
+          <span v-else-if="saveStatus === 'saving'" class="status-indicator text-warning animate-pulse text-xs">
+            ◌ Guardando...
+          </span>
+          <span v-else-if="saveStatus === 'unsaved'" class="status-indicator text-info text-xs">
+            ● Cambios sin guardar
+          </span>
+          <span v-else-if="saveStatus === 'error'" class="status-indicator text-error text-xs">
+            ❌ Error
+          </span>
+        </div>
+        
+        <!-- Botón de publicar rápido si es Borrador -->
+        <button 
+          v-if="deploymentStatus !== 'LIVE'"
+          @click="showUpgradeModal = true"
+          class="btn btn-sm bg-gradient-to-r from-pink-500 to-indigo-600 hover:from-pink-600 hover:to-indigo-700 text-white font-black px-4 py-2 rounded-xl shadow-md transition-all flex items-center gap-1 ml-4"
+        >
+          ✨ Publicar
+        </button>
+
+        <button v-if="deploymentSlug" @click="openLiveDemo" class="btn btn-outline-primary ml-4">
+          👀 Ver en Vivo
+        </button>
     </template>
 
     <div class="studio-container relative">
@@ -166,6 +184,12 @@
                 <span class="color-value">{{ localConfig.rsvp.bgColor }}</span>
               </div>
             </div>
+
+            <div class="form-group">
+              <label>WhatsApp de Confirmación</label>
+              <input v-model="localConfig.rsvp.whatsappPhone" type="tel" placeholder="Ej. +5215512345678" />
+              <p class="text-[10px] text-slate-400 mt-1">Los invitados del plan básico enviarán confirmaciones directas a este número de WhatsApp.</p>
+            </div>
           </div>
 
           <!-- TAB CONTADOR -->
@@ -190,7 +214,7 @@
             <div v-if="!allowedFeatures.countdown_timer" class="upgrade-block-overlay">
               <div class="lock-icon">🔒</div>
               <p class="lock-text">El bloque de Cuenta Regresiva requiere un plan <strong>Standard</strong> o superior.</p>
-              <button @click="showUpgradeModal = true" class="upgrade-btn">Mejorar Plan</button>
+              <button @click="showUpgradeModal = true" class="upgrade-btn">🔓 Desbloquear con Pase Standard</button>
             </div>
 
             <!-- Fields wrapper -->
@@ -239,7 +263,7 @@
             <div v-if="!allowedFeatures.timeline" class="upgrade-block-overlay">
               <div class="lock-icon">🔒</div>
               <p class="lock-text">El bloque de Itinerario requiere un plan <strong>Premium</strong>.</p>
-              <button @click="showUpgradeModal = true" class="upgrade-btn">Mejorar Plan</button>
+              <button @click="showUpgradeModal = true" class="upgrade-btn">🔓 Desbloquear con Pase Premium</button>
             </div>
 
             <!-- Fields wrapper -->
@@ -348,7 +372,7 @@
             <div v-if="!allowedFeatures.background_music" class="upgrade-block-overlay">
               <div class="lock-icon">🔒</div>
               <p class="lock-text">La Música de Fondo requiere un plan <strong>Standard</strong> o superior.</p>
-              <button @click="showUpgradeModal = true" class="upgrade-btn">Mejorar Plan</button>
+              <button @click="showUpgradeModal = true" class="upgrade-btn">🔓 Desbloquear con Pase Standard</button>
             </div>
 
             <!-- Fields wrapper -->
@@ -383,7 +407,7 @@
             <div v-if="!allowedFeatures.custom_theme" class="upgrade-block-overlay">
               <div class="lock-icon">🔒</div>
               <p class="lock-text">La paleta de color personalizada requiere un plan <strong>Standard</strong> o superior.</p>
-              <button @click="showUpgradeModal = true" class="upgrade-btn">Mejorar Plan</button>
+              <button @click="showUpgradeModal = true" class="upgrade-btn">🔓 Desbloquear con Pase Standard</button>
             </div>
 
             <!-- Fields wrapper -->
@@ -433,7 +457,7 @@
             <div v-if="!allowedFeatures.custom_og" class="upgrade-block-overlay">
               <div class="lock-icon">🔒</div>
               <p class="lock-text">La personalización de metadatos para redes sociales requiere un plan <strong>Premium</strong>.</p>
-              <button @click="showUpgradeModal = true" class="upgrade-btn">Mejorar Plan</button>
+              <button @click="showUpgradeModal = true" class="upgrade-btn">🔓 Desbloquear con Pase Premium</button>
             </div>
 
             <!-- Fields wrapper -->
@@ -530,11 +554,45 @@
       @close="showUpgradeModal = false" 
       @select-tier="handleTierSelection" 
     />
+
+    <!-- Modal de Celebración de Pago Exitoso (Success Modal) -->
+    <div v-if="showSuccessModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" @click="showSuccessModal = false"></div>
+      <div class="relative w-full max-w-lg bg-white rounded-[2rem] shadow-2xl p-8 text-center overflow-hidden flex flex-col gap-6 border border-slate-100">
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 to-teal-500"></div>
+        
+        <div class="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center text-4xl mx-auto shadow-sm">
+          🎉
+        </div>
+        
+        <div class="space-y-2">
+          <h3 class="text-2xl font-black text-slate-800">¡Tu invitación está en Vivo! ✨</h3>
+          <p class="text-slate-500 text-sm">
+            Hemos procesado tu pago exitosamente. Las marcas de agua han sido removidas y todas tus características premium están desbloqueadas.
+          </p>
+        </div>
+
+        <!-- Acciones -->
+        <div class="flex flex-col gap-3">
+          <button @click="copyInvitationLink" class="btn btn-outline border-slate-200 text-slate-700 hover:bg-slate-50 w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2">
+            🔗 Copiar Enlace
+          </button>
+          
+          <a :href="whatsappShareUrl" target="_blank" class="btn bg-emerald-500 hover:bg-emerald-600 text-white w-full py-3 rounded-xl font-black flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 text-center">
+            💬 Enviar por WhatsApp
+          </a>
+          
+          <button @click="showSuccessModal = false" class="btn btn-ghost text-slate-400 font-bold uppercase tracking-widest text-[10px] mt-2">
+            Seguir Editando
+          </button>
+        </div>
+      </div>
+    </div>
   </BuilderLayout>
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import BuilderLayout from '@/layouts/BuilderLayout.vue';
@@ -553,6 +611,7 @@ const saveStatus = ref('saved'); // 'saved', 'unsaved', 'saving', 'error'
 const activeTab = ref('cover'); // 'cover', 'rsvp', 'timer', 'timeline', 'music', 'theme', 'og', 'envelope'
 const showMobilePreview = ref(false);
 const showUpgradeModal = ref(false);
+const showSuccessModal = ref(false);
 
 const handleTierSelection = (productId) => {
   if (deploymentId) {
@@ -561,6 +620,18 @@ const handleTierSelection = (productId) => {
   showUpgradeModal.value = false;
   router.push(`/checkout/${productId}`);
 };
+
+const copyInvitationLink = () => {
+  const url = `${window.location.origin}/i/${deploymentSlug.value}`;
+  navigator.clipboard.writeText(url);
+  toast.success('¡Enlace copiado al portapapeles!');
+};
+
+const whatsappShareUrl = computed(() => {
+  const url = `${window.location.origin}/i/${deploymentSlug.value}`;
+  const text = `¡Hola! Queremos invitarte a nuestro evento. Mira todos los detalles y confirma tu asistencia aquí: ${url}`;
+  return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
+});
 
 const allowedFeatures = ref({
   background_music: false,
@@ -588,7 +659,8 @@ const localConfig = ref({
     bgColor: '#f8fafc',
     btnColor: '#3b82f6',
     title: 'Confirma tu Asistencia',
-    subtitle: 'Nos encantaría contar con tu presencia.'
+    subtitle: 'Nos encantaría contar con tu presencia.',
+    whatsappPhone: ''
   },
   has_timer: false,
   timer: {
@@ -624,6 +696,10 @@ const localConfig = ref({
 });
 
 onMounted(async () => {
+  if (route.query.payment === 'success') {
+    showSuccessModal.value = true;
+    router.replace({ query: {} });
+  }
   try {
     const res = await builderService.getDeployment(deploymentId);
     if (res.data) {
