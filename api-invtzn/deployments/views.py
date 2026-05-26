@@ -87,7 +87,9 @@ class DeploymentViewSet(viewsets.ModelViewSet):
             'status': deployment.status,
             'custom_data': deployment.custom_data,
             'slug': deployment.slug,
-            'product_type': deployment.product.product_type
+            'product_type': deployment.product.product_type,
+            'tier_level': deployment.product.tier_level,
+            'product_id': deployment.product.id
         })
 
     @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='slug/(?P<slug>[^/.]+)/rsvp')

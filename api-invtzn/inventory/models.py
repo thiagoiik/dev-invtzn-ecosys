@@ -63,6 +63,10 @@ class Product(models.Model):
         blank=True, 
         help_text="Configuración de bloques y flags permitidos"
     )
+    display_pcard = models.BooleanField(
+        default=False,
+        help_text="Define si este producto es el destino por defecto al presionar empezar gratis"
+    )
 
     def __str__(self):
         return f"{self.name} (${self.base_price})"
