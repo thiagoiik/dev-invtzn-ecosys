@@ -216,6 +216,7 @@ La estabilización de la fase 0.6.x incorpora la unión definitiva entre las ár
 
 La versión `v0.6.3` estabiliza el ecosistema resolviendo los problemas críticos reportados por QA y testers:
 
+*   **Compatibilidad con Stripe SDK v15 (Error en Webhook):** Solución definitiva al error `AttributeError: get` al procesar el evento `checkout.session.completed` en el backend, convirtiendo el objeto `StripeObject` a un diccionario estándar mediante `.to_dict()` para acceder de manera segura a la metadata y el payment intent.
 *   **Filtro de Rutas Públicas (Axios Interceptor):** Solución definitiva al error 401 en recargas (F5) en el catálogo público al omitir cabeceras de autorización en URLs relativas (`products` y `slug`).
 *   **Aumento de Vida de Sesión JWT:** Incremento del tiempo de vida del access token a **1 día** en entornos locales/sandbox para mejorar la experiencia de depuración y desarrollo.
 *   **Enlace de Registro y Rutas Corregidas:** Reparación del redireccionamiento roto a `/register` en el navbar (corregido a `/auth/registration/`).

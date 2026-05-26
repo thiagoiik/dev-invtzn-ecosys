@@ -125,9 +125,10 @@ class StripeProvider:
 
         if event['type'] == 'checkout.session.completed':
             session = event['data']['object']
-            order_id = session.get('metadata', {}).get('order_id')
+            session_dict = session.to_dict() if hasattr(session, 'to_dict') else session
+            order_id = session_dict.get('metadata', {}).get('order_id')
             if order_id:
-                StripeProvider._complete_order(order_id, session)
+                StripeProvider._complete_order(order_id, session_dict)
 
         return True, "Success"
 
