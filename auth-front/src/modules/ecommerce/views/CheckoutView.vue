@@ -465,7 +465,8 @@ const initiateStripePayment = async () => {
       subtotal_amount: subtotalAmount.value,
       total_amount: totalPrice.value,
       origin: 'ONLINE',
-      items: items
+      items: items,
+      customer_email: authStore.user?.email || null
     };
 
     if (appliedCoupon.value) {

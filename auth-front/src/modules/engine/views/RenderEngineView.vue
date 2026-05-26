@@ -59,7 +59,7 @@ const authStore = useAuthStore();
 
 const goToCheckout = () => {
   if (deploymentId.value) {
-    localStorage.setItem('claimed_deployment_id', deploymentId.value);
+    localStorage.setItem('pending_sandbox_id', deploymentId.value);
   }
   
   const targetProductId = productId.value || 1;

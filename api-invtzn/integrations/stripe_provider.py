@@ -84,6 +84,9 @@ class StripeProvider:
             },
         }
 
+        if order.customer_email:
+            checkout_params["customer_email"] = order.customer_email
+
         # Si la tienda tiene Connect configurado, enviamos el pago a su cuenta
         if store and store.stripe_account_id and store.stripe_onboarding_completed:
             checkout_params["payment_intent_data"] = {
