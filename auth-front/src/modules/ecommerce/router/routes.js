@@ -17,6 +17,31 @@ export default [
         path: '/checkout/:id',
         name: 'checkout',
         component: () => import('@/modules/ecommerce/views/CheckoutView.vue')
+      },
+      {
+        path: '/terminos',
+        name: 'terms',
+        component: () => import('@/modules/ecommerce/views/TermsView.vue')
+      },
+      {
+        path: '/privacidad',
+        name: 'privacy',
+        component: () => import('@/modules/ecommerce/views/PrivacyView.vue')
+      },
+      {
+        path: '/devoluciones',
+        name: 'refunds',
+        component: () => import('@/modules/ecommerce/views/RefundsView.vue')
+      },
+      {
+        path: '/precios',
+        name: 'pricing',
+        component: () => import('@/modules/ecommerce/views/PricingView.vue')
+      },
+      {
+        path: '/ayuda',
+        name: 'help',
+        component: () => import('@/modules/ecommerce/views/HelpView.vue')
       }
     ]
   }

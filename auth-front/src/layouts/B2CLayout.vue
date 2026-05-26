@@ -55,7 +55,7 @@
 
         <template v-else>
           <router-link to="/login" class="btn btn-ghost btn-sm sm:btn-md text-slate-600 font-bold">Ingresar</router-link>
-          <router-link to="/register" class="btn btn-primary btn-sm sm:btn-md rounded-xl shadow-lg shadow-primary/20">
+          <router-link to="/auth/registration/?redirect=create-basic" class="btn btn-primary btn-sm sm:btn-md rounded-xl shadow-lg shadow-primary/20">
             <span class="hidden sm:inline">Empezar Gratis</span>
             <span class="sm:hidden">Empezar</span>
           </router-link>
@@ -81,16 +81,17 @@
           <h4 class="font-black text-slate-900 uppercase tracking-widest text-xs mb-6">Explorar</h4>
           <ul class="space-y-4 text-sm font-bold text-slate-400">
             <li><router-link to="/catalog" class="hover:text-primary transition-colors">Catálogo</router-link></li>
-            <li><router-link to="/login" class="hover:text-primary transition-colors">Precios</router-link></li>
+            <li><router-link to="/precios" class="hover:text-primary transition-colors">Precios</router-link></li>
             <li><a href="#" class="hover:text-primary transition-colors">Showcase</a></li>
           </ul>
         </div>
         <div>
           <h4 class="font-black text-slate-900 uppercase tracking-widest text-xs mb-6">Soporte</h4>
           <ul class="space-y-4 text-sm font-bold text-slate-400">
-            <li><a href="#" class="hover:text-primary transition-colors">Ayuda</a></li>
-            <li><a href="#" class="hover:text-primary transition-colors">Términos</a></li>
-            <li><a href="#" class="hover:text-primary transition-colors">Privacidad</a></li>
+            <li><router-link to="/ayuda" class="hover:text-primary transition-colors">Ayuda</router-link></li>
+            <li><router-link to="/terminos" class="hover:text-primary transition-colors">Términos</router-link></li>
+            <li><router-link to="/privacidad" class="hover:text-primary transition-colors">Privacidad</router-link></li>
+            <li><router-link to="/devoluciones" class="hover:text-primary transition-colors">Devoluciones</router-link></li>
           </ul>
         </div>
       </div>

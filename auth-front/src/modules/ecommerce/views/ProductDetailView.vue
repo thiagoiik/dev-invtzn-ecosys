@@ -48,10 +48,11 @@
             <p class="text-slate-500 leading-relaxed text-lg">
               {{ product.description || 'Este diseño ha sido meticulosamente creado para reflejar elegancia y modernidad. Con una interfaz fluida y optimizada para dispositivos móviles, tus invitados quedarán maravillados desde el primer segundo.' }}
             </p>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4">
-              <div v-for="feat in ['RSVP Digital', 'Mapa Live', 'Galería', 'Música']" :key="feat" class="flex flex-col items-center gap-2 p-4 rounded-2xl bg-slate-50">
-                <span class="text-2xl">✨</span>
-                <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{{ feat }}</span>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-6 pt-4">
+              <div v-for="feat in dynamicFeatures" :key="feat.name" class="flex flex-col items-center text-center gap-2 p-5 rounded-3xl bg-slate-50 border border-slate-100/50 hover:bg-slate-100/30 transition-colors">
+                <span class="text-3xl">{{ feat.icon }}</span>
+                <span class="text-[10px] font-black text-slate-900 uppercase tracking-widest mt-1">{{ feat.name }}</span>
+                <span class="text-[9px] text-slate-400 font-bold uppercase tracking-tight">{{ feat.desc }}</span>
               </div>
             </div>
           </div>
@@ -141,7 +142,35 @@ const totalPrice = computed(() => {
   return base + addonsTotal;
 });
 
+const dynamicFeatures = computed(() => {
+  if (!product.value) return [];
+  const tier = product.value.tier_level;
+  if (tier === 'PREMIUM') {
+    return [
+      { name: 'RSVP Completo', icon: '✉️', desc: 'Base de datos de invitados' },
+      { name: 'Música de Fondo', icon: '🎵', desc: 'Audio personalizado' },
+      { name: 'Contador', icon: '🕰️', desc: 'Cuenta regresiva en vivo' },
+      { name: 'Cronograma', icon: '📅', desc: 'Línea de tiempo' },
+      { name: 'Sobres 3D', icon: '✉️', desc: 'Efecto de apertura 3D' },
+      { name: 'Metadatos OG', icon: '🔗', desc: 'Compartido premium' }
+    ];
+  } else if (tier === 'STANDARD') {
+    return [
+      { name: 'RSVP Básico', icon: '✉️', desc: 'Confirmación directa' },
+      { name: 'Música de Fondo', icon: '🎵', desc: 'Música predeterminada' },
+      { name: 'Contador', icon: '🕰️', desc: 'Cuenta regresiva en vivo' },
+      { name: 'Temas', icon: '🎨', desc: 'Personalización de colores' }
+    ];
+  } else {
+    return [
+      { name: 'RSVP WhatsApp', icon: '🟢', desc: 'Confirmación rápida' },
+      { name: 'Diseño Básico', icon: '✨', desc: 'Lienzo moderno' }
+    ];
+  }
+});
+
 onMounted(async () => {
+  window.scrollTo(0, 0);
   try {
     const productId = route.params.id;
     const response = await catalogService.fetchProducts();

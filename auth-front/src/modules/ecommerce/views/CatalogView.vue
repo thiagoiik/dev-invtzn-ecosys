@@ -9,6 +9,19 @@
         <div class="w-20 h-1.5 bg-primary mx-auto rounded-full"></div>
       </div>
 
+      <!-- Categorías de Catálogo -->
+      <div class="flex flex-wrap justify-center gap-4 py-2">
+        <button 
+          v-for="cat in ['ALL', 'DIGITAL', 'PHYSICAL', 'SERVICE']" 
+          :key="cat"
+          @click="selectedCategory = cat"
+          class="btn rounded-full px-6 py-2.5 font-bold transition-all duration-300"
+          :class="selectedCategory === cat ? 'btn-primary shadow-lg shadow-primary/20 scale-105' : 'btn-ghost text-slate-500 hover:bg-slate-100'"
+        >
+          {{ translateCategory(cat) }}
+        </button>
+      </div>
+
     <div v-if="loading" class="flex justify-center py-12">
       <span class="loading loading-spinner loading-lg text-primary"></span>
     </div>
@@ -20,7 +33,7 @@
     </div>
 
       <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
-        <div v-for="product in products" :key="product.id" 
+        <div v-for="product in filteredProducts" :key="product.id" 
           class="group bg-white rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 border border-slate-100 overflow-hidden flex flex-col h-full"
         >
           <!-- Premium Product Figure -->
@@ -62,13 +75,13 @@
                   class="btn btn-outline btn-sm rounded-xl border-slate-200 text-slate-600 hover:bg-slate-50"
                   @click="handlePreview(product)"
                 >
-                  Ver Preview
+                  Ver Demo
                 </button>
                 <button 
                   class="btn btn-primary btn-sm rounded-xl px-4 shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform"
                   @click="handleBuy(product)"
                 >
-                  Personalizar
+                  Caracteristicas
                 </button>
               </div>
             </div>
@@ -80,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import { catalogService } from '@/modules/ecommerce/services/catalogService';
@@ -91,6 +104,7 @@ const toast = useToast();
 const products = ref([]);
 const loading = ref(true);
 const catalogSection = ref(null);
+const selectedCategory = ref('ALL');
 
 const scrollToCatalog = () => {
   catalogSection.value?.scrollIntoView({ behavior: 'smooth' });
@@ -115,6 +129,23 @@ onMounted(() => {
   loadProducts();
 });
 
+const translateCategory = (cat) => {
+  const map = {
+    'ALL': 'Todos los Productos',
+    'DIGITAL': 'Invitaciones Digitales 📱',
+    'PHYSICAL': 'Impresos Físicos ✉️',
+    'SERVICE': 'Servicios a Medida 💎'
+  };
+  return map[cat] || cat;
+};
+
+const filteredProducts = computed(() => {
+  if (selectedCategory.value === 'ALL') {
+    return products.value;
+  }
+  return products.value.filter(p => p.product_type === selectedCategory.value);
+});
+
 const translateType = (type) => {
   const typeMap = {
     'DIGITAL': 'Digital',
@@ -129,8 +160,14 @@ const handleBuy = (product) => {
 };
 
 const handlePreview = (product) => {
-  // Aquí podemos usar un slug si el backend lo retorna, por ahora pasamos el ID o un placeholder
-  window.open(`/demo/${product.id}`, '_blank');
+  if (product.product_type !== 'DIGITAL') {
+    toast.info('Las demos en vivo solo están disponibles para invitaciones digitales.');
+    return;
+  }
+  
+  // demo_slug de la plantilla correspondiente, o fallback a 'cdae704e' como demo genérico
+  const demoSlug = product.features?.demo_slug || 'cdae704e';
+  window.open(`/i/${demoSlug}`, '_blank');
 };
 </script>
 

@@ -36,7 +36,7 @@
           <div class="relative">
             <div class="absolute -inset-1 bg-gradient-to-r from-primary to-indigo-500 rounded-3xl blur opacity-25 group-hover:opacity-100 transition duration-1000 group-hover:duration-200"></div>
             <img 
-              src="/hero_premium_mockup.png" 
+              src="/hero_phone_invitation.png" 
               alt="Premium Invitations" 
               class="relative rounded-3xl shadow-2xl border border-slate-800/50 hover:scale-[1.02] transition-transform duration-500"
             />
