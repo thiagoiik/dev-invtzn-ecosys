@@ -283,3 +283,125 @@ class TestDeployments:
         assert browsers['Safari'] == 1
         assert browsers['Chrome'] == 2
 
+    def test_creation_mode_default(self):
+        deployment = Deployment.objects.create(
+            user=self.user.id,
+            product=self.product,
+            status=Deployment.StatusChoices.DRAFT,
+            slug='test-mode-slug'
+        )
+        assert deployment.creation_mode == Deployment.CreationMode.CANVAS
+
+    def test_slug_regex_validation(self):
+        # 1. Valid slug
+        payload = {
+            'product': self.product.id,
+            'slug': 'valid-slug-123'
+        }
+        response = self.client.post('/api/v1/deployments/', payload)
+        assert response.status_code == 201
+
+        # 2. Invalid slug
+        payload['slug'] = 'invalid_slug_with_under'
+        response = self.client.post('/api/v1/deployments/', payload)
+        assert response.status_code == 400
+        assert 'slug' in response.data or 'non_field_errors' in response.data
+
+        # 3. Invalid slug with spaces
+        payload['slug'] = 'invalid slug space'
+        response = self.client.post('/api/v1/deployments/', payload)
+        assert response.status_code == 400
+
+        # 4. Invalid slug with capitals
+        payload['slug'] = 'Invalid-Slug'
+        response = self.client.post('/api/v1/deployments/', payload)
+        assert response.status_code == 400
+
+    def test_client_cannot_modify_catalog_deployment_visually(self):
+        catalog_deployment = Deployment.objects.create(
+            user=self.user.id,
+            product=self.product,
+            slug='catalog-deployment',
+            creation_mode=Deployment.CreationMode.CATALOG,
+            custom_data={'key': 'original'}
+        )
+        # Client tries to update custom_data
+        response = self.client.patch(f'/api/v1/deployments/{catalog_deployment.id}/', {'custom_data': {'key': 'changed'}}, format='json')
+        assert response.status_code == 400
+        assert 'custom_data' in response.data or 'non_field_errors' in response.data
+
+        # Designer tries to update custom_data (should succeed)
+        designer_user = User.objects.create_user(username='designer_user_2', password='password123')
+        UserProfile.objects.create(remote_auth_id=designer_user.id, custom_role=UserProfile.Role.DESIGNER)
+        self.client.force_authenticate(user=designer_user)
+        response = self.client.patch(f'/api/v1/deployments/{catalog_deployment.id}/', {'custom_data': {'key': 'changed'}}, format='json')
+        assert response.status_code == 200
+
+    def test_system_logs_permissions(self):
+        # Unauthenticated
+        self.client.force_authenticate(user=None)
+        response = self.client.get('/api/v1/system-logs/')
+        assert response.status_code in [401, 403]
+
+        # Authenticated Client
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get('/api/v1/system-logs/')
+        assert response.status_code == 403
+
+        # Authenticated Admin
+        admin_user = User.objects.create_user(username='admin_user_logs', password='password123')
+        UserProfile.objects.create(remote_auth_id=admin_user.id, custom_role=UserProfile.Role.ADMIN)
+        self.client.force_authenticate(user=admin_user)
+        response = self.client.get('/api/v1/system-logs/')
+        assert response.status_code == 200
+
+    def test_order_completion_triggers_signal_and_logs(self):
+        from sales.models import Order, OrderItem
+        from deployments.models import SystemLog
+
+        # Create another product to change to
+        new_product = Product.objects.create(name='Premium Product', base_price=50.00, product_type='DIGITAL', tier_level='PREMIUM')
+
+        deployment = Deployment.objects.create(
+            user=self.user.id,
+            product=self.product,
+            slug='test-signal-slug',
+            creation_mode=Deployment.CreationMode.CANVAS
+        )
+
+        order = Order.objects.create(
+            user=self.user.id,
+            deployment=deployment,
+            total_amount=50.00,
+            status=Order.StatusChoices.PENDING
+        )
+        OrderItem.objects.create(order=order, product=new_product, quantity=1, price_at_sale=50.00)
+
+        # Clear existing logs if any
+        SystemLog.objects.all().delete()
+
+        # Simulate completion
+        order.status = Order.StatusChoices.COMPLETED
+        order.save()
+
+        # Check deployment has new product and is active/paid
+        deployment.refresh_from_db()
+        assert deployment.product == new_product
+        assert deployment.status == Deployment.StatusChoices.LIVE
+        assert deployment.is_paid is True
+
+        # Check SystemLog entries
+        logs = SystemLog.objects.all()
+        assert logs.count() == 2
+
+        # One should be DEPLOYMENT_STATE, another PAYMENT_FLOW
+        log_types = [log.log_type for log in logs]
+        assert 'DEPLOYMENT_STATE' in log_types
+        assert 'PAYMENT_FLOW' in log_types
+
+        # Verify details
+        state_log = logs.filter(log_type='DEPLOYMENT_STATE').first()
+        assert state_log.user_id == self.user.id
+        assert state_log.metadata['deployment_id'] == deployment.id
+        assert state_log.metadata['product_id'] == new_product.id
+

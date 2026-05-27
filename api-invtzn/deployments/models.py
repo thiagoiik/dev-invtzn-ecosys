@@ -10,6 +10,10 @@ class Deployment(models.Model):
         LIVE = 'LIVE', 'Publicado'
         EXPIRED = 'EXPIRED', 'Expirado / Inactivo'
 
+    class CreationMode(models.TextChoices):
+        CATALOG = 'CATALOG', 'Catalog'
+        CANVAS = 'CANVAS', 'Canvas'
+
     user = models.IntegerField(db_index=True, null=True, blank=True, help_text="ID del usuario en api-auth")
     vendor_id = models.IntegerField(null=True, blank=True, help_text="ID del vendedor que registró el diseño")
     product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name='deployments')
@@ -17,6 +21,7 @@ class Deployment(models.Model):
     slug = models.SlugField(max_length=100, unique=True, blank=True, null=True, help_text="URL única para acceso público")
     status = models.CharField(max_length=20, choices=StatusChoices.choices, default=StatusChoices.DRAFT)
     is_paid = models.BooleanField(default=False, help_text="Indica si la invitación ya fue pagada")
+    creation_mode = models.CharField(max_length=20, choices=CreationMode.choices, default=CreationMode.CANVAS, help_text="Modo de creación")
     
     custom_data = models.JSONField(default=dict, blank=True, help_text="Almacena el diseño de Pinia")
     
@@ -148,3 +153,20 @@ class DeploymentMetric(models.Model):
 
     def __str__(self):
         return f"{self.metric_type} en {self.deployment.slug} ({self.city}, {self.country})"
+
+
+class SystemLog(models.Model):
+    class LogType(models.TextChoices):
+        USER_ACTION = 'USER_ACTION', 'User Action'
+        DEPLOYMENT_STATE = 'DEPLOYMENT_STATE', 'Deployment State'
+        PAYMENT_FLOW = 'PAYMENT_FLOW', 'Payment Flow'
+
+    log_type = models.CharField(max_length=50, choices=LogType.choices)
+    message = models.TextField()
+    user_id = models.IntegerField(null=True, blank=True)
+    username = models.CharField(max_length=150, null=True, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.log_type} - {self.message[:50]}"

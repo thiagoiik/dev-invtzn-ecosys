@@ -1,19 +1,50 @@
 from rest_framework import serializers
-from .models import Deployment
+from django.core.validators import RegexValidator
+from .models import Deployment, SystemLog
 
 class DeploymentSerializer(serializers.ModelSerializer):
     allowed_features = serializers.ReadOnlyField()
+    slug = serializers.CharField(
+        max_length=100,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        validators=[
+            RegexValidator(
+                regex=r'^[a-z0-9-]+$',
+                message="El slug solo puede contener letras minúsculas, números y guiones."
+            )
+        ]
+    )
 
     class Meta:
         model = Deployment
         fields = '__all__'
         read_only_fields = ('user', 'status', 'is_paid', 'created_at', 'updated_at', 'allowed_features')
 
+    def validate_slug(self, value):
+        if value:
+            import re
+            if not re.match(r'^[a-z0-9-]+$', value):
+                raise serializers.ValidationError("El slug solo puede contener letras minúsculas, números y guiones.")
+        return value
+
     def validate_custom_data(self, value):
+        deployment = self.instance
+        if deployment and getattr(deployment, 'creation_mode', None) == 'CATALOG':
+            request = self.context.get('request')
+            if request and request.user and request.user.is_authenticated:
+                from profiles.models import UserProfile
+                try:
+                    profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+                    if profile.custom_role == UserProfile.Role.CLIENT:
+                        raise serializers.ValidationError("Los clientes no pueden modificar visualmente los despliegues de catálogo.")
+                except UserProfile.DoesNotExist:
+                    pass
+
         if not isinstance(value, dict):
             return value
             
-        deployment = self.instance
         if not deployment:
             # En creación, permitimos omitir la validación de tiers ya que empieza vacío
             return value
@@ -41,3 +72,9 @@ class DeploymentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("La personalización de metadatos Open Graph requiere plan Premium.")
 
         return value
+
+
+class SystemLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SystemLog
+        fields = '__all__'

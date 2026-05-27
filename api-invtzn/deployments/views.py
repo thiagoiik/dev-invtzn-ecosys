@@ -3,8 +3,8 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from .models import Deployment
-from .serializers import DeploymentSerializer
+from .models import Deployment, SystemLog
+from .serializers import DeploymentSerializer, SystemLogSerializer
 
 class DeploymentViewSet(viewsets.ModelViewSet):
     serializer_class = DeploymentSerializer
@@ -381,4 +381,26 @@ class DeploymentViewSet(viewsets.ModelViewSet):
             'daily': sorted(list(daily_data.values()), key=lambda x: x['date']),
             'recent': recent_list
         })
+
+
+from rest_framework.permissions import BasePermission
+
+class IsAdminOrSuperuser(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if request.user.is_superuser:
+            return True
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            return profile.custom_role == UserProfile.Role.ADMIN
+        except UserProfile.DoesNotExist:
+            return False
+
+
+class SystemLogViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = SystemLog.objects.all().order_by('-created_at')
+    serializer_class = SystemLogSerializer
+    permission_classes = [IsAuthenticated, IsAdminOrSuperuser]
 
