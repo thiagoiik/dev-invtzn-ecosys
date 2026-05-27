@@ -529,7 +529,7 @@
         <div class="device-frame">
           <!-- Inyectamos los componentes del Engine en tiempo real -->
           <div v-if="!loading" class="preview-canvas">
-            <EnvelopeWrapper :type="localConfig.envelope_type || localConfig.envelope">
+            <EnvelopeWrapper v-if="activeTab === 'envelope'" :type="localConfig.envelope_type || localConfig.envelope">
               <RenderEngineMaster 
                 :status="deploymentStatus" 
                 :customData="localConfig" 
@@ -539,6 +539,15 @@
                 @purchase="showUpgradeModal = true"
               />
             </EnvelopeWrapper>
+            <RenderEngineMaster 
+              v-else
+              :status="deploymentStatus" 
+              :customData="localConfig" 
+              :slug="deploymentSlug" 
+              :deploymentId="deploymentId"
+              :isStudioMode="true"
+              @purchase="showUpgradeModal = true"
+            />
           </div>
           <div v-else class="loading-state">
             <div class="loading-spinner"></div>

@@ -1,3 +1,5 @@
+import { useAuthStore } from '@/modules/auth/store/auth';
+
 export default [
   {
     path: '/workspace',
@@ -9,7 +11,19 @@ export default [
     children: [
       {
         path: '',
-        redirect: '/workspace/crm'
+        redirect: () => {
+          const authStore = useAuthStore();
+          if (authStore.role === 'DESIGNER') {
+            return '/workspace/designs';
+          }
+          return '/workspace/crm';
+        }
+      },
+      {
+        path: 'products',
+        name: 'workspace-products',
+        component: () => import('@/modules/workspace/views/ProductsManagerView.vue'),
+        meta: { requiresRole: ['ADMIN'] }
       },
       {
         path: 'crm',

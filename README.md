@@ -228,6 +228,20 @@ La versión `v0.6.3` estabiliza el ecosistema resolviendo los problemas crítico
 
 ---
 
+## 💎 Versión v0.7.0 — Separación de Flujos de Edición & Logs de Auditoría
+
+La versión **v0.7.0** introduce un cambio estructural en el proceso de creación y edición, diferenciando entre flujos de consumo simplificados (Cliente A) y lienzos libres profesionales (Cliente B), sumado a robustez en la depuración:
+
+*   **Cliente A (Catálogo - `CATALOG`):** Ruta `/builder/:id/form` que renderiza una interfaz de captura ágil de una sola columna (`CatalogFormView.vue`). Oculta el editor visual 3D. El botón de edición en el Dashboard desaparece automáticamente una vez que el cliente marca los datos como completos (`is_catalog_complete`).
+*   **Cliente B (Lienzo Libre - `CANVAS`):** Acceso al editor visual completo (`StudioView.vue`) con bloqueos de componentes dinámicos en tiempo real según el nivel de suscripción del cliente.
+*   **Bypass Dinámico de Sobre en Studio:** El sobre 3D (`EnvelopeWrapper`) solo se dibuja en la pestaña activa de "Sobre", optimizando la velocidad y reduciendo la fricción visual de edición.
+*   **Sistema de Auditoría de logs (`SystemLog`):** Centraliza logs de eventos críticos (`USER_ACTION`, `DEPLOYMENT_STATE` y `PAYMENT_FLOW`) en el backend. Protegido rigurosamente para acceso exclusivo de `ADMIN` y superusuarios.
+*   **DevTools Auditoría Real-Time:** Pestaña "Logs del Sistema" en DevTools para administradores, que renderiza la bitácora de logs con filtros de búsqueda y un visor modal para payloads y metadatos JSON.
+*   **Administrador de Productos (`ProductsManagerView.vue`):** Interfaz exclusiva para administradores bajo `/workspace/products` para control del catálogo, precios base, stocks y configuraciones de tiers comerciales.
+*   **Redirección Inteligente por Rol:** Seguridad a nivel de Vue Router para `/workspace`, dirigiendo automáticamente a `DESIGNER` a sus diseños y al resto del staff (`ADMIN`, `FRANCHISEE`, `MANAGER`, `VENDOR`) a la consola CRM comercial.
+
+---
+
 ## 🧪 Comandos Útiles
 
 ### Desarrollo y Base de Datos

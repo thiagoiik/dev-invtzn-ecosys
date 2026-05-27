@@ -108,6 +108,16 @@
               <span v-if="!isTablet || isMobile" class="text-sm">Sucursales</span>
             </router-link>
             <router-link 
+              to="/workspace/products" 
+              class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
+              :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
+              :title="isTablet && !isMobile ? 'Productos' : ''"
+              @click="isMobile ? mobileMenuOpen = false : null"
+            >
+              <span>📦</span>
+              <span v-if="!isTablet || isMobile" class="text-sm">Productos</span>
+            </router-link>
+            <router-link 
               to="/workspace/coupons" 
               class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
               :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
