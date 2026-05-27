@@ -526,11 +526,22 @@
 
       <!-- PANEL DERECHO: LIVE PREVIEW -->
       <section class="preview-panel" :class="{ 'is-hidden-mobile': !showMobilePreview }">
-        <div class="device-frame">
-          <!-- Inyectamos los componentes del Engine en tiempo real -->
-          <div v-if="!loading" class="preview-canvas">
-            <EnvelopeWrapper v-if="activeTab === 'envelope'" :type="localConfig.envelope_type || localConfig.envelope">
+        <div class="simulator-scale-wrapper" :style="scaleStyle">
+          <div class="device-frame">
+            <!-- Inyectamos los componentes del Engine en tiempo real -->
+            <div v-if="!loading" class="preview-canvas">
+              <EnvelopeWrapper v-if="activeTab === 'envelope'" :type="localConfig.envelope_type || localConfig.envelope">
+                <RenderEngineMaster 
+                  :status="deploymentStatus" 
+                  :customData="localConfig" 
+                  :slug="deploymentSlug" 
+                  :deploymentId="deploymentId"
+                  :isStudioMode="true"
+                  @purchase="showUpgradeModal = true"
+                />
+              </EnvelopeWrapper>
               <RenderEngineMaster 
+                v-else
                 :status="deploymentStatus" 
                 :customData="localConfig" 
                 :slug="deploymentSlug" 
@@ -538,20 +549,11 @@
                 :isStudioMode="true"
                 @purchase="showUpgradeModal = true"
               />
-            </EnvelopeWrapper>
-            <RenderEngineMaster 
-              v-else
-              :status="deploymentStatus" 
-              :customData="localConfig" 
-              :slug="deploymentSlug" 
-              :deploymentId="deploymentId"
-              :isStudioMode="true"
-              @purchase="showUpgradeModal = true"
-            />
-          </div>
-          <div v-else class="loading-state">
-            <div class="loading-spinner"></div>
-            Cargando vista previa...
+            </div>
+            <div v-else class="loading-state">
+              <div class="loading-spinner"></div>
+              Cargando vista previa...
+            </div>
           </div>
         </div>
       </section>
@@ -601,7 +603,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, watch, computed, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import BuilderLayout from '@/layouts/BuilderLayout.vue';
@@ -754,11 +756,13 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+  updateScaleFactor();
+  window.addEventListener('resize', updateScaleFactor);
 });
 
 const openLiveDemo = () => {
   if (deploymentSlug.value) {
-    window.open(`/demo/${deploymentSlug.value}`, '_blank');
+    window.open(`/i/${deploymentSlug.value}`, '_blank');
   }
 };
 
@@ -818,6 +822,35 @@ watch(localConfig, () => {
     }
   }, 2000);
 }, { deep: true });
+
+const scaleFactor = ref(1);
+
+const updateScaleFactor = () => {
+  const containerHeight = window.innerHeight - 150;
+  const targetHeight = 800;
+  if (containerHeight < targetHeight) {
+    scaleFactor.value = Math.max(0.4, containerHeight / targetHeight);
+  } else {
+    scaleFactor.value = 1;
+  }
+};
+
+const scaleStyle = computed(() => {
+  if (typeof window !== 'undefined' && window.innerWidth < 768) {
+    return {};
+  }
+  return {
+    transform: `scale(${scaleFactor.value})`,
+    transformOrigin: 'center center',
+    transition: 'transform 0.2s ease-out'
+  };
+});
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', updateScaleFactor);
+  }
+});
 </script>
 
 <style scoped>
@@ -852,17 +885,18 @@ watch(localConfig, () => {
   display: flex;
   width: 100%;
   height: 100%;
+  background: #020617;
 }
 
 /* Panel de Controles */
 .control-panel {
   width: 380px;
-  background: #1e293b;
+  background: #0b0f19;
   color: white;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #334155;
-  box-shadow: 10px 0 30px -10px rgba(0, 0, 0, 0.3);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
   z-index: 10;
 }
 .panel-header {
@@ -871,9 +905,9 @@ watch(localConfig, () => {
 .panel-header h3 {
   margin: 0;
   font-size: 1.25rem;
-  font-weight: 800;
+  font-weight: 900;
   letter-spacing: -0.025em;
-  color: #f1f5f9;
+  color: #ffffff;
 }
 
 /* Tabs Grid */
@@ -881,9 +915,9 @@ watch(localConfig, () => {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.35rem;
-  background: #0f172a;
+  background: #020617;
   padding: 0.35rem;
-  border-radius: 10px;
+  border-radius: 12px;
   margin: 0.5rem 1.5rem 1.5rem 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -891,8 +925,8 @@ watch(localConfig, () => {
   padding: 0.6rem 0.75rem;
   border: none;
   background: transparent;
-  color: #64748b;
-  font-size: 0.85rem;
+  color: #94a3b8;
+  font-size: 0.8rem;
   font-weight: 800;
   border-radius: 8px;
   cursor: pointer;
@@ -903,12 +937,13 @@ watch(localConfig, () => {
   gap: 0.5rem;
 }
 .tab-btn:hover {
-  color: #f1f5f9;
+  color: #38bdf8;
 }
 .tab-btn.active {
-  background: #334155;
-  color: #ffffff;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38bdf8;
+  box-shadow: 0 4px 12px rgba(56, 189, 248, 0.1);
 }
 
 .config-form {
@@ -947,11 +982,11 @@ watch(localConfig, () => {
 .form-group input[type="text"],
 .form-group input[type="url"],
 .form-group input[type="datetime-local"] {
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: #020617;
+  border: 1px solid #1e293b;
   color: white;
   padding: 0.85rem 1rem;
-  border-radius: 8px;
+  border-radius: 10px;
   transition: all 0.2s ease;
   font-size: 0.9rem;
   width: 100%;
@@ -964,11 +999,11 @@ watch(localConfig, () => {
 
 /* Select Input */
 .select-input {
-  background: #0f172a;
-  border: 1px solid #334155;
+  background: #020617;
+  border: 1px solid #1e293b;
   color: white;
   padding: 0.85rem 1rem;
-  border-radius: 8px;
+  border-radius: 10px;
   transition: all 0.2s ease;
   font-size: 0.9rem;
   width: 100%;
@@ -984,10 +1019,10 @@ watch(localConfig, () => {
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: #0f172a;
+  background: #020617;
   padding: 0.6rem 1rem;
-  border-radius: 8px;
-  border: 1px solid #334155;
+  border-radius: 10px;
+  border: 1px solid #1e293b;
 }
 .color-input {
   -webkit-appearance: none;
@@ -1016,10 +1051,10 @@ watch(localConfig, () => {
 
 /* Switch Container */
 .switch-container {
-  background: #0f172a;
+  background: #020617;
   padding: 0.85rem 1rem;
-  border-radius: 8px;
-  border: 1px solid #334155;
+  border-radius: 10px;
+  border: 1px solid #1e293b;
 }
 .switch-label {
   display: flex;
@@ -1279,26 +1314,32 @@ watch(localConfig, () => {
 /* Panel de Preview */
 .preview-panel {
   flex: 1;
-  background: #0f172a;
+  background: #020617;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 2rem;
-  overflow-y: auto;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 0);
+  overflow: hidden;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 0);
   background-size: 24px 24px;
+}
+.simulator-scale-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 380px;
+  height: 800px;
+  position: relative;
 }
 .device-frame {
   width: 380px;
   height: 800px;
-  max-width: 100%;
-  max-height: 100%;
   border-radius: 40px;
-  border: 12px solid #1e293b;
+  border: 12px solid #0f172a;
   overflow: hidden;
   position: relative;
   background: white;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
 }
 
 @media (max-width: 767px) {

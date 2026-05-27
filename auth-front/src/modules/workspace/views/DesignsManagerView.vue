@@ -1,129 +1,167 @@
 <template>
-  <div class="designs-manager">
-    <div class="header">
-      <h3>Gestión de Diseños (Deployments)</h3>
-      <button @click="loadDeployments" class="btn btn-refresh">🔄 Actualizar</button>
+  <div class="space-y-6">
+    <!-- Header cockpit card -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+      <div>
+        <h2 class="text-2xl font-bold text-slate-800">Línea de Tiempo de Diseños</h2>
+        <p class="text-slate-500">Supervisa las invitaciones según la etapa de vida del evento: desde la maquetación hasta el archivo histórico.</p>
+      </div>
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <div class="relative flex-1 sm:w-64">
+          <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+            🔍
+          </span>
+          <input 
+            v-model="searchQuery" 
+            type="text" 
+            placeholder="Buscar por ID, Slug o Cliente..." 
+            class="input input-bordered w-full pl-9 h-11 rounded-xl text-sm"
+          />
+        </div>
+        <button @click="loadDeployments" class="btn btn-ghost bg-slate-50 hover:bg-slate-100 border border-slate-200 h-11 px-4 rounded-xl flex items-center gap-2" :disabled="loading">
+          <span>🔄</span> Actualizar
+        </button>
+      </div>
     </div>
 
-    <div v-if="loading" class="loading">Cargando diseños globales...</div>
-    
-    <template v-else>
-      <!-- Vista de Tabla (Escritorio / Tablet) -->
-      <div class="hidden md:block overflow-x-auto">
-        <table class="data-grid">
+    <!-- Pestañas Horizontes de Tiempo -->
+    <div class="tabs tabs-boxed bg-slate-100 p-1.5 rounded-2xl flex flex-wrap gap-1">
+      <button 
+        class="tab flex-1 h-11 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all"
+        :class="{ 'tab-active bg-white text-primary shadow-sm': activeTab === 'design' }"
+        @click="activeTab = 'design'"
+      >
+        🛠️ En Diseño
+        <span class="badge badge-sm" :class="activeTab === 'design' ? 'badge-primary text-white' : 'badge-ghost'">
+          {{ filteredGroupedDeployments.design.length }}
+        </span>
+      </button>
+      
+      <button 
+        class="tab flex-1 h-11 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all"
+        :class="{ 'tab-active bg-white text-primary shadow-sm': activeTab === 'active' }"
+        @click="activeTab = 'active'"
+      >
+        🟢 Activas (Pre-Evento)
+        <span class="badge badge-sm" :class="activeTab === 'active' ? 'badge-primary text-white' : 'badge-ghost'">
+          {{ filteredGroupedDeployments.active.length }}
+        </span>
+      </button>
+      
+      <button 
+        class="tab flex-1 h-11 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all"
+        :class="{ 'tab-active bg-white text-primary shadow-sm': activeTab === 'postEvent' }"
+        @click="activeTab = 'postEvent'"
+      >
+        🌅 Post-Evento
+        <span class="badge badge-sm" :class="activeTab === 'postEvent' ? 'badge-primary text-white' : 'badge-ghost'">
+          {{ filteredGroupedDeployments.postEvent.length }}
+        </span>
+      </button>
+      
+      <button 
+        class="tab flex-1 h-11 rounded-xl font-bold text-xs flex items-center justify-center gap-2 transition-all"
+        :class="{ 'tab-active bg-white text-primary shadow-sm': activeTab === 'archived' }"
+        @click="activeTab = 'archived'"
+      >
+        📦 Archivadas
+        <span class="badge badge-sm" :class="activeTab === 'archived' ? 'badge-primary text-white' : 'badge-ghost'">
+          {{ filteredGroupedDeployments.archived.length }}
+        </span>
+      </button>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div v-if="loading" class="flex justify-center items-center p-20">
+        <span class="loading loading-spinner loading-lg text-primary"></span>
+      </div>
+      
+      <div v-else-if="currentTabList.length === 0" class="p-20 text-center text-slate-400">
+        <div class="text-4xl mb-3">📂</div>
+        <p class="italic font-medium">No se encontraron diseños en esta fase de la línea de tiempo.</p>
+      </div>
+
+      <div v-else class="overflow-x-auto">
+        <table class="table w-full table-zebra">
           <thead>
-            <tr>
-              <th>ID</th>
-              <th>Cliente</th>
-              <th>Estado Pago</th>
-              <th>Estado Visibilidad</th>
-              <th>URL Pública</th>
-              <th>Acciones</th>
+            <tr class="bg-slate-50/75 text-slate-600 font-bold border-b border-slate-200">
+              <th class="px-6 py-4">ID</th>
+              <th class="px-6 py-4">Cliente / Producto</th>
+              <th class="px-6 py-4">Modo de Creación</th>
+              <th class="px-6 py-4">Fecha del Evento</th>
+              <th class="px-6 py-4">Estado de Pago</th>
+              <th class="px-6 py-4">URL Pública</th>
+              <th class="px-6 py-4 text-right">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="dep in deployments" :key="dep.id">
-              <td>#{{ dep.id }}</td>
-              <td>
-                <div class="font-bold">Usuario {{ dep.user }}</div>
-                <div class="text-[10px] text-slate-400 uppercase">Prod #{{ dep.product }}</div>
+            <tr v-for="dep in currentTabList" :key="dep.id" class="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+              <td class="px-6 py-4 font-bold text-slate-700">#{{ dep.id }}</td>
+              <td class="px-6 py-4">
+                <div class="font-bold text-slate-800">Usuario ID: {{ dep.user || 'Anónimo' }}</div>
+                <div class="text-xs text-slate-400">Producto ID: {{ dep.product }}</div>
               </td>
-              <td>
-                <span v-if="dep.is_paid" class="badge paid">✅ PAGADA</span>
-                <span v-else class="badge trial">🧪 PRUEBA</span>
+              <td class="px-6 py-4 text-xs">
+                <span :class="[
+                  'badge badge-sm font-bold tracking-wide uppercase',
+                  dep.creation_mode === 'CATALOG' ? 'bg-indigo-50 text-indigo-600 border-none' : 'bg-pink-50 text-pink-600 border-none'
+                ]">
+                  {{ dep.creation_mode === 'CATALOG' ? 'Cliente A (Catálogo)' : 'Cliente B (Canvas)' }}
+                </span>
               </td>
-              <td>
-                <span :class="['badge', dep.status.toLowerCase()]">{{ dep.status }}</span>
+              <td class="px-6 py-4 text-xs text-slate-600 font-semibold">
+                {{ formatEventDate(dep) }}
               </td>
-              <td>
-                <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="link">/i/{{ dep.slug }}</a>
-                <span v-else class="text-muted">Sin asignar</span>
+              <td class="px-6 py-4 text-xs">
+                <span v-if="dep.is_paid" class="badge badge-success text-white font-bold gap-1 px-2.5">
+                  ✅ PAGADA
+                </span>
+                <span v-else class="badge badge-warning text-amber-950 font-bold gap-1 px-2.5">
+                  🧪 PRUEBA
+                </span>
               </td>
-              <td class="actions-cell">
-                <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="btn btn-sm btn-outline" title="Previa">👁️</a>
-                
-                <button @click="onShowMetrics(dep.id)" class="btn btn-sm btn-outline" title="Métricas">
-                  📊
-                </button>
-                
-                <router-link :to="'/builder/' + dep.id" class="btn btn-sm btn-primary" title="Editar">
-                  🛠️
-                </router-link>
-                
-                <button v-if="!dep.is_paid" @click="onPay(dep)" class="btn btn-sm btn-success" title="Activar Pase">
-                  ✨ Activar Pase
-                </button>
+              <td class="px-6 py-4">
+                <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="link link-primary font-bold text-xs">
+                  /i/{{ dep.slug }}
+                </a>
+                <span v-else class="text-slate-400 italic text-xs">Sin asignar</span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <div class="flex justify-end gap-1">
+                  <!-- Previsualizar -->
+                  <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="btn btn-xs btn-outline btn-square text-base" title="Ver en vivo">
+                    👁️
+                  </a>
+                  
+                  <!-- Métricas -->
+                  <button @click="onShowMetrics(dep.id)" class="btn btn-xs btn-outline btn-square text-base" title="Ver Métricas">
+                    📊
+                  </button>
+                  
+                  <!-- Entrar al Studio / Formulario -->
+                  <router-link :to="'/builder/' + dep.id" class="btn btn-xs btn-primary font-black px-3.5" title="Abrir Studio">
+                    Editar
+                  </router-link>
+                  
+                  <!-- Activar Pago -->
+                  <button v-if="!dep.is_paid" @click="onPay(dep)" class="btn btn-xs btn-success text-white font-bold px-3.5" title="Marcar como Pagada">
+                    Activar
+                  </button>
 
-                <button @click="onDelete(dep.id)" class="btn btn-sm btn-danger" title="Eliminar">
-                  🗑️
-                </button>
+                  <!-- Eliminar -->
+                  <button @click="onDelete(dep.id)" class="btn btn-xs btn-error text-white btn-square text-base" title="Eliminar Diseño">
+                    🗑️
+                  </button>
+                </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+    </div>
 
-      <!-- Vista Móvil (Tarjetas) -->
-      <div class="grid grid-cols-1 gap-4 md:hidden">
-        <div 
-          v-for="dep in deployments" 
-          :key="dep.id"
-          class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col gap-4"
-        >
-          <!-- Fila superior: ID y Visibilidad -->
-          <div class="flex items-center justify-between">
-            <span class="font-black text-slate-800 text-sm">ID #{{ dep.id }}</span>
-            <span :class="['badge font-bold text-[10px] uppercase tracking-wider', dep.status.toLowerCase()]">
-              {{ dep.status }}
-            </span>
-          </div>
-
-          <!-- Cuerpo del Diseño -->
-          <div class="space-y-3">
-            <div>
-              <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Cliente</div>
-              <div class="font-bold text-slate-800 text-sm">Usuario {{ dep.user }}</div>
-              <div class="text-[10px] text-slate-400">Prod #{{ dep.product }}</div>
-            </div>
-            
-            <div>
-              <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Pago</div>
-              <span v-if="dep.is_paid" class="badge paid text-xs">✅ PAGADA</span>
-              <span v-else class="badge trial text-xs">🧪 PRUEBA</span>
-            </div>
-
-            <div v-if="dep.slug">
-              <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">URL Pública</div>
-              <a :href="'/i/' + dep.slug" target="_blank" class="link text-sm font-bold">/i/{{ dep.slug }}</a>
-            </div>
-          </div>
-
-          <!-- Acciones -->
-          <div class="flex items-center gap-2 pt-3 border-t border-slate-100 flex-wrap">
-            <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" class="btn btn-sm btn-outline flex-1 text-center py-2 flex items-center justify-center gap-1">
-              👁️ Ver
-            </a>
-
-            <button @click="onShowMetrics(dep.id)" class="btn btn-sm btn-outline flex-1 py-2 flex items-center justify-center gap-1">
-              📊 Métricas
-            </button>
-            
-            <router-link :to="'/builder/' + dep.id" class="btn btn-sm btn-primary flex-1 text-center py-2 flex items-center justify-center gap-1">
-              🛠️ Editar
-            </router-link>
-            
-            <button v-if="!dep.is_paid" @click="onPay(dep)" class="btn btn-sm btn-success flex-1 py-2 flex items-center justify-center gap-1 font-bold">
-              ✨ Activar Pase
-            </button>
-
-            <button @click="onDelete(dep.id)" class="btn btn-sm btn-danger flex-1 py-2 flex items-center justify-center gap-1">
-              🗑️ Borrar
-            </button>
-          </div>
-        </div>
-      </div>
-    </template>
-
+    <!-- Drawer de Métricas -->
     <DeploymentMetricsDrawer 
       :isOpen="isMetricsOpen" 
       :deploymentId="selectedDeploymentId" 
@@ -133,7 +171,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useToast } from 'vue-toastification';
 import { crmService } from '@/modules/workspace/services/crmService';
 import DeploymentMetricsDrawer from '@/modules/workspace/components/DeploymentMetricsDrawer.vue';
@@ -141,6 +179,8 @@ import DeploymentMetricsDrawer from '@/modules/workspace/components/DeploymentMe
 const toast = useToast();
 const deployments = ref([]);
 const loading = ref(true);
+const searchQuery = ref('');
+const activeTab = ref('design');
 
 const isMetricsOpen = ref(false);
 const selectedDeploymentId = ref(null);
@@ -162,14 +202,89 @@ const loadDeployments = async () => {
   }
 };
 
+const parseEventDate = (dep) => {
+  const targetDateStr = dep.custom_data?.timer?.targetDate || dep.custom_data?.cover?.date;
+  if (!targetDateStr) return null;
+  // Si la fecha tiene formato ISO
+  const parsed = Date.parse(targetDateStr);
+  if (!isNaN(parsed)) return new Date(parsed);
+  return null;
+};
+
+const formatEventDate = (dep) => {
+  const dateObj = parseEventDate(dep);
+  if (!dateObj) {
+    return dep.custom_data?.cover?.date || 'Sin fecha asignada';
+  }
+  const options = { day: 'numeric', month: 'short', year: 'numeric' };
+  return dateObj.toLocaleDateString('es-ES', options).toUpperCase();
+};
+
+const groupedDeployments = computed(() => {
+  const now = new Date();
+  const groups = {
+    design: [],
+    active: [],
+    postEvent: [],
+    archived: []
+  };
+
+  deployments.value.forEach(dep => {
+    const status = dep.status || 'DRAFT';
+    if (status === 'EXPIRED') {
+      groups.archived.push(dep);
+    } else if (status === 'DRAFT') {
+      groups.design.push(dep);
+    } else if (status === 'LIVE') {
+      const eventDate = parseEventDate(dep);
+      if (eventDate && eventDate < now) {
+        groups.postEvent.push(dep);
+      } else {
+        groups.active.push(dep);
+      }
+    } else {
+      groups.design.push(dep);
+    }
+  });
+
+  return groups;
+});
+
+const filteredGroupedDeployments = computed(() => {
+  const query = searchQuery.value.toLowerCase().trim();
+  const allGroups = groupedDeployments.value;
+
+  if (!query) return allGroups;
+
+  const filterList = (list) => {
+    return list.filter(dep => {
+      const idMatches = String(dep.id).includes(query);
+      const userMatches = String(dep.user || '').includes(query);
+      const slugMatches = dep.slug && dep.slug.toLowerCase().includes(query);
+      const namesMatches = dep.custom_data?.cover?.title && dep.custom_data.cover.title.toLowerCase().includes(query);
+      return idMatches || userMatches || slugMatches || namesMatches;
+    });
+  };
+
+  return {
+    design: filterList(allGroups.design),
+    active: filterList(allGroups.active),
+    postEvent: filterList(allGroups.postEvent),
+    archived: filterList(allGroups.archived)
+  };
+});
+
+const currentTabList = computed(() => {
+  return filteredGroupedDeployments.value[activeTab.value] || [];
+});
+
 const onDelete = async (id) => {
   if (confirm(`¿Estás seguro de que quieres eliminar el diseño #${id}? Esta acción es irreversible.`)) {
     try {
-      import('@/modules/ecommerce/services/deploymentService').then(async ({ deploymentService }) => {
-        await deploymentService.deleteDeployment(id);
-        toast.success(`Diseño #${id} eliminado`);
-        loadDeployments(); // Recargar la tabla
-      });
+      const { deploymentService } = await import('@/modules/ecommerce/services/deploymentService');
+      await deploymentService.deleteDeployment(id);
+      toast.success(`Diseño #${id} eliminado`);
+      loadDeployments();
     } catch (error) {
       toast.error('No se pudo eliminar el diseño.');
     }
@@ -179,7 +294,6 @@ const onDelete = async (id) => {
 const onPay = async (dep) => {
   try {
     toast.info('Generando orden de pago...');
-    // 1. Crear la orden para este deployment
     const orderData = {
       product: dep.product,
       deployment: dep.id,
@@ -190,14 +304,12 @@ const onPay = async (dep) => {
     const res = await crmService.createOrder(orderData);
     const orderId = res.data.id;
     
-    // 2. Generar el link de Stripe
     const successUrl = `${window.location.origin}/workspace/designs?success=true`;
     const cancelUrl = `${window.location.origin}/workspace/designs?cancel=true`;
     
     const checkoutRes = await crmService.createStripeCheckout(orderId, successUrl, cancelUrl);
     const { url } = checkoutRes.data;
     
-    // 3. Redirigir
     window.location.href = url;
   } catch (error) {
     toast.error('Error al procesar el pago.');
@@ -209,47 +321,3 @@ onMounted(() => {
   loadDeployments();
 });
 </script>
-
-<style scoped>
-.designs-manager {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-}
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-.btn {
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-  text-decoration: none;
-}
-.btn-refresh { background: #f1f5f9; color: #475569; }
-.btn-sm { font-size: 0.85rem; padding: 0.35rem 0.75rem; margin-right: 0.5rem; }
-.btn-outline { border: 1px solid #cbd5e1; background: white; color: #475569; }
-.btn-primary { background: #3b82f6; color: white; }
-.btn-success { background: #10b981; color: white; }
-.btn-danger { background: #ef4444; color: white; }
-
-.data-grid { width: 100%; border-collapse: collapse; }
-.data-grid th, .data-grid td { padding: 1rem; text-align: left; border-bottom: 1px solid #e2e8f0; }
-.data-grid th { background: #f8fafc; color: #64748b; font-weight: 600; }
-
-.badge { padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.85rem; font-weight: bold; }
-.badge.draft { background: #f1f5f9; color: #475569; }
-.badge.live { background: #3b82f6; color: white; }
-.badge.paid { background: #dcfce7; color: #16a34a; }
-.badge.trial { background: #fef3c7; color: #d97706; }
-.badge.expired { background: #fee2e2; color: #dc2626; }
-
-.link { color: #3b82f6; text-decoration: underline; }
-.text-muted { color: #94a3b8; }
-.actions-cell { display: flex; align-items: center; }
-</style>

@@ -40,6 +40,7 @@ class Product(models.Model):
     
     # ¿Este producto genera un despliegue automático?
     has_template = models.BooleanField(default=False)
+    template_slug = models.CharField(max_length=100, blank=True, null=True, help_text="Slug de la invitación base (maqueta) para clonar custom_data")
 
     # NUEVOS CAMPOS ETAPA 2
     sku = models.CharField(max_length=50, unique=True, null=True, blank=True, help_text="Código único de inventario")

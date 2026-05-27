@@ -389,7 +389,7 @@ class IsAdminOrSuperuser(BasePermission):
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
-        if request.user.is_superuser:
+        if getattr(request.user, 'is_superuser', False):
             return True
         from profiles.models import UserProfile
         try:

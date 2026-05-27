@@ -29,6 +29,18 @@ class Deployment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     def save(self, *args, **kwargs):
+        if not self.pk:
+            if self.product and getattr(self.product, 'template_slug', None):
+                try:
+                    from deployments.models import Deployment as DepModel
+                    template_dep = DepModel.objects.get(slug=self.product.template_slug)
+                    if not self.custom_data or self.custom_data == {}:
+                        import copy
+                        self.custom_data = copy.deepcopy(template_dep.custom_data)
+                        self.creation_mode = template_dep.creation_mode
+                except Exception:
+                    pass
+
         if not self.slug:
             import uuid
             self.slug = str(uuid.uuid4())[:8]

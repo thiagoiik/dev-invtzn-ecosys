@@ -159,6 +159,12 @@
                   </div>
                 </div>
 
+                <div v-if="form.product_type === 'DIGITAL'" class="form-control w-full">
+                  <label class="label"><span class="label-text font-bold text-slate-700">Slug de Plantilla (Lienzo Maestro)</span></label>
+                  <input v-model="form.template_slug" type="text" placeholder="Ej: boda-elegante-oro" class="input input-bordered w-full" />
+                  <p class="text-[10px] text-slate-400 mt-1">El slug del lienzo maestro que se clonará automáticamente al comprar o probar este producto.</p>
+                </div>
+
                 <div class="form-control w-full">
                   <label class="label"><span class="label-text font-bold text-slate-700">Descripción</span></label>
                   <textarea v-model="form.description" placeholder="Ingresa los detalles o descripción corta del producto..." class="textarea textarea-bordered w-full h-24"></textarea>
@@ -236,6 +242,7 @@ const form = ref({
   has_template: true,
   display_pcard: false,
   is_active: true,
+  template_slug: '',
   features: {}
 });
 
@@ -268,6 +275,7 @@ const openCreateDrawer = () => {
     has_template: true,
     display_pcard: false,
     is_active: true,
+    template_slug: '',
     features: {}
   };
   drawerOpen.value = true;
@@ -290,6 +298,7 @@ const openEditDrawer = (product) => {
     has_template: product.has_template ?? true,
     display_pcard: product.display_pcard ?? false,
     is_active: product.is_active ?? true,
+    template_slug: product.template_slug || '',
     features: product.features || {}
   };
   drawerOpen.value = true;

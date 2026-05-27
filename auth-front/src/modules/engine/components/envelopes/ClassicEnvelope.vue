@@ -1,6 +1,7 @@
 <template>
-  <div class="classic-envelope-container" :class="{ 'is-open': isOpen, 'is-hidden': isHidden }">
-    <div class="envelope-classic-wrapper" id="envelope-1">
+  <div class="classic-envelope-container" :class="{ 'is-open': isOpen, 'is-released': isReleased }">
+    <!-- El sobre y sus partes físicas (se remueven al finalizar la transición) -->
+    <div v-if="!isReleased" class="envelope-classic-wrapper" id="envelope-1">
       <div class="envelope-classic-shadow"></div>
       <div class="envelope-classic">
         <!-- Solapa superior -->
@@ -19,16 +20,20 @@
           <div class="seal-crest">S&A</div>
           <div class="seal-crack-line"></div>
         </div>
-        
-        <!-- Aquí metemos el contenido cuando se abre -->
-        <div class="invitation-card-slot" id="card-1">
-          <div class="scrollable-content-wrapper">
-             <slot v-if="renderContent"></slot>
-          </div>
-        </div>
       </div>
       <div class="interaction-tip animate-pulse mt-8 text-white font-serif tracking-widest text-sm" v-if="!isOpen">
         Toca el sello de lacre dorado
+      </div>
+    </div>
+
+    <!-- La tarjeta de invitación (slot de contenido) -->
+    <div 
+      class="invitation-card-slot" 
+      :class="{ 'is-active': isOpen, 'is-released': isReleased }"
+      id="card-1"
+    >
+      <div class="scrollable-content-wrapper">
+         <slot v-slot="{ isOpened }"></slot>
       </div>
     </div>
   </div>
@@ -42,7 +47,7 @@ const emit = defineEmits(['opened']);
 const audioFX = useAudioFX();
 
 const isOpen = ref(false);
-const isHidden = ref(false);
+const isReleased = ref(false);
 const renderContent = ref(false); // To delay rendering the heavy content
 
 const openEnvelope = () => {
@@ -56,10 +61,10 @@ const openEnvelope = () => {
   
   setTimeout(() => {
     emit('opened');
-    // Hide the envelope completely after animation so it doesn't block scrolling
+    // Esperamos 1.5s a que termine la animación de deslizamiento y liberamos la tarjeta
     setTimeout(() => {
-       isHidden.value = true;
-    }, 1500); // 1.5s is enough for the transition to complete
+       isReleased.value = true;
+    }, 1500);
   }, 1000);
 };
 </script>
@@ -70,28 +75,32 @@ const openEnvelope = () => {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background-color: #1a1a1a;
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  z-index: 50;
-  transition: opacity 1s ease-in-out;
+  background-color: #111111;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 9999;
+  transition: background-color 0.8s ease;
 }
 
-.classic-envelope-container.is-hidden {
-  opacity: 0;
-  pointer-events: none;
-  z-index: -1;
+/* Al abrirse del todo, se vuelve transparente y relativo para no estorbar el scroll global */
+.classic-envelope-container.is-released {
+  position: relative;
+  background-color: transparent;
+  min-height: auto;
+  z-index: 1;
+  inset: auto;
 }
 
 .envelope-classic-wrapper {
   position: relative;
   width: 90vw;
-  max-width: 600px;
-  aspect-ratio: 1.5 / 1;
+  max-width: 500px;
+  aspect-ratio: 1.4 / 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   perspective: 1500px;
+  z-index: 5;
 }
 
 .envelope-classic {
@@ -100,13 +109,13 @@ const openEnvelope = () => {
   position: relative;
   background-color: #f4ebd8; /* Papel crema */
   border-radius: 8px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
   transform-style: preserve-3d;
   transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .is-open .envelope-classic {
-  transform: translateY(100vh) rotateX(10deg); /* Se cae hacia abajo */
+  transform: translateY(100vh) rotateX(15deg); /* Cae con rotación 3D */
 }
 
 .envelope-flap-top {
@@ -144,11 +153,11 @@ const openEnvelope = () => {
   top: 60%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 80px;
-  height: 80px;
+  width: 70px;
+  height: 70px;
   background: radial-gradient(circle, #b8860b, #8b6508);
   border-radius: 50%;
-  z-index: 5;
+  z-index: 6;
   box-shadow: 0 4px 10px rgba(0,0,0,0.5), inset 0 2px 5px rgba(255,255,255,0.3);
   display: flex;
   justify-content: center;
@@ -159,7 +168,7 @@ const openEnvelope = () => {
 .seal-crest {
   font-family: 'Cinzel', serif;
   color: #fff8e7;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: bold;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
@@ -167,29 +176,61 @@ const openEnvelope = () => {
 .is-open .envelope-wax-seal {
   opacity: 0;
   transition: opacity 0.2s;
+  pointer-events: none;
 }
 
+.interaction-tip {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  color: #daa520;
+}
+
+/* La tarjeta que se desliza fuera del sobre */
 .invitation-card-slot {
   position: absolute;
-  bottom: 0;
-  left: 5%;
+  top: 10vh;
   width: 90%;
-  height: 95%;
+  max-width: 450px;
+  height: 80vh;
   background-color: #fff;
-  border-radius: 4px;
+  border-radius: 16px;
   z-index: 2;
-  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1) 0.5s;
-  box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+  transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  overflow: hidden;
 }
 
-.is-open .invitation-card-slot {
-  /* La carta sale hacia arriba y toma la pantalla, mientras el sobre cae */
-  transform: translateY(-120vh) scale(1.1);
+/* La carta sale hacia arriba y toma la pantalla */
+.invitation-card-slot.is-active:not(.is-released) {
+  transform: translateY(-110vh) scale(1.03);
+  z-index: 100;
+}
+
+/* Cuando se libera al final, toma el control de scroll global */
+.invitation-card-slot.is-released {
+  position: relative;
+  top: 0;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+  z-index: 1;
+  background-color: transparent;
+  transition: none;
 }
 
 .scrollable-content-wrapper {
   width: 100%;
   height: 100%;
-  overflow: hidden; /* Evita scrolls antes de tiempo */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.is-released .scrollable-content-wrapper {
+  height: auto;
+  overflow: visible;
 }
 </style>

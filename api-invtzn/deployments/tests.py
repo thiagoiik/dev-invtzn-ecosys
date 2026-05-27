@@ -406,3 +406,30 @@ class TestDeployments:
         assert state_log.metadata['deployment_id'] == deployment.id
         assert state_log.metadata['product_id'] == new_product.id
 
+    def test_create_deployment_clones_template_data(self):
+        # 1. Create a master template deployment
+        template_dep = Deployment.objects.create(
+            user=None,
+            product=self.product,
+            status=Deployment.StatusChoices.LIVE,
+            slug='master-template-123',
+            creation_mode=Deployment.CreationMode.CATALOG,
+            custom_data={'cover': {'title': 'Boda Master', 'date': '2026-12-25'}}
+        )
+
+        # 2. Update our product to point to this template_slug
+        self.product.template_slug = 'master-template-123'
+        self.product.save()
+
+        # 3. Create a new deployment for this product (with empty custom_data)
+        new_dep = Deployment.objects.create(
+            user=self.user.id,
+            product=self.product,
+            status=Deployment.StatusChoices.DRAFT,
+            custom_data={}
+        )
+
+        # 4. Check if the new deployment cloned the custom_data and creation_mode
+        assert new_dep.custom_data == template_dep.custom_data
+        assert new_dep.creation_mode == template_dep.creation_mode
+
