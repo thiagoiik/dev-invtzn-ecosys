@@ -33,7 +33,7 @@
       id="card-1"
     >
       <div class="scrollable-content-wrapper">
-         <slot v-slot="{ isOpened }"></slot>
+         <slot></slot>
       </div>
     </div>
   </div>
