@@ -31,16 +31,6 @@ class DeploymentSerializer(serializers.ModelSerializer):
 
     def validate_custom_data(self, value):
         deployment = self.instance
-        if deployment and getattr(deployment, 'creation_mode', None) == 'CATALOG':
-            request = self.context.get('request')
-            if request and request.user and request.user.is_authenticated:
-                from profiles.models import UserProfile
-                try:
-                    profile = UserProfile.objects.get(remote_auth_id=request.user.id)
-                    if profile.custom_role == UserProfile.Role.CLIENT:
-                        raise serializers.ValidationError("Los clientes no pueden modificar visualmente los despliegues de catálogo.")
-                except UserProfile.DoesNotExist:
-                    pass
 
         if not isinstance(value, dict):
             return value

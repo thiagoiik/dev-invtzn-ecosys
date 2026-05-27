@@ -317,18 +317,19 @@ class TestDeployments:
         response = self.client.post('/api/v1/deployments/', payload)
         assert response.status_code == 400
 
-    def test_client_cannot_modify_catalog_deployment_visually(self):
+    def test_client_can_modify_catalog_deployment_data(self):
         catalog_deployment = Deployment.objects.create(
             user=self.user.id,
             product=self.product,
             slug='catalog-deployment',
             creation_mode=Deployment.CreationMode.CATALOG,
-            custom_data={'key': 'original'}
+            custom_data={'cover': {'title': 'original'}}
         )
         # Client tries to update custom_data
-        response = self.client.patch(f'/api/v1/deployments/{catalog_deployment.id}/', {'custom_data': {'key': 'changed'}}, format='json')
-        assert response.status_code == 400
-        assert 'custom_data' in response.data or 'non_field_errors' in response.data
+        response = self.client.patch(f'/api/v1/deployments/{catalog_deployment.id}/', {'custom_data': {'cover': {'title': 'changed'}}}, format='json')
+        assert response.status_code == 200
+        catalog_deployment.refresh_from_db()
+        assert catalog_deployment.custom_data['cover']['title'] == 'changed'
 
         # Designer tries to update custom_data (should succeed)
         designer_user = User.objects.create_user(username='designer_user_2', password='password123')

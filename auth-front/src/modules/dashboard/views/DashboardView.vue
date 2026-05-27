@@ -57,6 +57,9 @@
             ]">
               {{ dep.creation_mode === 'CATALOG' ? 'Cliente A (Catálogo)' : 'Cliente B (Canvas)' }}
             </span>
+            <span v-if="dep.creation_mode === 'CATALOG' && dep.custom_data?.is_catalog_complete" class="badge text-[10px] font-bold px-2 py-1 rounded-md border-none uppercase tracking-wider bg-emerald-50 text-emerald-600">
+              ✓ Listo
+            </span>
             <span class="text-xs text-slate-400 font-medium">
               {{ dep.is_paid ? 'Pagado' : 'Pendiente' }}
             </span>
@@ -66,12 +69,9 @@
             <div class="grid grid-cols-2 gap-2">
               <!-- Botones diferenciados Cliente A vs Cliente B -->
               <template v-if="dep.creation_mode === 'CATALOG'">
-                <router-link v-if="!dep.custom_data?.is_catalog_complete" :to="'/builder/' + dep.id + '/form'" class="btn btn-ghost bg-slate-50 hover:bg-primary hover:text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1">
+                <router-link :to="'/builder/' + dep.id + '/form'" class="btn btn-ghost bg-slate-50 hover:bg-primary hover:text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1">
                   ✏️ Formulario
                 </router-link>
-                <div v-else class="flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-xl font-bold text-xs py-2">
-                  ✓ Completado
-                </div>
               </template>
               <template v-else>
                 <router-link :to="'/builder/' + dep.id" class="btn btn-ghost bg-slate-50 hover:bg-primary hover:text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1">
