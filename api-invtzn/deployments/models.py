@@ -51,7 +51,7 @@ class Deployment(models.Model):
 
     @property
     def allowed_features(self):
-        # Características mínimas por defecto (Sandbox / Gratis sin pagar)
+        # Características mínimas por defecto (Básica)
         features = {
             'background_music': False,
             'custom_audio_url': False,
@@ -60,10 +60,6 @@ class Deployment(models.Model):
             'custom_theme': False,
             'custom_og': False,
         }
-
-        # Si no ha sido pagada, se mantiene con las limitaciones de Sandbox
-        if not self.is_paid:
-            return features
 
         if not self.product:
             return features

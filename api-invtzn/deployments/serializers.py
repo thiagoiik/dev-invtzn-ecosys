@@ -39,6 +39,19 @@ class DeploymentSerializer(serializers.ModelSerializer):
             # En creación, permitimos omitir la validación de tiers ya que empieza vacío
             return value
 
+        # Bypass de validación para administradores y diseñadores (staff)
+        request = self.context.get('request')
+        if request and request.user:
+            if getattr(request.user, 'is_superuser', False):
+                return value
+            try:
+                from profiles.models import UserProfile
+                profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+                if profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]:
+                    return value
+            except Exception:
+                pass
+
         allowed = deployment.allowed_features
         blocks = value.get('blocks', [])
 
