@@ -1,26 +1,26 @@
 <template>
   <BuilderLayout>
     <template #actions>
-        <div class="save-status-container flex items-center gap-4">
+        <div class="save-status-container flex items-center gap-1.5 sm:gap-3">
           <!-- Badge de Estado de la Invitación -->
-          <span v-if="deploymentStatus === 'LIVE'" class="badge bg-emerald-500 text-white font-bold text-xs uppercase px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
-            🟢 En Vivo
+          <span v-if="deploymentStatus === 'LIVE'" class="badge bg-emerald-500 text-white font-bold text-[10px] sm:text-xs uppercase px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
+            🟢<span class="hidden sm:inline"> En Vivo</span>
           </span>
-          <span v-else class="badge bg-amber-500 text-white font-bold text-xs uppercase px-3 py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
-            🧪 Borrador
+          <span v-else class="badge bg-amber-500 text-white font-bold text-[10px] sm:text-xs uppercase px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
+            🧪<span class="hidden sm:inline"> Borrador</span>
           </span>
 
-          <span v-if="saveStatus === 'saved'" class="status-indicator text-success text-xs">
-            ✔ Guardado
+          <span v-if="saveStatus === 'saved'" class="status-indicator text-success text-[10px] sm:text-xs flex items-center gap-1">
+            ✔<span class="hidden md:inline"> Guardado</span>
           </span>
-          <span v-else-if="saveStatus === 'saving'" class="status-indicator text-warning animate-pulse text-xs">
-            ◌ Guardando...
+          <span v-else-if="saveStatus === 'saving'" class="status-indicator text-warning animate-pulse text-[10px] sm:text-xs flex items-center gap-1">
+            ◌<span class="hidden md:inline"> Guardando...</span>
           </span>
-          <span v-else-if="saveStatus === 'unsaved'" class="status-indicator text-info text-xs">
-            ● Cambios sin guardar
+          <span v-else-if="saveStatus === 'unsaved'" class="status-indicator text-info text-[10px] sm:text-xs flex items-center gap-1">
+            ●<span class="hidden md:inline"> Sin guardar</span>
           </span>
-          <span v-else-if="saveStatus === 'error'" class="status-indicator text-error text-xs">
-            ❌ Error
+          <span v-else-if="saveStatus === 'error'" class="status-indicator text-error text-[10px] sm:text-xs flex items-center gap-1">
+            ❌<span class="hidden md:inline"> Error</span>
           </span>
         </div>
         
@@ -28,13 +28,17 @@
         <button 
           v-if="deploymentStatus !== 'LIVE'"
           @click="showUpgradeModal = true"
-          class="btn btn-sm bg-gradient-to-r from-pink-500 to-indigo-600 hover:from-pink-600 hover:to-indigo-700 text-white font-black px-4 py-2 rounded-xl shadow-md transition-all flex items-center gap-1 ml-4"
+          class="btn btn-sm bg-gradient-to-r from-pink-500 to-indigo-600 hover:from-pink-600 hover:to-indigo-700 text-white font-black px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-md transition-all flex items-center gap-1 text-[10px] sm:text-xs"
         >
-          ✨ Publicar
+          ✨<span class="hidden sm:inline"> Publicar</span>
         </button>
 
-        <button v-if="deploymentSlug" @click="openLiveDemo" class="btn btn-outline-primary ml-4">
-          👀 Ver en Vivo
+        <button 
+          v-if="deploymentSlug" 
+          @click="openLiveDemo" 
+          class="btn btn-outline-primary px-2.5 py-1.5 sm:px-4 sm:py-2 text-[10px] sm:text-xs flex items-center gap-1"
+        >
+          👀<span class="hidden sm:inline"> Ver en Vivo</span><span class="inline sm:hidden"> Ver</span>
         </button>
     </template>
 
@@ -606,6 +610,7 @@
 import { ref, onMounted, watch, computed, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
+import { useAuthStore } from '@/modules/auth/store/auth';
 import BuilderLayout from '@/layouts/BuilderLayout.vue';
 import { builderService } from '@/modules/builder/services/builderService';
 import RenderEngineMaster from '@/modules/engine/components/RenderEngineMaster.vue';
@@ -614,6 +619,12 @@ import UpgradeModal from '@/modules/builder/components/UpgradeModal.vue';
 
 const route = useRoute();
 const router = useRouter();
+let authStore = null;
+try {
+  authStore = useAuthStore();
+} catch (e) {
+  // Silent fallback for unit testing environments without active Pinia
+}
 const toast = useToast();
 const deploymentId = route.params.id;
 
@@ -716,7 +727,17 @@ onMounted(async () => {
     if (res.data) {
       deploymentSlug.value = res.data.slug || '';
       deploymentStatus.value = res.data.status || 'DRAFT';
-      if (res.data.allowed_features) {
+      const isStaff = authStore?.role === 'ADMIN' || authStore?.role === 'DESIGNER';
+      if (isStaff) {
+        allowedFeatures.value = {
+          background_music: true,
+          custom_audio_url: true,
+          countdown_timer: true,
+          timeline: true,
+          custom_theme: true,
+          custom_og: true,
+        };
+      } else if (res.data.allowed_features) {
         allowedFeatures.value = res.data.allowed_features;
       }
       
@@ -861,12 +882,17 @@ onBeforeUnmount(() => {
   font-weight: bold;
 }
 .status-indicator {
-  padding: 0.4rem 0.8rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 20px;
   background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(4px);
   border: 1px solid rgba(255, 255, 255, 0.05);
   transition: all 0.3s ease;
+}
+@media (min-width: 640px) {
+  .status-indicator {
+    padding: 0.4rem 0.8rem;
+  }
 }
 .text-success {
   color: #10b981;
