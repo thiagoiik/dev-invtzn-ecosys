@@ -1,12 +1,11 @@
 <template>
-  <div class="origami-envelope-container" :class="{ 'is-open': isOpen, 'is-hidden': isHidden }">
-    <div class="origami-wrapper" id="envelope-3">
+  <div class="origami-envelope-container" :class="{ 'is-open': isOpen, 'is-released': isReleased }">
+    <!-- El sobre físico (se remueve al abrirse completamente) -->
+    <div v-if="!isReleased" class="origami-wrapper" id="envelope-3">
       <div class="origami-box relative w-[90vw] max-w-[400px] aspect-square mx-auto">
         
-        <!-- Tarjeta adentro -->
-        <div class="invitation-card-slot" id="card-3">
-          <slot v-if="renderContent"></slot>
-        </div>
+        <!-- CAPA 1: Fondo crema del origami -->
+        <div class="origami-back"></div>
 
         <!-- Solapas que se desdoblan en orden -->
         <div class="origami-flap flap-left"></div>
@@ -30,6 +29,17 @@
         Toca el corazón
       </div>
     </div>
+
+    <!-- La tarjeta de invitación (slot de contenido) -->
+    <div 
+      class="invitation-card-slot" 
+      :class="{ 'is-visible': isCardVisible, 'is-released': isReleased }"
+      id="card-3"
+    >
+      <div class="scrollable-content-wrapper">
+         <slot></slot>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -41,8 +51,8 @@ const emit = defineEmits(['opened']);
 const audioFX = useAudioFX();
 
 const isOpen = ref(false);
-const isHidden = ref(false);
-const renderContent = ref(true);
+const isReleased = ref(false);
+const isCardVisible = ref(false);
 
 const openEnvelope = () => {
   if (isOpen.value) return;
@@ -50,45 +60,73 @@ const openEnvelope = () => {
   audioFX.playEnvelopeAudio('origami');
   isOpen.value = true;
   
+  // A los 1.2s (cuando las 4 solapas terminan de desdoblarse), la tarjeta se vuelve visible y se eleva
+  setTimeout(() => {
+    isCardVisible.value = true;
+  }, 1200);
+  
   setTimeout(() => {
     emit('opened');
+    // Esperamos 1.2s adicionales para liberar la tarjeta al scroll nativo
     setTimeout(() => {
-       isHidden.value = true;
-    }, 1500); 
-  }, 1400); // 4 clicks of 200ms + ending
+       isReleased.value = true;
+    }, 1200);
+  }, 1200);
 };
 </script>
 
 <style scoped>
 .origami-envelope-container {
-  position: absolute;
-  inset: 0;
   display: flex;
   justify-content: center;
   align-items: center;
+  min-height: 100vh;
   background-color: #f1f5f9;
-  z-index: 50;
-  transition: opacity 1s ease-in-out;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 9999;
+  transition: background-color 0.8s ease;
 }
 
-.origami-envelope-container.is-hidden {
+.origami-envelope-container.is-released {
+  position: relative;
+  background-color: transparent;
+  min-height: auto;
+  z-index: 1;
+  inset: auto;
+}
+
+.origami-wrapper {
+  position: relative;
+  width: 90vw;
+  max-width: 450px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 5;
+  transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s ease;
+}
+
+/* El sobre desdoblado cae y se desvanece tras la apertura */
+.is-open .origami-wrapper {
+  transform: translateY(15vh) scale(0.95);
   opacity: 0;
-  pointer-events: none;
-  z-index: -1;
+  transition-delay: 1.2s;
+}
+
+.origami-back {
+  position: absolute;
+  inset: 0;
+  background-color: #cbd5e1; /* Revestimiento interior de papel */
+  border-radius: 4px;
+  z-index: 1;
+  box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
 }
 
 .origami-box {
+  width: 100%;
+  aspect-ratio: 1;
   perspective: 1200px;
-}
-
-.invitation-card-slot {
-  position: absolute;
-  inset: 5%;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-  overflow: hidden;
-  z-index: 1;
 }
 
 .origami-flap {
@@ -155,5 +193,68 @@ const openEnvelope = () => {
 .is-open .origami-seal {
   opacity: 0;
   pointer-events: none;
+}
+
+.interaction-tip {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: #475569;
+}
+
+/* La tarjeta que se expone */
+.invitation-card-slot {
+  position: absolute;
+  top: 5vh;
+  width: 90%;
+  max-width: 420px;
+  height: 90vh;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+  overflow: hidden;
+  z-index: 2;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(0.9) translateY(4vh);
+  transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease, visibility 0.8s ease;
+}
+
+.invitation-card-slot.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: scale(1.0) translateY(0);
+  z-index: 100;
+}
+
+.invitation-card-slot.is-released {
+  position: relative;
+  top: 0;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+  z-index: 1;
+  background-color: transparent;
+  transition: none;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.scrollable-content-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.is-released .scrollable-content-wrapper {
+  height: auto;
+  overflow: visible;
 }
 </style>

@@ -1,13 +1,9 @@
 <template>
-  <div class="gatefold-envelope-container" :class="{ 'is-open': isOpen, 'is-hidden': isHidden }">
-    <div class="gatefold-wrapper" id="envelope-2">
+  <div class="gatefold-envelope-container" :class="{ 'is-open': isOpen, 'is-released': isReleased }">
+    <!-- El sobre físico (se remueve al abrirse completamente) -->
+    <div v-if="!isReleased" class="gatefold-wrapper" id="envelope-2">
       <div class="gatefold-container relative w-full max-w-2xl aspect-[3/4] mx-auto perspective-1000">
         
-        <!-- Contenido principal (Slot) -->
-        <div class="invitation-card-slot" id="card-2">
-           <slot v-if="renderContent"></slot>
-        </div>
-
         <!-- Puerta Izquierda -->
         <div class="gatefold-door door-left">
           <div class="door-inner-pattern"></div>
@@ -38,6 +34,17 @@
         Toca el lazo central de seda
       </div>
     </div>
+
+    <!-- La tarjeta de invitación (slot de contenido) -->
+    <div 
+      class="invitation-card-slot" 
+      :class="{ 'is-visible': isCardVisible, 'is-released': isReleased }"
+      id="card-2"
+    >
+      <div class="scrollable-content-wrapper">
+         <slot></slot>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -49,8 +56,8 @@ const emit = defineEmits(['opened']);
 const audioFX = useAudioFX();
 
 const isOpen = ref(false);
-const isHidden = ref(false);
-const renderContent = ref(true); // Content needs to be behind doors initially
+const isReleased = ref(false);
+const isCardVisible = ref(false);
 
 const openEnvelope = () => {
   if (isOpen.value) return;
@@ -58,10 +65,15 @@ const openEnvelope = () => {
   audioFX.playEnvelopeAudio('gatefold');
   isOpen.value = true;
   
+  // A los 500ms (las puertas se están abriendo), la tarjeta se vuelve visible
+  setTimeout(() => {
+    isCardVisible.value = true;
+  }, 500);
+  
   setTimeout(() => {
     emit('opened');
     setTimeout(() => {
-       isHidden.value = true;
+       isReleased.value = true;
     }, 1500); 
   }, 1200);
 };
@@ -69,34 +81,50 @@ const openEnvelope = () => {
 
 <style scoped>
 .gatefold-envelope-container {
-  position: absolute;
-  inset: 0;
   display: flex;
   justify-content: center;
   align-items: center;
+  min-height: 100vh;
   background-color: #f8fafc;
-  z-index: 50;
-  transition: opacity 1s ease-in-out;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 9999;
+  transition: background-color 0.8s ease;
 }
 
-.gatefold-envelope-container.is-hidden {
+.gatefold-envelope-container.is-released {
+  position: relative;
+  background-color: transparent;
+  min-height: auto;
+  z-index: 1;
+  inset: auto;
+}
+
+.gatefold-wrapper {
+  position: relative;
+  width: 90vw;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 5;
+  transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s ease;
+}
+
+/* El tríptico completo cae y se desvanece al abrirse */
+.is-open .gatefold-wrapper {
+  transform: translateY(20vh);
   opacity: 0;
-  pointer-events: none;
-  z-index: -1;
 }
 
 .perspective-1000 {
   perspective: 1500px;
 }
 
-.invitation-card-slot {
-  position: absolute;
-  inset: 0;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-  overflow: hidden;
-  z-index: 1;
+.gatefold-container {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 3/4;
 }
 
 .gatefold-door {
@@ -165,5 +193,68 @@ const openEnvelope = () => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+.interaction-tip {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: #475569;
+}
+
+/* La tarjeta que se expone */
+.invitation-card-slot {
+  position: absolute;
+  top: 5vh;
+  width: 90%;
+  max-width: 450px;
+  height: 90vh;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  overflow: hidden;
+  z-index: 2;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: scale(0.95);
+  transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease, visibility 0.8s ease;
+}
+
+.invitation-card-slot.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: scale(1.0);
+  z-index: 100;
+}
+
+.invitation-card-slot.is-released {
+  position: relative;
+  top: 0;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0;
+  box-shadow: none;
+  transform: none;
+  z-index: 1;
+  background-color: transparent;
+  transition: none;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.scrollable-content-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.is-released .scrollable-content-wrapper {
+  height: auto;
+  overflow: visible;
 }
 </style>

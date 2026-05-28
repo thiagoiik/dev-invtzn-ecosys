@@ -531,7 +531,21 @@
       <!-- PANEL DERECHO: LIVE PREVIEW -->
       <section class="preview-panel" :class="{ 'is-hidden-mobile': !showMobilePreview }">
         <div class="simulator-scale-wrapper" :style="scaleStyle">
+          <!-- Sombra tridimensional posterior del celular -->
+          <div class="device-shadow-3d"></div>
+          
           <div class="device-frame">
+            <!-- Cristal frontal con reflejo sutil (detrás del bisel pero encima del canvas) -->
+            <div class="device-glass-reflection"></div>
+            
+            <!-- Bisel físico / Marco frontal 3D con isla dinámica -->
+            <div class="device-bezel-frame">
+              <div class="device-island-notch">
+                <div class="device-camera-lens"></div>
+                <div class="device-sensor-dot"></div>
+              </div>
+            </div>
+
             <!-- Inyectamos los componentes del Engine en tiempo real -->
             <div v-if="!loading" class="preview-canvas">
               <EnvelopeWrapper v-if="activeTab === 'envelope'" :type="localConfig.envelope_type || localConfig.envelope">
@@ -1357,15 +1371,80 @@ onBeforeUnmount(() => {
   height: 800px;
   position: relative;
 }
+.device-shadow-3d {
+  position: absolute;
+  width: 380px;
+  height: 800px;
+  border-radius: 40px;
+  background: rgba(0, 0, 0, 0.6);
+  filter: blur(25px);
+  transform: translateY(18px) scale(0.98);
+  z-index: 0;
+}
+
 .device-frame {
   width: 380px;
   height: 800px;
   border-radius: 40px;
-  border: 12px solid #0f172a;
   overflow: hidden;
   position: relative;
-  background: white;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+  background: #020617;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  z-index: 2;
+  transform-style: preserve-3d;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.device-bezel-frame {
+  position: absolute;
+  inset: 0;
+  border: 12px solid #0f172a;
+  border-radius: 40px;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.05);
+  display: flex;
+  justify-content: center;
+}
+
+.device-island-notch {
+  position: absolute;
+  top: 8px;
+  width: 100px;
+  height: 24px;
+  background: #000000;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  z-index: 11;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px 0 12px;
+}
+
+.device-camera-lens {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #1e1b4b, #000 70%);
+  border: 1px solid #312e81;
+}
+
+.device-sensor-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #111;
+}
+
+.device-glass-reflection {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.07) 0%, rgba(255, 255, 255, 0) 45%, rgba(255, 255, 255, 0) 100%);
+  border-radius: 40px;
+  pointer-events: none;
+  z-index: 9;
 }
 
 @media (max-width: 767px) {
@@ -1386,16 +1465,26 @@ onBeforeUnmount(() => {
     height: 100%;
     border-radius: 0;
     border: none;
+    box-shadow: none;
+  }
+  .device-bezel-frame,
+  .device-island-notch,
+  .device-glass-reflection,
+  .device-shadow-3d {
+    display: none !important;
   }
   .is-hidden-mobile {
     display: none !important;
   }
 }
+
 .preview-canvas {
   width: 100%;
   height: 100%;
   overflow-y: auto;
+  z-index: 1;
 }
+
 .preview-canvas::-webkit-scrollbar {
   width: 0px;
 }

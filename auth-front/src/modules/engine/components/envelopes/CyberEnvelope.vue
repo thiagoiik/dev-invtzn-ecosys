@@ -1,13 +1,9 @@
 <template>
-  <div class="cyber-envelope-container" :class="{ 'is-open': isOpen, 'is-scanning': isScanning, 'is-hidden': isHidden }">
-    <div class="cyber-gate-wrapper" id="envelope-4">
+  <div class="cyber-envelope-container" :class="{ 'is-open': isOpen, 'is-scanning': isScanning, 'is-released': isReleased }">
+    <!-- El sobre físico (se remueve al abrirse completamente) -->
+    <div v-if="!isReleased" class="cyber-gate-wrapper" id="envelope-4">
       <div class="cyber-gate-container relative w-full h-screen overflow-hidden bg-black flex justify-center items-center">
         
-        <!-- Tarjeta adentro -->
-        <div class="invitation-card-slot" id="card-4">
-          <slot v-if="renderContent"></slot>
-        </div>
-
         <!-- Puerta Metálica Izquierda -->
         <div class="cyber-panel panel-left border-r-2 border-cyan-500/50">
           <div class="panel-circuit-lines"></div>
@@ -39,6 +35,17 @@
 
       </div>
     </div>
+
+    <!-- La tarjeta de invitación (slot de contenido) -->
+    <div 
+      class="invitation-card-slot" 
+      :class="{ 'is-active': isOpen, 'is-released': isReleased }"
+      id="card-4"
+    >
+      <div class="scrollable-content-wrapper">
+         <slot></slot>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -51,8 +58,7 @@ const audioFX = useAudioFX();
 
 const isOpen = ref(false);
 const isScanning = ref(false);
-const isHidden = ref(false);
-const renderContent = ref(true);
+const isReleased = ref(false);
 
 const openEnvelope = () => {
   if (isOpen.value || isScanning.value) return;
@@ -68,7 +74,7 @@ const openEnvelope = () => {
     setTimeout(() => {
       emit('opened');
       setTimeout(() => {
-         isHidden.value = true;
+         isReleased.value = true;
       }, 1500); 
     }, 800); // Wait for door opening
   }, 1200);
@@ -77,22 +83,32 @@ const openEnvelope = () => {
 
 <style scoped>
 .cyber-envelope-container {
-  position: absolute;
-  inset: 0;
-  z-index: 50;
-  transition: opacity 0.5s ease-in-out;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #020617;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 9999;
+  transition: background-color 0.8s ease;
 }
 
-.cyber-envelope-container.is-hidden {
-  opacity: 0;
-  pointer-events: none;
-  z-index: -1;
-}
-
-.invitation-card-slot {
-  position: absolute;
-  inset: 0;
+.cyber-envelope-container.is-released {
+  position: relative;
+  background-color: transparent;
+  min-height: auto;
   z-index: 1;
+  inset: auto;
+}
+
+.cyber-gate-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .cyber-panel {
@@ -181,5 +197,39 @@ const openEnvelope = () => {
 @keyframes pulse-glow {
   0% { filter: drop-shadow(0 0 5px #00f0ff); }
   100% { filter: drop-shadow(0 0 15px #00f0ff); }
+}
+
+/* La tarjeta que se expone */
+.invitation-card-slot {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+  overflow: hidden;
+}
+
+.invitation-card-slot.is-active:not(.is-released) {
+  z-index: 100;
+}
+
+.invitation-card-slot.is-released {
+  position: relative;
+  width: 100%;
+  height: auto;
+  z-index: 1;
+  background-color: transparent;
+  transition: none;
+}
+
+.scrollable-content-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.is-released .scrollable-content-wrapper {
+  height: auto;
+  overflow: visible;
 }
 </style>

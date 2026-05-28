@@ -1,15 +1,11 @@
 <template>
-  <div class="curtain-envelope-container" :class="{ 'is-open': isOpen, 'is-hidden': isHidden }">
-    <div class="curtain-wrapper" id="envelope-5">
+  <div class="curtain-envelope-container" :class="{ 'is-open': isOpen, 'is-released': isReleased }">
+    <!-- El sobre físico (se remueve al abrirse completamente) -->
+    <div v-if="!isReleased" class="curtain-wrapper" id="envelope-5">
       <div class="relative w-full h-screen overflow-hidden bg-black flex justify-center items-center">
         
         <!-- Partículas (Sparkles) -->
         <div class="sparkles-container absolute inset-0 z-10 pointer-events-none" ref="sparklesRef"></div>
-
-        <!-- Tarjeta adentro -->
-        <div class="invitation-card-slot" id="card-5">
-          <slot v-if="renderContent"></slot>
-        </div>
 
         <!-- Telón Izquierdo -->
         <div class="curtain-panel panel-left bg-red-900 border-r border-red-800">
@@ -34,6 +30,17 @@
         </div>
       </div>
     </div>
+
+    <!-- La tarjeta de invitación (slot de contenido) -->
+    <div 
+      class="invitation-card-slot" 
+      :class="{ 'is-active': isOpen, 'is-released': isReleased }"
+      id="card-5"
+    >
+      <div class="scrollable-content-wrapper">
+         <slot></slot>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -45,8 +52,7 @@ const emit = defineEmits(['opened']);
 const audioFX = useAudioFX();
 
 const isOpen = ref(false);
-const isHidden = ref(false);
-const renderContent = ref(true);
+const isReleased = ref(false);
 const sparklesRef = ref(null);
 
 const generateSparkles = (count) => {
@@ -87,7 +93,7 @@ const openEnvelope = () => {
   setTimeout(() => {
     emit('opened');
     setTimeout(() => {
-       isHidden.value = true;
+       isReleased.value = true;
     }, 1500); 
   }, 1500);
 };
@@ -95,22 +101,32 @@ const openEnvelope = () => {
 
 <style scoped>
 .curtain-envelope-container {
-  position: absolute;
-  inset: 0;
-  z-index: 50;
-  transition: opacity 1s ease-in-out;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #000;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 9999;
+  transition: background-color 0.8s ease;
 }
 
-.curtain-envelope-container.is-hidden {
-  opacity: 0;
-  pointer-events: none;
-  z-index: -1;
-}
-
-.invitation-card-slot {
-  position: absolute;
-  inset: 0;
+.curtain-envelope-container.is-released {
+  position: relative;
+  background-color: transparent;
+  min-height: auto;
   z-index: 1;
+  inset: auto;
+}
+
+.curtain-wrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .curtain-panel {
@@ -169,5 +185,39 @@ const openEnvelope = () => {
     opacity: 0; 
     transform: translate(var(--move-x), -60vh) scale(0); 
   }
+}
+
+/* La tarjeta que se expone */
+.invitation-card-slot {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+  overflow: hidden;
+}
+
+.invitation-card-slot.is-active:not(.is-released) {
+  z-index: 100;
+}
+
+.invitation-card-slot.is-released {
+  position: relative;
+  width: 100%;
+  height: auto;
+  z-index: 1;
+  background-color: transparent;
+  transition: none;
+}
+
+.scrollable-content-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.is-released .scrollable-content-wrapper {
+  height: auto;
+  overflow: visible;
 }
 </style>

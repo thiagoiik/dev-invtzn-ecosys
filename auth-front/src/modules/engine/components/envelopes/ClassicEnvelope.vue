@@ -3,16 +3,21 @@
     <!-- El sobre y sus partes físicas (se remueven al finalizar la transición) -->
     <div v-if="!isReleased" class="envelope-classic-wrapper" id="envelope-1">
       <div class="envelope-classic-shadow"></div>
-      <div class="envelope-classic">
+      
+      <!-- CAPA 1: Parte trasera del sobre (Fondo crema) -->
+      <div class="envelope-classic-back"></div>
+
+      <!-- CAPA 3: Parte delantera del sobre (Bolsillo, solapa y lacre) -->
+      <div class="envelope-classic-front" :class="{ 'flap-open': isOpen }">
+        <!-- Cuerpo del sobre / Bolsillo frontal -->
+        <div class="envelope-body-pocket"></div>
+        
         <!-- Solapa superior -->
         <div class="envelope-flap-top"></div>
         
-        <!-- Cuerpo del sobre -->
-        <div class="envelope-body-pocket"></div>
-        
         <!-- Sello de lacre interactivo -->
         <div 
-          class="envelope-wax-seal cursor-pointer transition-transform hover:scale-110 active:scale-95" 
+          class="envelope-wax-seal cursor-pointer transition-all hover:scale-110 active:scale-95" 
           id="seal-1" 
           title="Toca el lacre para abrir"
           @click="openEnvelope"
@@ -21,15 +26,16 @@
           <div class="seal-crack-line"></div>
         </div>
       </div>
+
       <div class="interaction-tip animate-pulse mt-8 text-white font-serif tracking-widest text-sm" v-if="!isOpen">
         Toca el sello de lacre dorado
       </div>
     </div>
 
-    <!-- La tarjeta de invitación (slot de contenido) -->
+    <!-- CAPA 2: La tarjeta de invitación (Hermano plano) -->
     <div 
       class="invitation-card-slot" 
-      :class="{ 'is-active': isOpen, 'is-released': isReleased }"
+      :class="{ 'is-visible': isCardVisible, 'is-released': isReleased }"
       id="card-1"
     >
       <div class="scrollable-content-wrapper">
@@ -48,24 +54,27 @@ const audioFX = useAudioFX();
 
 const isOpen = ref(false);
 const isReleased = ref(false);
-const renderContent = ref(false); // To delay rendering the heavy content
+const isCardVisible = ref(false);
 
 const openEnvelope = () => {
   if (isOpen.value) return;
   
-  // Play sound
+  // Reproducir sonido
   audioFX.playEnvelopeAudio('classic');
-  
   isOpen.value = true;
-  renderContent.value = true;
+  
+  // A los 800ms (cuando la solapa termina de abrirse), la tarjeta se vuelve visible y empieza a subir
+  setTimeout(() => {
+    isCardVisible.value = true;
+  }, 800);
   
   setTimeout(() => {
     emit('opened');
-    // Esperamos 1.5s a que termine la animación de deslizamiento y liberamos la tarjeta
+    // Esperamos 2.0s en total (1.2s de animación de deslizamiento y caída) para liberar la tarjeta al scroll
     setTimeout(() => {
        isReleased.value = true;
-    }, 1500);
-  }, 1000);
+    }, 1200);
+  }, 800);
 };
 </script>
 
@@ -101,21 +110,50 @@ const openEnvelope = () => {
   align-items: center;
   perspective: 1500px;
   z-index: 5;
+  transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s ease;
 }
 
-.envelope-classic {
-  width: 100%;
-  height: 100%;
-  position: relative;
+/* El sobre completo cae y se desvanece al abrirse */
+.is-open .envelope-classic-wrapper {
+  transform: translateY(100vh) rotateX(15deg);
+  opacity: 0;
+}
+
+.envelope-classic-shadow {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+  z-index: 0;
+}
+
+/* Capa 1: Trasera */
+.envelope-classic-back {
+  position: absolute;
+  inset: 0;
   background-color: #f4ebd8; /* Papel crema */
   border-radius: 8px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-  transform-style: preserve-3d;
-  transition: transform 1s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
 }
 
-.is-open .envelope-classic {
-  transform: translateY(100vh) rotateX(15deg); /* Cae con rotación 3D */
+/* Capa 3: Frente */
+.envelope-classic-front {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  transform-style: preserve-3d;
+}
+
+.envelope-body-pocket {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #f4ebd8;
+  clip-path: polygon(0 100%, 0 40%, 50% 70%, 100% 40%, 100% 100%);
+  z-index: 3;
+  box-shadow: inset 0 4px 20px rgba(0,0,0,0.05);
 }
 
 .envelope-flap-top {
@@ -132,20 +170,9 @@ const openEnvelope = () => {
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-.is-open .envelope-flap-top {
+.flap-open .envelope-flap-top {
   transform: rotateX(180deg);
   z-index: 1;
-}
-
-.envelope-body-pocket {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: #f4ebd8;
-  clip-path: polygon(0 100%, 0 40%, 50% 70%, 100% 40%, 100% 100%);
-  z-index: 3;
 }
 
 .envelope-wax-seal {
@@ -163,6 +190,12 @@ const openEnvelope = () => {
   justify-content: center;
   align-items: center;
   border: 2px solid #daa520;
+  transition: opacity 0.3s;
+}
+
+.flap-open .envelope-wax-seal {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .seal-crest {
@@ -173,12 +206,6 @@ const openEnvelope = () => {
   text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
 }
 
-.is-open .envelope-wax-seal {
-  opacity: 0;
-  transition: opacity 0.2s;
-  pointer-events: none;
-}
-
 .interaction-tip {
   text-transform: uppercase;
   font-size: 0.7rem;
@@ -186,24 +213,31 @@ const openEnvelope = () => {
   color: #daa520;
 }
 
-/* La tarjeta que se desliza fuera del sobre */
+/* Capa 2: La tarjeta que se desliza fuera del sobre */
 .invitation-card-slot {
   position: absolute;
-  top: 10vh;
-  width: 90%;
-  max-width: 450px;
-  height: 80vh;
+  top: 15vh;
+  width: 86%;
+  max-width: 430px;
+  height: 70vh;
   background-color: #fff;
   border-radius: 16px;
-  z-index: 2;
-  transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  z-index: 2; /* Entre la trasera (1) y el frente (3) */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(12vh) scale(0.9); /* Oculta y metida dentro */
+  transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.6s ease, visibility 0.6s ease;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
   overflow: hidden;
 }
 
 /* La carta sale hacia arriba y toma la pantalla */
-.invitation-card-slot.is-active:not(.is-released) {
-  transform: translateY(-110vh) scale(1.03);
+.invitation-card-slot.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(-24vh) scale(1.02); /* Sube suavemente saliendo del bolsillo */
   z-index: 100;
 }
 
@@ -220,6 +254,9 @@ const openEnvelope = () => {
   z-index: 1;
   background-color: transparent;
   transition: none;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .scrollable-content-wrapper {
