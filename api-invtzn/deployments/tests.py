@@ -433,4 +433,34 @@ class TestDeployments:
         assert new_dep.custom_data == template_dep.custom_data
         assert new_dep.creation_mode == template_dep.creation_mode
 
+        # 5. Create another deployment with the default frontend placeholder custom_data
+        default_placeholder = {"message": "¡Diseña tu invitación aquí!", "theme": "light"}
+        placeholder_dep = Deployment.objects.create(
+            user=self.user.id,
+            product=self.product,
+            status=Deployment.StatusChoices.DRAFT,
+            custom_data=default_placeholder
+        )
+
+        # 6. Check if it successfully cloned custom_data and creation_mode as well
+        assert placeholder_dep.custom_data == template_dep.custom_data
+        assert placeholder_dep.creation_mode == template_dep.creation_mode
+
+        # 7. Create another deployment with customized cover titles (like the QuickDraftModal flow)
+        custom_input = {
+            "cover": {"title": "Ana & Luis", "date": "25 DE DICIEMBRE DE 2026"},
+            "rsvp": {"eventTitle": "Ana & Luis"}
+        }
+        merged_dep = Deployment.objects.create(
+            user=self.user.id,
+            product=self.product,
+            status=Deployment.StatusChoices.DRAFT,
+            custom_data=custom_input
+        )
+
+        # 8. Check that it successfully cloned layout fields but merged the customized inputs
+        assert merged_dep.custom_data["cover"]["title"] == "Ana & Luis"
+        assert merged_dep.custom_data["cover"]["date"] == "25 DE DICIEMBRE DE 2026"
+        assert merged_dep.custom_data["rsvp"]["eventTitle"] == "Ana & Luis"
+        assert merged_dep.creation_mode == template_dep.creation_mode
 

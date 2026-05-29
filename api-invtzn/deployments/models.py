@@ -34,10 +34,23 @@ class Deployment(models.Model):
                 try:
                     from deployments.models import Deployment as DepModel
                     template_dep = DepModel.objects.get(slug=self.product.template_slug)
-                    if not self.custom_data or self.custom_data == {}:
-                        import copy
-                        self.custom_data = copy.deepcopy(template_dep.custom_data)
-                        self.creation_mode = template_dep.creation_mode
+                    self.creation_mode = template_dep.creation_mode
+                    import copy
+                    cloned_data = copy.deepcopy(template_dep.custom_data)
+                    
+                    if self.custom_data:
+                        default_placeholder = {"message": "¡Diseña tu invitación aquí!", "theme": "light"}
+                        if self.custom_data != default_placeholder and self.custom_data != {}:
+                            def deep_merge(d1, d2):
+                                for k, v in d2.items():
+                                    if isinstance(v, dict) and k in d1 and isinstance(d1[k], dict):
+                                        deep_merge(d1[k], v)
+                                    else:
+                                        d1[k] = v
+                                return d1
+                            cloned_data = deep_merge(cloned_data, self.custom_data)
+                            
+                    self.custom_data = cloned_data
                 except Exception:
                     pass
 
