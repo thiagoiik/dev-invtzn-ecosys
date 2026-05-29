@@ -67,8 +67,8 @@
           
           <div class="flex flex-col gap-2 pt-6 border-t border-slate-50">
             <div class="grid grid-cols-2 gap-2">
-              <!-- Botones diferenciados Cliente A vs Cliente B vs Staff -->
-              <template v-if="isStaff">
+              <!-- Botones diferenciados Cliente A vs Cliente B vs Admin/Designer -->
+              <template v-if="isAdminOrDesigner">
                 <router-link :to="'/builder/' + dep.id" class="btn btn-ghost bg-slate-50 hover:bg-primary hover:text-white rounded-xl font-bold text-xs flex items-center justify-center gap-1">
                   ✏️ Studio
                 </router-link>
@@ -89,7 +89,7 @@
 
               <a v-if="dep.slug" :href="'/i/' + dep.slug" target="_blank" :class="[
                 'btn btn-ghost bg-slate-50 hover:bg-slate-100 rounded-xl font-bold text-xs flex items-center justify-center gap-1',
-                (isStaff && dep.creation_mode === 'CATALOG') ? 'col-span-2' : ''
+                (isAdminOrDesigner && dep.creation_mode === 'CATALOG') ? 'col-span-2' : ''
               ]">
                 👁️ Ver
               </a>
@@ -206,7 +206,7 @@ const currentInvitationUrl = computed(() => {
   return `${window.location.origin}/i/${selectedDep.value.slug}`;
 });
 
-const isStaff = computed(() => {
+const isAdminOrDesigner = computed(() => {
   return ['ADMIN', 'DESIGNER'].includes(authStore.role);
 });
 

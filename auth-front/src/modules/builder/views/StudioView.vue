@@ -741,8 +741,8 @@ onMounted(async () => {
     if (res.data) {
       deploymentSlug.value = res.data.slug || '';
       deploymentStatus.value = res.data.status || 'DRAFT';
-      const isStaff = authStore?.role === 'ADMIN' || authStore?.role === 'DESIGNER';
-      if (isStaff) {
+      const isAdminOrDesigner = authStore?.role === 'ADMIN' || authStore?.role === 'DESIGNER';
+      if (isAdminOrDesigner) {
         allowedFeatures.value = {
           background_music: true,
           custom_audio_url: true,
