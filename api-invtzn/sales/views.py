@@ -75,6 +75,42 @@ class OrderViewSet(viewsets.ModelViewSet):
             
         return Response({'success': True, 'message': 'Orden forzada a completada y despliegue activado.'})
 
+    @action(detail=False, methods=['post'], url_path='force-activation-by-deployment')
+    def force_activation_by_deployment(self, request):
+        """
+        DevTool: Localiza la orden de pago pendiente más reciente asociada a un ID de Diseño
+        (deployment_id) y fuerza su cobro para activarla.
+        """
+        profile = self._get_user_profile()
+        if not profile or profile.custom_role not in ['ADMIN', 'FRANCHISEE']:
+            return Response({'error': 'No autorizado'}, status=403)
+            
+        deployment_id = request.data.get('deployment_id')
+        if not deployment_id:
+            return Response({'error': 'El ID del diseño (deployment_id) es requerido.'}, status=400)
+            
+        # Localizar la última orden creada para este diseño que no esté completada o esté pendiente
+        order = Order.objects.filter(deployment_id=deployment_id).order_by('-created_at').first()
+        if not order:
+            return Response({'error': f'No se encontró ninguna orden de pago asociada al diseño #{deployment_id}.'}, status=404)
+            
+        if order.status == Order.StatusChoices.COMPLETED:
+            return Response({'error': f'La orden #{order.id} asociada al diseño ya está completada.'}, status=400)
+            
+        # Completar la orden. El handler post_save se encargará de activar el deployment y marcarlo como pagado.
+        order.status = Order.StatusChoices.COMPLETED
+        order.save()
+        
+        # Sincronizar el estado del pago por si acaso
+        if hasattr(order, 'payment') and order.payment:
+            order.payment.success = True
+            order.payment.save()
+            
+        return Response({
+            'success': True,
+            'message': f'Orden #{order.id} para el diseño #{deployment_id} completada con éxito.'
+        })
+
     @action(detail=True, methods=['post'], url_path='complete-pos')
     def complete_pos_order(self, request, pk=None):
         from django.utils import timezone

@@ -78,19 +78,36 @@
 
       <!-- Simulador de Pagos -->
       <div class="card bg-white border border-slate-200 shadow-sm rounded-2xl">
-        <div class="card-body p-6">
-          <h2 class="card-title text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
-            <span>⚡</span> Simular Activación de Orden
-          </h2>
-          <p class="text-slate-500 text-sm mb-4">Fuerza el pago y la activación de una orden que se quedó pendiente porque el webhook no llegó.</p>
-          <div class="flex gap-4 items-center flex-wrap sm:flex-nowrap">
-            <div class="form-control flex-1 max-w-xs">
-              <input v-model="orderIdToForce" type="number" placeholder="ID de la Orden" class="input input-bordered bg-white border-slate-300 text-slate-800 w-full" />
+        <div class="card-body p-6 space-y-6">
+          <div>
+            <h2 class="card-title text-lg font-bold text-slate-800 mb-2 flex items-center gap-2">
+              <span>⚡</span> Simular Activación de Orden
+            </h2>
+            <p class="text-slate-500 text-sm">Fuerza el pago y la activación de una orden que se quedó pendiente porque el webhook no llegó.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Por ID de Orden -->
+            <div class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Por ID de Orden</span>
+              <div class="flex gap-2">
+                <input v-model="orderIdToForce" type="number" placeholder="Ej: 54" class="input input-bordered bg-white border-slate-300 text-slate-800 w-full" />
+                <button @click="forceActivation" :disabled="!orderIdToForce || isLoading" class="btn btn-primary px-4">
+                  Forzar Pago
+                </button>
+              </div>
             </div>
-            <button @click="forceActivation" :disabled="!orderIdToForce || isLoading" class="btn btn-primary">
-              <span v-if="isLoading" class="loading loading-spinner loading-sm"></span>
-              Forzar Pago y Activación
-            </button>
+
+            <!-- Por ID de Diseño / Invitación -->
+            <div class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">Por ID de Diseño (Bypass)</span>
+              <div class="flex gap-2">
+                <input v-model="deploymentIdToForce" type="number" placeholder="Ej: 69" class="input input-bordered bg-white border-slate-300 text-slate-800 w-full" />
+                <button @click="forceActivationByDeployment" :disabled="!deploymentIdToForce || isLoading" class="btn btn-primary px-4">
+                  Forzar Diseño
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -193,6 +210,7 @@ const activeTab = ref('webhooks');
 const webhookLogs = ref([]);
 const systemLogs = ref([]);
 const orderIdToForce = ref('');
+const deploymentIdToForce = ref('');
 const isLoading = ref(false);
 const selectedPayload = ref('');
 const selectedMetadata = ref('');
@@ -244,6 +262,21 @@ const forceActivation = async () => {
     const res = await invtznClient.post(`orders/${orderIdToForce.value}/force-activation/`);
     toast.success(res.data.message || 'Orden activada con éxito');
     orderIdToForce.value = '';
+  } catch (error) {
+    toast.error(error.response?.data?.error || 'Error al forzar activación');
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+const forceActivationByDeployment = async () => {
+  isLoading.value = true;
+  try {
+    const res = await invtznClient.post('orders/force-activation-by-deployment/', {
+      deployment_id: parseInt(deploymentIdToForce.value)
+    });
+    toast.success(res.data.message || 'Orden activada con éxito');
+    deploymentIdToForce.value = '';
   } catch (error) {
     toast.error(error.response?.data?.error || 'Error al forzar activación');
   } finally {
