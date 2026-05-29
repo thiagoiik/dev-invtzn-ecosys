@@ -121,131 +121,69 @@
             </div>
           </div>
 
-          <!-- SECTION 3: COUNTDOWN TIMER (Tier-locked) -->
-          <div class="space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-700/50 pb-2">
-              <h3 class="text-sm font-black text-sky-400 uppercase tracking-widest">🕰️ Cuenta Regresiva</h3>
-              <span v-if="!allowedFeatures.countdown_timer" class="badge-lock bg-amber-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded uppercase">PRO 👑</span>
-            </div>
-
-            <div v-if="!allowedFeatures.countdown_timer" class="p-4 bg-slate-900/50 border border-amber-500/20 rounded-2xl flex items-center justify-between gap-4">
-              <p class="text-xs text-slate-400">El bloque de Cuenta Regresiva requiere un plan <strong>Standard</strong> o superior.</p>
-              <button type="button" @click="openUpgrade" class="btn btn-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold rounded-lg">🔓 Desbloquear</button>
-            </div>
-
-            <div :class="{ 'opacity-40 pointer-events-none': !allowedFeatures.countdown_timer }" class="space-y-4">
-              <div class="flex items-center justify-between bg-slate-900/40 p-3 rounded-xl border border-slate-700/40">
-                <span class="text-xs font-bold text-slate-300">Habilitar Cuenta Regresiva</span>
-                <input 
-                  type="checkbox" 
-                  v-model="localConfig.has_timer" 
-                  :disabled="!allowedFeatures.countdown_timer"
-                  class="switch-input"
-                />
+          <!-- SECTION 3: COUNTDOWN TIMER (Cuenta Regresiva) -->
+          <div v-if="localConfig.has_timer" class="space-y-4">
+            <h3 class="text-sm font-black text-sky-400 uppercase tracking-widest border-b border-slate-700/50 pb-2">🕰️ Cuenta Regresiva</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="form-group">
+                <label>Título de la Cuenta Regresiva</label>
+                <input v-model="localConfig.timer.title" type="text" placeholder="Ej: Cuenta Regresiva" />
               </div>
-
-              <div v-if="localConfig.has_timer" class="grid grid-cols-2 gap-4">
-                <div class="form-group">
-                  <label>Título</label>
-                  <input v-model="localConfig.timer.title" type="text" placeholder="Ej: Faltan..." />
-                </div>
-                <div class="form-group">
-                  <label>Fecha y Hora del Evento</label>
-                  <input v-model="localConfig.timer.targetDate" type="datetime-local" class="datetime-input" />
-                </div>
+              <div class="form-group">
+                <label>Fecha y Hora del Evento</label>
+                <input v-model="localConfig.timer.targetDate" type="datetime-local" class="datetime-input" />
               </div>
             </div>
           </div>
 
-          <!-- SECTION 4: TIMELINE (Tier-locked) -->
-          <div class="space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-700/50 pb-2">
-              <h3 class="text-sm font-black text-sky-400 uppercase tracking-widest">📅 Cronograma (Itinerario)</h3>
-              <span v-if="!allowedFeatures.timeline" class="badge-lock bg-amber-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded uppercase">PREMIUM 👑</span>
-            </div>
-
-            <div v-if="!allowedFeatures.timeline" class="p-4 bg-slate-900/50 border border-amber-500/20 rounded-2xl flex items-center justify-between gap-4">
-              <p class="text-xs text-slate-400">El bloque de Itinerario detallado requiere un plan <strong>Premium</strong>.</p>
-              <button type="button" @click="openUpgrade" class="btn btn-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold rounded-lg">🔓 Desbloquear</button>
-            </div>
-
-            <div :class="{ 'opacity-40 pointer-events-none': !allowedFeatures.timeline }" class="space-y-4">
-              <div class="flex items-center justify-between bg-slate-900/40 p-3 rounded-xl border border-slate-700/40">
-                <span class="text-xs font-bold text-slate-300">Habilitar Itinerario</span>
-                <input 
-                  type="checkbox" 
-                  v-model="localConfig.has_timeline" 
-                  :disabled="!allowedFeatures.timeline"
-                  class="switch-input"
-                />
+          <!-- SECTION 4: TIMELINE (Cronograma / Itinerario) -->
+          <div v-if="localConfig.has_timeline" class="space-y-4">
+            <h3 class="text-sm font-black text-sky-400 uppercase tracking-widest border-b border-slate-700/50 pb-2">📅 Cronograma (Itinerario)</h3>
+            <div class="space-y-4">
+              <div class="form-group">
+                <label>Título de la Sección</label>
+                <input v-model="localConfig.timeline.title" type="text" placeholder="Ej: Cronograma del Evento" />
               </div>
 
-              <div v-if="localConfig.has_timeline" class="space-y-4">
+              <div v-for="(item, idx) in localConfig.timeline.schedule" :key="idx" class="p-4 bg-slate-900/60 rounded-2xl border border-slate-700/50 space-y-3">
+                <div class="flex justify-between items-center">
+                  <span class="text-xs font-bold text-sky-400">Evento #{{ idx + 1 }}</span>
+                  <button type="button" @click="removeScheduleItem(idx)" class="text-rose-500 hover:text-rose-400 text-xs font-bold">🗑️ Eliminar</button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="form-group">
+                    <label>Hora</label>
+                    <input v-model="item.time" type="text" placeholder="Ej: 18:00" class="compact-input" />
+                  </div>
+                  <div class="form-group">
+                    <label>Icono (Emoji)</label>
+                    <input v-model="item.icon" type="text" placeholder="💍" class="compact-input text-center" />
+                  </div>
+                </div>
+
                 <div class="form-group">
-                  <label>Título de la Sección</label>
-                  <input v-model="localConfig.timeline.title" type="text" placeholder="Ej: Cronograma del Evento" />
+                  <label>Título del Evento</label>
+                  <input v-model="item.title" type="text" placeholder="Ej: Ceremonia de bodas" class="compact-input" />
                 </div>
 
-                <div v-for="(item, idx) in localConfig.timeline.schedule" :key="idx" class="p-4 bg-slate-900/60 rounded-2xl border border-slate-700/50 space-y-3">
-                  <div class="flex justify-between items-center">
-                    <span class="text-xs font-bold text-sky-400">Evento #{{ idx + 1 }}</span>
-                    <button type="button" @click="removeScheduleItem(idx)" class="text-rose-500 hover:text-rose-400 text-xs font-bold">🗑️ Eliminar</button>
-                  </div>
-
-                  <div class="grid grid-cols-2 gap-3">
-                    <div class="form-group">
-                      <label>Hora</label>
-                      <input v-model="item.time" type="text" placeholder="Ej: 18:00" class="compact-input" />
-                    </div>
-                    <div class="form-group">
-                      <label>Icono (Emoji)</label>
-                      <input v-model="item.icon" type="text" placeholder="💍" class="compact-input text-center" />
-                    </div>
-                  </div>
-
-                  <div class="form-group">
-                    <label>Título del Evento</label>
-                    <input v-model="item.title" type="text" placeholder="Ej: Ceremonia religiosa" class="compact-input" />
-                  </div>
-
-                  <div class="form-group">
-                    <label>Descripción</label>
-                    <textarea v-model="item.description" placeholder="Ej: En la capilla principal..." class="compact-textarea"></textarea>
-                  </div>
+                <div class="form-group">
+                  <label>Descripción</label>
+                  <textarea v-model="item.description" placeholder="Ej: En la capilla principal..." class="compact-textarea"></textarea>
                 </div>
-
-                <button type="button" @click="addScheduleItem" class="w-full py-2.5 border border-dashed border-slate-600 text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
-                  ➕ Añadir Nuevo Evento
-                </button>
               </div>
+
+              <button type="button" @click="addScheduleItem" class="w-full py-2.5 border border-dashed border-slate-600 text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all">
+                ➕ Añadir Nuevo Evento
+              </button>
             </div>
           </div>
 
-          <!-- SECTION 5: MUSIC (Tier-locked) -->
-          <div class="space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-700/50 pb-2">
-              <h3 class="text-sm font-black text-sky-400 uppercase tracking-widest">🎵 Música de Fondo</h3>
-              <span v-if="!allowedFeatures.background_music" class="badge-lock bg-amber-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded uppercase">STANDARD 👑</span>
-            </div>
-
-            <div v-if="!allowedFeatures.background_music" class="p-4 bg-slate-900/50 border border-amber-500/20 rounded-2xl flex items-center justify-between gap-4">
-              <p class="text-xs text-slate-400">La Música de Fondo requiere un plan <strong>Standard</strong> o superior.</p>
-              <button type="button" @click="openUpgrade" class="btn btn-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold rounded-lg">🔓 Desbloquear</button>
-            </div>
-
-            <div :class="{ 'opacity-40 pointer-events-none': !allowedFeatures.background_music }" class="space-y-4">
-              <div class="flex items-center justify-between bg-slate-900/40 p-3 rounded-xl border border-slate-700/40">
-                <span class="text-xs font-bold text-slate-300">Habilitar Música de Fondo</span>
-                <input 
-                  type="checkbox" 
-                  v-model="localConfig.has_music" 
-                  :disabled="!allowedFeatures.background_music"
-                  class="switch-input"
-                  @change="syncMusic"
-                />
-              </div>
-
-              <div v-if="localConfig.has_music" class="form-group">
+          <!-- SECTION 5: MUSIC (Música de Fondo) -->
+          <div v-if="localConfig.has_music" class="space-y-4">
+            <h3 class="text-sm font-black text-sky-400 uppercase tracking-widest border-b border-slate-700/50 pb-2">🎵 Música de Fondo</h3>
+            <div class="space-y-4">
+              <div class="form-group">
                 <label>URL del Archivo de Audio (MP3 Directo)</label>
                 <input 
                   v-model="localConfig.audioUrl" 
@@ -258,70 +196,113 @@
             </div>
           </div>
 
-          <!-- SECTION 6: COLOR PALETTE (Tier-locked) -->
+          <!-- SECCIÓN NUEVA: UBICACIONES Y MAPAS -->
           <div class="space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-700/50 pb-2">
-              <h3 class="text-sm font-black text-sky-400 uppercase tracking-widest">🎨 Estilos y Color Personalizado</h3>
-              <span v-if="!allowedFeatures.custom_theme" class="badge-lock bg-amber-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded uppercase">STANDARD 👑</span>
-            </div>
+            <h3 class="text-sm font-black text-sky-400 uppercase tracking-widest border-b border-slate-700/50 pb-2">📍 Ubicaciones del Evento</h3>
+            <div class="space-y-4">
+              <!-- Ceremonia -->
+              <div class="p-4 bg-slate-900/40 rounded-2xl border border-slate-700/40 space-y-3">
+                <span class="text-xs font-bold text-amber-400">⛪ Ceremonia Religiosa / Civil</span>
+                <div class="form-group">
+                  <label>Nombre del Lugar</label>
+                  <input v-model="localConfig.locations.ceremonyName" type="text" placeholder="Ej: Parroquia de Santa María" />
+                </div>
+                <div class="form-group">
+                  <label>Enlace de Google Maps</label>
+                  <input v-model="localConfig.locations.ceremonyMapsUrl" type="url" placeholder="https://maps.google.com/..." />
+                </div>
+              </div>
 
-            <div v-if="!allowedFeatures.custom_theme" class="p-4 bg-slate-900/50 border border-amber-500/20 rounded-2xl flex items-center justify-between gap-4">
-              <p class="text-xs text-slate-400">La Paleta de Colores personalizada requiere un plan <strong>Standard</strong> o superior.</p>
-              <button type="button" @click="openUpgrade" class="btn btn-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold rounded-lg">🔓 Desbloquear</button>
-            </div>
-
-            <div :class="{ 'opacity-40 pointer-events-none': !allowedFeatures.custom_theme }" class="space-y-4">
-              <div class="form-group">
-                <label class="flex justify-between text-xs text-slate-300">
-                  <span>Tono de Color (HUE)</span>
-                  <span class="font-bold font-mono">{{ localConfig.theme.hue }}°</span>
-                </label>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="360" 
-                  v-model.number="localConfig.theme.hue" 
-                  :disabled="!allowedFeatures.custom_theme"
-                  class="hue-range"
-                />
-                <div class="color-hue-preview-bar rounded-md h-2.5"></div>
-                <div class="flex items-center gap-2 mt-1">
-                  <div 
-                    class="w-6 h-6 rounded-full border border-slate-600"
-                    :style="{ backgroundColor: `hsl(${localConfig.theme.hue}, 80%, 50%)` }"
-                  ></div>
-                  <span class="text-[10px] text-slate-400">Color principal de acento e interactividad.</span>
+              <!-- Recepción -->
+              <div class="p-4 bg-slate-900/40 rounded-2xl border border-slate-700/40 space-y-3">
+                <span class="text-xs font-bold text-amber-400">🥂 Recepción / Fiesta</span>
+                <div class="form-group">
+                  <label>Nombre del Salón / Jardín</label>
+                  <input v-model="localConfig.locations.receptionName" type="text" placeholder="Ej: Jardín de Eventos Los Pinos" />
+                </div>
+                <div class="form-group">
+                  <label>Enlace de Google Maps</label>
+                  <input v-model="localConfig.locations.receptionMapsUrl" type="url" placeholder="https://maps.google.com/..." />
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- SECTION 7: OPEN GRAPH / SEO (Tier-locked) -->
+          <!-- SECCIÓN NUEVA: MESA DE REGALOS -->
           <div class="space-y-4">
-            <div class="flex justify-between items-center border-b border-slate-700/50 pb-2">
-              <h3 class="text-sm font-black text-sky-400 uppercase tracking-widest">⚙️ SEO y Redes Sociales (Open Graph)</h3>
-              <span v-if="!allowedFeatures.custom_og" class="badge-lock bg-amber-600 text-white font-extrabold text-[9px] px-2 py-0.5 rounded uppercase">PREMIUM 👑</span>
-            </div>
+            <h3 class="text-sm font-black text-sky-400 uppercase tracking-widest border-b border-slate-700/50 pb-2">🎁 Mesa de Regalos</h3>
+            <div class="space-y-4">
+              <div class="p-4 bg-slate-900/40 rounded-2xl border border-slate-700/40 space-y-3">
+                <span class="text-xs font-bold text-amber-400">🏦 Datos de Depósito / Transferencia</span>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="form-group">
+                    <label>Nombre del Banco</label>
+                    <input v-model="localConfig.gifts.bankName" type="text" placeholder="Ej: BBVA" />
+                  </div>
+                  <div class="form-group">
+                    <label>Titular de la Cuenta</label>
+                    <input v-model="localConfig.gifts.bankOwner" type="text" placeholder="Ej: Pedro Pérez" />
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Cuenta CLABE (18 dígitos)</label>
+                  <input v-model="localConfig.gifts.clabe" type="text" placeholder="Ej: 012180000000000000" maxlength="18" />
+                </div>
+              </div>
 
-            <div v-if="!allowedFeatures.custom_og" class="p-4 bg-slate-900/50 border border-amber-500/20 rounded-2xl flex items-center justify-between gap-4">
-              <p class="text-xs text-slate-400">La edición de SEO y títulos para redes sociales requiere un plan <strong>Premium</strong>.</p>
-              <button type="button" @click="openUpgrade" class="btn btn-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold rounded-lg">🔓 Desbloquear</button>
+              <div class="p-4 bg-slate-900/40 rounded-2xl border border-slate-700/40 space-y-3">
+                <span class="text-xs font-bold text-amber-400">🛍️ Enlaces de Mesas Externas</span>
+                <div class="form-group">
+                  <label>Mesa de Regalos 1 (Amazon, Liverpool, etc.)</label>
+                  <input v-model="localConfig.gifts.registryUrl1" type="url" placeholder="https://www.amazon.com.mx/baby-reg/..." />
+                </div>
+                <div class="form-group">
+                  <label>Mesa de Regalos 2 (Opcional)</label>
+                  <input v-model="localConfig.gifts.registryUrl2" type="url" placeholder="https://mesaderegalos.liverpool.com.mx/..." />
+                </div>
+              </div>
             </div>
+          </div>
 
-            <div :class="{ 'opacity-40 pointer-events-none': !allowedFeatures.custom_og }" class="space-y-4">
+          <!-- SECCIÓN NUEVA: CÓDIGO DE VESTIMENTA -->
+          <div class="space-y-4">
+            <h3 class="text-sm font-black text-sky-400 uppercase tracking-widest border-b border-slate-700/50 pb-2">👗 Código de Vestimenta (Dress Code)</h3>
+            <div class="space-y-4">
+              <div class="form-group">
+                <label>Tipo de Código de Vestimenta</label>
+                <select v-model="localConfig.dressCode.type" class="select-input">
+                  <option value="FORMAL">Formal</option>
+                  <option value="ETIQUETA">Etiqueta (Gala)</option>
+                  <option value="COCKTAIL">Cóctel</option>
+                  <option value="GUAYABERA">Guayabera / Clima Cálido</option>
+                  <option value="CASUAL">Casual</option>
+                  <option value="PLAYA">Playa</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Especificaciones / Detalles Adicionales</label>
+                <textarea v-model="localConfig.dressCode.details" placeholder="Ej: Traje oscuro caballeros y vestido largo damas..." class="compact-textarea"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 6: SEO y Redes Sociales (Open Graph) -->
+          <div class="space-y-4">
+            <h3 class="text-sm font-black text-sky-400 uppercase tracking-widest border-b border-slate-700/50 pb-2">⚙️ Vista en Redes Sociales (WhatsApp)</h3>
+            <div class="space-y-4">
               <div class="form-group">
                 <label>Título para Redes Sociales (og_title)</label>
-                <input v-model="localConfig.og_title" type="text" placeholder="Ej: ¡Estás invitado a nuestra boda!" :disabled="!allowedFeatures.custom_og" />
+                <input v-model="localConfig.og_title" type="text" placeholder="Ej: ¡Estás invitado a nuestra boda!" />
               </div>
 
               <div class="form-group">
                 <label>Descripción para Redes Sociales (og_description)</label>
-                <input v-model="localConfig.og_description" type="text" placeholder="Ej: Acompáñanos este 25 de diciembre..." :disabled="!allowedFeatures.custom_og" />
+                <input v-model="localConfig.og_description" type="text" placeholder="Ej: Acompáñanos este 25 de diciembre..." />
               </div>
 
               <div class="form-group">
                 <label>URL de Imagen para Redes (og_image)</label>
-                <input v-model="localConfig.og_image" type="url" placeholder="https://..." :disabled="!allowedFeatures.custom_og" />
+                <input v-model="localConfig.og_image" type="url" placeholder="https://..." />
               </div>
             </div>
           </div>
@@ -380,7 +361,6 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import BuilderLayout from '@/layouts/BuilderLayout.vue';
-import UpgradeModal from '@/modules/builder/components/UpgradeModal.vue';
 import { builderService } from '@/modules/builder/services/builderService';
 
 const route = useRoute();
@@ -393,14 +373,6 @@ const saveStatus = ref('saved'); // 'saved', 'unsaved', 'saving', 'error'
 const showUpgradeModal = ref(false);
 
 const deploymentStatus = ref('DRAFT');
-const allowedFeatures = ref({
-  background_music: false,
-  custom_audio_url: false,
-  countdown_timer: false,
-  timeline: false,
-  custom_theme: false,
-  custom_og: false,
-});
 
 const localConfig = ref({
   cover: {
@@ -448,20 +420,29 @@ const localConfig = ref({
   og_image: '',
   envelope_type: null,
   envelope: null,
-  is_catalog_complete: false
+  is_catalog_complete: false,
+  
+  // Estructuras de datos para bodas
+  locations: {
+    ceremonyName: '',
+    ceremonyMapsUrl: '',
+    receptionName: '',
+    receptionMapsUrl: ''
+  },
+  gifts: {
+    bankName: '',
+    bankOwner: '',
+    clabe: '',
+    registryUrl1: '',
+    registryUrl2: ''
+  },
+  dressCode: {
+    type: 'FORMAL',
+    details: ''
+  }
 });
 
-const openUpgrade = () => {
-  showUpgradeModal.value = true;
-};
-
-const handleTierSelection = (productId) => {
-  if (deploymentId) {
-    localStorage.setItem('pending_sandbox_id', deploymentId);
-  }
-  showUpgradeModal.value = false;
-  router.push(`/checkout/${productId}`);
-};
+// Acciones removidas ya que no hay modales de upgrade en el formulario del cliente final
 
 const syncMusic = () => {
   if (!localConfig.value.music) {
@@ -495,9 +476,6 @@ const loadData = async () => {
     const res = await builderService.getDeployment(deploymentId);
     if (res.data) {
       deploymentStatus.value = res.data.status || 'DRAFT';
-      if (res.data.allowed_features) {
-        allowedFeatures.value = res.data.allowed_features;
-      }
       
       const custom = res.data.custom_data;
       if (custom && Object.keys(custom).length > 0) {
@@ -515,6 +493,15 @@ const loadData = async () => {
         }
         if (custom.theme) {
           localConfig.value.theme = { ...localConfig.value.theme, ...custom.theme };
+        }
+        if (custom.locations) {
+          localConfig.value.locations = { ...localConfig.value.locations, ...custom.locations };
+        }
+        if (custom.gifts) {
+          localConfig.value.gifts = { ...localConfig.value.gifts, ...custom.gifts };
+        }
+        if (custom.dressCode) {
+          localConfig.value.dressCode = { ...localConfig.value.dressCode, ...custom.dressCode };
         }
         
         localConfig.value.has_timer = custom.has_timer ?? false;
