@@ -165,9 +165,12 @@ const handlePreview = (product) => {
     return;
   }
   
-  // demo_slug de la plantilla correspondiente, o fallback a 'cdae704e' como demo genérico
-  const demoSlug = product.features?.demo_slug || 'cdae704e';
-  window.open(`/i/${demoSlug}`, '_blank');
+  if (!product.template_slug) {
+    toast.info('Este diseño no cuenta con una demo en vivo actualmente.');
+    return;
+  }
+  
+  window.open(`/i/${product.template_slug}`, '_blank');
 };
 </script>
 
