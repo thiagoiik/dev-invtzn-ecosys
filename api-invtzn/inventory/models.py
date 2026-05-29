@@ -69,6 +69,11 @@ class Product(models.Model):
         help_text="Define si este producto es el destino por defecto al presionar empezar gratis"
     )
 
+    def save(self, *args, **kwargs):
+        if self.sku == "":
+            self.sku = None
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.name} (${self.base_price})"
 
