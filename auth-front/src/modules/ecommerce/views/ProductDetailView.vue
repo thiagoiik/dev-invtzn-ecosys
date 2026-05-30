@@ -192,23 +192,23 @@ const dynamicFeatures = computed(() => {
   const tier = product.value.tier_level;
   if (tier === 'PREMIUM') {
     return [
-      { name: 'RSVP Completo', icon: '✉️', desc: 'Base de datos de invitados' },
-      { name: 'Música de Fondo', icon: '🎵', desc: 'Audio personalizado' },
-      { name: 'Contador', icon: '🕰️', desc: 'Cuenta regresiva en vivo' },
+      { name: 'RSVP Avanzado', icon: '✉️', desc: 'Alergias, menú y pases' },
+      { name: 'Música de Fondo', icon: '🎵', desc: 'Carga tus archivos' },
+      { name: 'Contador', icon: '🕰️', desc: 'Cuenta regresiva' },
       { name: 'Cronograma', icon: '📅', desc: 'Línea de tiempo' },
-      { name: 'Sobres 3D', icon: '✉️', desc: 'Efecto de apertura 3D' },
-      { name: 'Metadatos OG', icon: '🔗', desc: 'Compartido premium' }
+      { name: 'Sobres 3D', icon: '✉️', desc: 'Apertura interactiva' },
+      { name: 'Compartido Premium', icon: '🔗', desc: 'Vista en redes optimizada' }
     ];
   } else if (tier === 'STANDARD') {
     return [
-      { name: 'RSVP Básico', icon: '✉️', desc: 'Confirmación directa' },
+      { name: 'RSVP en Panel', icon: '✉️', desc: 'Control en tiempo real' },
       { name: 'Música de Fondo', icon: '🎵', desc: 'Música predeterminada' },
-      { name: 'Contador', icon: '🕰️', desc: 'Cuenta regresiva en vivo' },
-      { name: 'Temas', icon: '🎨', desc: 'Personalización de colores' }
+      { name: 'Contador', icon: '🕰️', desc: 'Cuenta regresiva' },
+      { name: 'Temas', icon: '🎨', desc: 'Colores personalizables' }
     ];
   } else {
     return [
-      { name: 'RSVP WhatsApp', icon: '🟢', desc: 'Confirmación rápida' },
+      { name: 'RSVP WhatsApp', icon: '🟢', desc: 'Confirmación directa' },
       { name: 'Diseño Básico', icon: '✨', desc: 'Lienzo moderno' }
     ];
   }

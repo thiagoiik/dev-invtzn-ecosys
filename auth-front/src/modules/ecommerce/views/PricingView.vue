@@ -14,13 +14,13 @@
 
       <!-- Grid de Tarjetas de Precios -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch pt-6">
-        <!-- 1. Plan Básico -->
+        <!-- 1. Plan Básico (Pase de Bienvenida) -->
         <div class="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm flex flex-col justify-between hover:shadow-lg transition-all duration-300 relative overflow-hidden">
           <div class="space-y-6">
             <header class="space-y-2">
-              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Prueba Gratuita</span>
+              <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Pase de Bienvenida</span>
               <h3 class="text-2xl font-black text-slate-800">Lienzo Básico</h3>
-              <p class="text-slate-400 text-xs font-medium">Prueba y diseña sin prisas desde el editor.</p>
+              <p class="text-slate-400 text-xs font-medium">Activo al verificar tu perfil y dejar una reseña en nuestra comunidad.</p>
             </header>
             <div class="flex items-baseline gap-1">
               <span class="text-5xl font-black text-slate-900">$0</span>
@@ -28,12 +28,30 @@
             </div>
             <div class="w-full h-[1px] bg-slate-100"></div>
             <ul class="space-y-4 text-xs font-bold text-slate-500">
-              <li class="flex items-center gap-2">✓ Portada Interactiva</li>
-              <li class="flex items-center gap-2">✓ Edición ilimitada</li>
-              <li class="flex items-center gap-2 text-primary font-black">✓ RSVP directo a tu WhatsApp</li>
-              <li class="text-slate-300 flex items-center gap-2">✗ Sin Música de Fondo</li>
-              <li class="text-slate-300 flex items-center gap-2">✗ Sin Cuenta Regresiva</li>
-              <li class="text-slate-300 flex items-center gap-2">✗ Marca de agua en visualización</li>
+              <li class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>Portada Interactiva</span>
+              </li>
+              <li class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>Edición ilimitada</span>
+              </li>
+              <li class="flex items-center gap-1.5 text-primary font-black">
+                <svg class="w-4 h-4 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>RSVP directo a tu WhatsApp</span>
+              </li>
+              <li class="text-slate-350 flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 12H6"></path></svg>
+                <span>Sin Música de Fondo</span>
+              </li>
+              <li class="text-slate-350 flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 12H6"></path></svg>
+                <span>Sin Cuenta Regresiva</span>
+              </li>
+              <li class="text-slate-350 flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-slate-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M18 12H6"></path></svg>
+                <span>Marca de agua en visualización</span>
+              </li>
             </ul>
           </div>
           <div class="pt-8">
@@ -55,17 +73,35 @@
               <p class="text-slate-400 text-xs font-medium">Ideal para eventos íntimos y elegantes.</p>
             </header>
             <div class="flex items-baseline gap-1">
-              <span class="text-5xl font-black text-slate-900">$149</span>
+              <span class="text-5xl font-black text-slate-900">$799</span>
               <span class="text-slate-400 text-sm font-bold uppercase">MXN</span>
             </div>
             <div class="w-full h-[1px] bg-slate-100"></div>
             <ul class="space-y-4 text-xs font-bold text-slate-600">
-              <li class="flex items-center gap-2 text-primary">✓ Sin marcas de agua</li>
-              <li class="flex items-center gap-2">✓ Portada Interactiva</li>
-              <li class="flex items-center gap-2 text-primary font-black">✓ RSVP directo a WhatsApp</li>
-              <li class="flex items-center gap-2">✓ Música de fondo (Predeterminada)</li>
-              <li class="flex items-center gap-2">✓ Cuenta regresiva en vivo</li>
-              <li class="flex items-center gap-2">✓ Personalización de paleta de colores</li>
+              <li class="flex items-center gap-1.5 text-primary">
+                <svg class="w-4 h-4 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>Sin marcas de agua</span>
+              </li>
+              <li class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>Portada Interactiva</span>
+              </li>
+              <li class="flex items-center gap-1.5 text-primary font-black">
+                <svg class="w-4 h-4 text-primary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>RSVP en tu panel privado</span>
+              </li>
+              <li class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>Música de fondo (Predeterminada)</span>
+              </li>
+              <li class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>Cuenta regresiva en vivo</span>
+              </li>
+              <li class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-emerald-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>Personalización de paleta de colores</span>
+              </li>
             </ul>
           </div>
           <div class="pt-8">
@@ -84,17 +120,35 @@
               <p class="text-slate-400 text-xs font-medium">Control completo y personalización de lujo.</p>
             </header>
             <div class="flex items-baseline gap-1">
-              <span class="text-5xl font-black text-white">$299</span>
+              <span class="text-5xl font-black text-white">$1,399</span>
               <span class="text-slate-500 text-sm font-bold uppercase">MXN</span>
             </div>
             <div class="w-full h-[1px] bg-slate-800"></div>
-            <ul class="space-y-4 text-xs font-bold text-slate-300">
-              <li class="flex items-center gap-2 text-purple-400">✓ Sin marcas de agua</li>
-              <li class="flex items-center gap-2 text-purple-400">✓ Base de datos centralizada de invitados</li>
-              <li class="flex items-center gap-2">✓ Música de fondo (Carga tus archivos)</li>
-              <li class="flex items-center gap-2">✓ Cronograma interactivo del evento</li>
-              <li class="flex items-center gap-2">✓ Apertura de sobres interactivos 3D</li>
-              <li class="flex items-center gap-2">✓ Metadatos Open Graph personalizados (WhatsApp/FB)</li>
+            <ul class="space-y-4 text-xs font-bold text-slate-350">
+              <li class="flex items-center gap-1.5 text-purple-400">
+                <svg class="w-4 h-4 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>Sin marcas de agua</span>
+              </li>
+              <li class="flex items-center gap-1.5 text-purple-400">
+                <svg class="w-4 h-4 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>RSVP Avanzado (Alergias, menú, transporte)</span>
+              </li>
+              <li class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>Música de fondo (Carga tus archivos)</span>
+              </li>
+              <li class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>Cronograma interactivo del evento</span>
+              </li>
+              <li class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>Apertura de sobres interactivos 3D</span>
+              </li>
+              <li class="flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-purple-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <span>Metadatos Open Graph personalizados (WhatsApp/FB)</span>
+              </li>
             </ul>
           </div>
           <div class="pt-8">
@@ -103,6 +157,14 @@
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- Nota adicional sobre Seriales -->
+      <div class="max-w-3xl mx-auto text-center mt-16 p-6 rounded-2xl bg-white border border-slate-100 shadow-sm space-y-2">
+        <h4 class="font-bold text-slate-800">¿Estás planeando otro evento?</h4>
+        <p class="text-sm text-slate-500">
+          Consigue pases (seriales) adicionales para nuevos diseños en el Studio por solo <span class="font-black text-slate-900">$900 MXN</span>.
+        </p>
       </div>
     </div>
   </div>
