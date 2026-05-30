@@ -10,5 +10,18 @@ export const builderService = {
     return invtznClient.patch(`deployments/${id}/`, {
       custom_data: customData
     });
+  },
+  
+  updateDeployment(id, data) {
+    return invtznClient.patch(`deployments/${id}/`, data);
+  },
+  
+  activateBasic(id, reviewData) {
+    return invtznClient.post(`deployments/${id}/activate-basic/`, reviewData);
+  },
+  
+  publishProduct(id, productData) {
+    return invtznClient.post(`deployments/${id}/publish-product/`, productData);
   }
+
 };

@@ -19,17 +19,22 @@
         <div class="lg:col-span-7 space-y-8">
           <div class="group relative bg-white rounded-[2.5rem] p-4 shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
             <div class="aspect-[4/5] md:aspect-video bg-slate-100 rounded-[2rem] flex items-center justify-center relative overflow-hidden">
-              <!-- Background glow -->
-              <div class="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-indigo-500/10"></div>
-              
-              <!-- Content -->
-              <div class="relative z-10 text-center space-y-6">
-                <div class="w-32 h-32 bg-white rounded-3xl shadow-xl flex items-center justify-center text-6xl mx-auto transform -rotate-6 group-hover:rotate-0 transition-transform duration-500">
-                  💎
-                </div>
-                <div>
-                  <h3 class="text-3xl font-black text-slate-800">{{ product.name }}</h3>
-                  <p class="text-slate-400 font-medium">Diseño interactivo de alta gama</p>
+              <img 
+                v-if="product.thumbnail_url" 
+                :src="product.thumbnail_url" 
+                alt="Vista previa del diseño" 
+                class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+              />
+              <div v-else class="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-indigo-500/10 flex items-center justify-center">
+                <!-- Content fallback -->
+                <div class="relative z-10 text-center space-y-6">
+                  <div class="w-32 h-32 bg-white rounded-3xl shadow-xl flex items-center justify-center text-6xl mx-auto transform -rotate-6 group-hover:rotate-0 transition-transform duration-500">
+                    💎
+                  </div>
+                  <div>
+                    <h3 class="text-3xl font-black text-slate-800">{{ product.name }}</h3>
+                    <p class="text-slate-400 font-medium">Diseño interactivo de alta gama</p>
+                  </div>
                 </div>
               </div>
 

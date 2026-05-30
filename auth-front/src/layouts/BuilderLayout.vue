@@ -11,10 +11,14 @@
           <span class="hidden md:inline">Diseño de  </span>Invitaciones
         </span>
       </div>
+      <div class="center-section">
+        <slot name="title"></slot>
+      </div>
       <div class="right-section">
         <slot name="actions"></slot>
       </div>
     </header>
+
 
     <!-- Área de trabajo -->
     <main class="workspace">
@@ -65,7 +69,15 @@
   letter-spacing: 2px;
   color: #38bdf8;
 }
+.center-section {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 50%;
+}
 .workspace {
+
   flex: 1;
   display: flex;
   position: relative;

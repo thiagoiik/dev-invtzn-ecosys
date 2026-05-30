@@ -40,10 +40,16 @@
           <figure class="h-64 bg-slate-100 relative overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             
-            <!-- Aquí iría la imagen real del producto si existiera, usamos un gradiente por ahora -->
-            <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-primary/20 flex items-center justify-center">
+            <img 
+              v-if="product.thumbnail_url" 
+              :src="product.thumbnail_url" 
+              alt="Vista previa" 
+              class="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+            />
+            <div v-else class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-primary/20 flex items-center justify-center">
               <span class="text-7xl group-hover:scale-110 transition-transform duration-700 ease-out">💎</span>
             </div>
+
             
             <div class="absolute top-4 right-4 z-20">
               <span class="bg-white/90 backdrop-blur-md text-slate-900 px-3 py-1 rounded-full text-xs font-bold shadow-sm">

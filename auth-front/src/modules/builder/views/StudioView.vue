@@ -1,5 +1,26 @@
 <template>
   <BuilderLayout>
+    <template #title>
+      <div class="flex items-center gap-2 text-white max-w-full">
+        <span v-if="!isEditingSlug" class="font-semibold text-xs sm:text-sm md:text-base truncate max-w-[150px] md:max-w-xs cursor-pointer select-none" @dblclick="startEditingSlug" title="Doble clic para cambiar slug">
+          🔗 {{ deploymentSlug }}
+        </span>
+        <input 
+          v-else 
+          v-model="editableSlug" 
+          @blur="saveSlug" 
+          @keyup.enter="saveSlug"
+          type="text" 
+          class="bg-slate-800 text-white text-[10px] sm:text-xs px-2 py-1 rounded border border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 max-w-[120px] md:max-w-xs"
+          placeholder="slug-de-la-plantilla" 
+          autofocus
+        />
+        <button v-if="!isEditingSlug" @click="startEditingSlug" class="text-xs text-slate-400 hover:text-white transition-all" title="Editar slug">
+          ✏️
+        </button>
+      </div>
+    </template>
+
     <template #actions>
         <div class="save-status-container flex items-center gap-1.5 sm:gap-3">
           <!-- Badge de Estado de la Invitación -->
@@ -24,13 +45,21 @@
           </span>
         </div>
         
-        <!-- Botón de publicar rápido si es Borrador -->
+        <!-- Botón de publicar dinámico -->
         <button 
           v-if="deploymentStatus !== 'LIVE'"
-          @click="showUpgradeModal = true"
+          @click="handlePublishClick"
           class="btn btn-sm bg-gradient-to-r from-pink-500 to-indigo-600 hover:from-pink-600 hover:to-indigo-700 text-white font-black px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-md transition-all flex items-center gap-1 text-[10px] sm:text-xs"
         >
           ✨<span class="hidden sm:inline"> Publicar</span>
+        </button>
+
+        <button 
+          v-else-if="deploymentStatus === 'LIVE' && authStore?.role !== 'ADMIN' && authStore?.role !== 'DESIGNER'"
+          @click="pauseInvitation"
+          class="btn btn-sm bg-rose-600 hover:bg-rose-700 text-white font-black px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-md transition-all flex items-center gap-1 text-[10px] sm:text-xs"
+        >
+          ⏸️<span class="hidden sm:inline"> Pausar</span>
         </button>
 
         <button 
@@ -41,6 +70,7 @@
           👀<span class="hidden sm:inline"> Ver en Vivo</span><span class="inline sm:hidden"> Ver</span>
         </button>
     </template>
+
 
     <div class="studio-container relative">
       <!-- Botón Flotante para Móviles -->
@@ -617,7 +647,149 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal de Reseña para Activación de Plan Básico -->
+    <div v-if="showReviewModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" @click="showReviewModal = false"></div>
+      <div class="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 md:p-8 flex flex-col gap-6 border border-slate-100 overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-sky-400 to-indigo-500"></div>
+        
+        <div class="text-center space-y-2">
+          <span class="text-3xl">✨</span>
+          <h3 class="text-xl font-black text-slate-800">Activa tu Invitación Gratis</h3>
+          <p class="text-slate-500 text-xs sm:text-sm">
+            Para publicar tu invitación en el plan básico, cuéntanos qué te ha parecido nuestra plataforma.
+          </p>
+        </div>
+
+        <form @submit.prevent="submitReviewAndActivate" class="space-y-4">
+          <div class="form-group flex flex-col gap-1.5 text-left">
+            <label class="text-xs font-bold text-slate-600">Tu Nombre</label>
+            <input 
+              v-model="reviewForm.reviewer_name" 
+              type="text" 
+              placeholder="Ej: Sofía Martínez" 
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-700 text-sm"
+              required 
+            />
+          </div>
+
+          <div class="form-group flex flex-col gap-1.5 text-left">
+            <label class="text-xs font-bold text-slate-600">Calificación</label>
+            <div class="flex items-center gap-1">
+              <button 
+                v-for="star in 5" 
+                :key="star" 
+                type="button"
+                @click="reviewForm.rating = star"
+                class="text-2xl transition-all"
+              >
+                <span v-if="star <= reviewForm.rating" class="text-amber-400">★</span>
+                <span v-else class="text-slate-200">★</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group flex flex-col gap-1.5 text-left">
+            <label class="text-xs font-bold text-slate-600">Tu Testimonio / Opinión</label>
+            <textarea 
+              v-model="reviewForm.comment" 
+              rows="3"
+              placeholder="Ej: La plataforma es super intuitiva y rápida de usar. ¡Me encantó el sobre animado!" 
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-700 text-sm resize-none"
+              required
+            ></textarea>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button 
+              type="button" 
+              @click="showReviewModal = false" 
+              class="btn btn-outline border-slate-200 text-slate-500 hover:bg-slate-50 flex-1 py-2.5 rounded-xl font-bold text-sm"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              class="btn bg-indigo-600 hover:bg-indigo-700 text-white flex-1 py-2.5 rounded-xl font-bold text-sm shadow-md"
+            >
+              Publicar Ahora 🚀
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal de Publicación del Administrador como Producto Comercial -->
+    <div v-if="showAdminPublishModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" @click="showAdminPublishModal = false"></div>
+      <div class="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 md:p-8 flex flex-col gap-6 border border-slate-100 overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-pink-500 to-indigo-600"></div>
+        
+        <div class="text-center space-y-2">
+          <span class="text-3xl">🛍️</span>
+          <h3 class="text-xl font-black text-slate-800">Publicar como Producto</h3>
+          <p class="text-slate-500 text-xs sm:text-sm">
+            Convierte esta plantilla de diseño en un producto comercial del catálogo general.
+          </p>
+        </div>
+
+        <form @submit.prevent="submitAdminPublish" class="space-y-4">
+          <div class="form-group flex flex-col gap-1.5 text-left">
+            <label class="text-xs font-bold text-slate-600">Nombre del Producto</label>
+            <input 
+              v-model="adminPublishForm.name" 
+              type="text" 
+              placeholder="Ej: Invitación Boda Clásica Oro" 
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-700 text-sm"
+              required 
+            />
+          </div>
+
+          <div class="form-group flex flex-col gap-1.5 text-left">
+            <label class="text-xs font-bold text-slate-600">Slug de la Plantilla (Único)</label>
+            <input 
+              v-model="adminPublishForm.slug" 
+              type="text" 
+              placeholder="ej-invitacion-boda-oro" 
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-700 text-sm"
+              required 
+            />
+          </div>
+
+          <div class="form-group flex flex-col gap-1.5 text-left">
+            <label class="text-xs font-bold text-slate-600">Asociar a Sucursal / Tienda (Opcional)</label>
+            <select 
+              v-model="adminPublishForm.store_id"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-700 text-sm"
+            >
+              <option :value="null">Ninguna (Catálogo Global B2C)</option>
+              <option v-for="store in storesList" :key="store.id" :value="store.id">
+                {{ store.name }} ({{ store.city || 'Sin ciudad' }})
+              </option>
+            </select>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button 
+              type="button" 
+              @click="showAdminPublishModal = false" 
+              class="btn btn-outline border-slate-200 text-slate-500 hover:bg-slate-50 flex-1 py-2.5 rounded-xl font-bold text-sm"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              class="btn bg-indigo-600 hover:bg-indigo-700 text-white flex-1 py-2.5 rounded-xl font-bold text-sm shadow-md"
+            >
+              Crear Producto 🛒
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </BuilderLayout>
+
 </template>
 
 <script setup>
@@ -627,9 +799,32 @@ import { useToast } from 'vue-toastification';
 import { useAuthStore } from '@/modules/auth/store/auth';
 import BuilderLayout from '@/layouts/BuilderLayout.vue';
 import { builderService } from '@/modules/builder/services/builderService';
+import { crmService } from '@/modules/workspace/services/crmService';
 import RenderEngineMaster from '@/modules/engine/components/RenderEngineMaster.vue';
 import EnvelopeWrapper from '@/modules/engine/components/EnvelopeWrapper.vue';
 import UpgradeModal from '@/modules/builder/components/UpgradeModal.vue';
+
+// Variables de estado adicionales v0.8.4
+const productTier = ref('BASIC');
+const deploymentIsPaid = ref(false);
+const isEditingSlug = ref(false);
+const editableSlug = ref('');
+const showReviewModal = ref(false);
+const showAdminPublishModal = ref(false);
+const storesList = ref([]);
+
+const reviewForm = ref({
+  reviewer_name: '',
+  comment: '',
+  rating: 5
+});
+
+const adminPublishForm = ref({
+  name: '',
+  slug: '',
+  store_id: null
+});
+
 
 const route = useRoute();
 const router = useRouter();
@@ -741,7 +936,20 @@ onMounted(async () => {
     if (res.data) {
       deploymentSlug.value = res.data.slug || '';
       deploymentStatus.value = res.data.status || 'DRAFT';
+      deploymentIsPaid.value = res.data.is_paid || false;
+      productTier.value = res.data.product_tier || 'BASIC';
+      editableSlug.value = res.data.slug || '';
+      
       const isAdminOrDesigner = authStore?.role === 'ADMIN' || authStore?.role === 'DESIGNER';
+      if (authStore?.role === 'ADMIN') {
+        try {
+          const storesRes = await crmService.fetchAllStores();
+          storesList.value = storesRes.data || [];
+        } catch (e) {
+          console.error("Error al cargar tiendas:", e);
+        }
+      }
+      
       if (isAdminOrDesigner) {
         allowedFeatures.value = {
           background_music: true,
@@ -754,6 +962,7 @@ onMounted(async () => {
       } else if (res.data.allowed_features) {
         allowedFeatures.value = res.data.allowed_features;
       }
+
       
       const custom = res.data.custom_data;
       if (custom && Object.keys(custom).length > 0) {
@@ -800,6 +1009,118 @@ const openLiveDemo = () => {
     window.open(`/i/${deploymentSlug.value}`, '_blank');
   }
 };
+
+const startEditingSlug = () => {
+  editableSlug.value = deploymentSlug.value;
+  isEditingSlug.value = true;
+};
+
+const saveSlug = async () => {
+  if (!editableSlug.value || editableSlug.value.trim() === '') {
+    toast.error('El slug no puede estar vacío.');
+    isEditingSlug.value = false;
+    return;
+  }
+  
+  const slugRegex = /^[a-z0-9-]+$/;
+  if (!slugRegex.test(editableSlug.value)) {
+    toast.error('El slug solo puede contener letras minúsculas, números y guiones.');
+    return;
+  }
+  
+  try {
+    await builderService.updateDeployment(deploymentId, { slug: editableSlug.value.trim() });
+    deploymentSlug.value = editableSlug.value.trim();
+    toast.success('Slug actualizado correctamente.');
+    isEditingSlug.value = false;
+  } catch (error) {
+    const errMsg = error.response?.data?.error || error.response?.data?.slug?.[0] || 'Error al actualizar el slug';
+    toast.error(errMsg);
+  }
+};
+
+const handlePublishClick = () => {
+  const role = authStore?.role;
+  if (role === 'ADMIN') {
+    adminPublishForm.value.name = localConfig.value.cover.title || '';
+    adminPublishForm.value.slug = deploymentSlug.value || '';
+    adminPublishForm.value.store_id = null;
+    showAdminPublishModal.value = true;
+  } else if (role === 'DESIGNER') {
+    toast.info('Los cambios del diseño se guardaron en tu biblioteca.');
+  } else {
+    if (productTier.value === 'BASIC') {
+      reviewForm.value.reviewer_name = '';
+      reviewForm.value.comment = '';
+      reviewForm.value.rating = 5;
+      showReviewModal.value = true;
+    } else {
+      if (deploymentIsPaid.value) {
+        confirmPublishPaid();
+      } else {
+        showUpgradeModal.value = true;
+      }
+    }
+  }
+};
+
+const confirmPublishPaid = async () => {
+  if (confirm('¿Estás seguro de que deseas poner tu invitación en vivo?')) {
+    try {
+      await builderService.updateDeployment(deploymentId, { status: 'LIVE' });
+      deploymentStatus.value = 'LIVE';
+      toast.success('¡Tu invitación está En Vivo!');
+    } catch (e) {
+      toast.error('Error al publicar la invitación.');
+    }
+  }
+};
+
+const pauseInvitation = async () => {
+  if (confirm('¿Estás seguro de que deseas pausar tu invitación? Esto desactivará el acceso público temporalmente.')) {
+    try {
+      await builderService.updateDeployment(deploymentId, { status: 'DRAFT' });
+      deploymentStatus.value = 'DRAFT';
+      toast.info('Invitación pausada correctamente.');
+    } catch (e) {
+      toast.error('Error al pausar la invitación.');
+    }
+  }
+};
+
+const submitReviewAndActivate = async () => {
+  if (!reviewForm.value.reviewer_name || !reviewForm.value.comment) {
+    toast.error('Por favor, ingresa tu nombre y tu comentario.');
+    return;
+  }
+  try {
+    const res = await builderService.activateBasic(deploymentId, reviewForm.value);
+    deploymentStatus.value = res.data.status || 'LIVE';
+    deploymentIsPaid.value = true;
+    toast.success('¡Plan básico activado y publicado exitosamente!');
+    showReviewModal.value = false;
+    showSuccessModal.value = true;
+  } catch (e) {
+    const errMsg = e.response?.data?.error || 'Error al activar tu plan básico.';
+    toast.error(errMsg);
+  }
+};
+
+const submitAdminPublish = async () => {
+  if (!adminPublishForm.value.name || !adminPublishForm.value.slug) {
+    toast.error('El nombre y el slug son requeridos.');
+    return;
+  }
+  try {
+    const res = await builderService.publishProduct(deploymentId, adminPublishForm.value);
+    toast.success('¡Producto comercial creado exitosamente!');
+    showAdminPublishModal.value = false;
+  } catch (e) {
+    const errMsg = e.response?.data?.error || 'Error al publicar como producto.';
+    toast.error(errMsg);
+  }
+};
+
 
 const addScheduleItem = () => {
   if (!localConfig.value.timeline.schedule) {
