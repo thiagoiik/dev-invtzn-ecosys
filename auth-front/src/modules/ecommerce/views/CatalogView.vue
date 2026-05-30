@@ -12,7 +12,7 @@
       <!-- Categorías de Catálogo -->
       <div class="flex flex-wrap justify-center gap-4 py-2">
         <button 
-          v-for="cat in ['ALL', 'DIGITAL', 'PHYSICAL', 'SERVICE']" 
+          v-for="cat in ['ALL', 'DIGITAL', 'SERVICE']" 
           :key="cat"
           @click="selectedCategory = cat"
           class="btn rounded-full px-6 py-2.5 font-bold transition-all duration-300"
@@ -132,9 +132,9 @@ onMounted(() => {
 const translateCategory = (cat) => {
   const map = {
     'ALL': 'Todos los Productos',
-    'DIGITAL': 'Invitaciones Digitales 📱',
-    'PHYSICAL': 'Impresos Físicos ✉️',
-    'SERVICE': 'Servicios a Medida 💎'
+    'DIGITAL': 'Invitaciones Digitales',
+    /* 'PHYSICAL': 'Impresos Físicos', */
+    'SERVICE': 'Servicios a Medida'
   };
   return map[cat] || cat;
 };

@@ -10,7 +10,7 @@
           </span>
         </div>
         <nav class="hidden md:flex items-center gap-8 font-medium text-slate-600">
-          <router-link to="/catalog" class="hover:text-slate-900 transition-colors">Plantillas</router-link>
+          <router-link to="/catalog" class="hover:text-slate-900 transition-colors">Catalogo</router-link>
           <a href="#servicios" class="hover:text-slate-900 transition-colors">Servicios a Medida</a>
           <router-link to="/login" class="hover:text-slate-900 transition-colors">Iniciar Sesión</router-link>
         </nav>
@@ -42,7 +42,7 @@
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
               </span>
-              <span class="text-xs font-bold text-slate-600 uppercase tracking-widest">Plataforma B2B / B2C v0.6.x</span>
+              <span class="text-xs font-bold text-slate-600 uppercase tracking-widest">Invitaciones Especiales</span>
             </div>
             
             <h1 class="text-5xl lg:text-7xl font-black text-slate-900 tracking-tight leading-[1.1] mb-6 animate-fade-in-up" style="animation-delay: 100ms;">
