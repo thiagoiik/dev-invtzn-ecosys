@@ -17,10 +17,14 @@ class DeploymentSerializer(serializers.ModelSerializer):
         ]
     )
 
+    product_tier = serializers.CharField(source='product.tier_level', read_only=True)
+    product_name = serializers.CharField(source='product.name', read_only=True)
+
     class Meta:
         model = Deployment
         fields = '__all__'
         read_only_fields = ('user', 'status', 'is_paid', 'created_at', 'updated_at', 'allowed_features')
+
 
     def validate_slug(self, value):
         if value:

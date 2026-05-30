@@ -382,6 +382,157 @@ class DeploymentViewSet(viewsets.ModelViewSet):
             'recent': recent_list
         })
 
+    @action(detail=True, methods=['post'], url_path='activate-basic')
+    def activate_basic(self, request, pk=None):
+        deployment = self.get_object()
+        
+        # 1. Validar que la invitación sea de tier básico
+        if deployment.product.tier_level != 'BASIC':
+            return Response({'error': 'Esta acción solo está permitida para invitaciones de plan Básico.'}, status=400)
+            
+        # 2. Validar que el usuario no tenga ya un serial básico activo asignado
+        from profiles.models import UserProfile
+        from inventory.models import ProductSerialKey, Product
+        from django.utils import timezone
+        
+        user_profile = get_object_or_404(UserProfile, remote_auth_id=request.user.id)
+        
+        existing_keys = ProductSerialKey.objects.filter(
+            order_item__order__user=request.user.id,
+            product__tier_level=Product.TierLevel.BASIC,
+            is_assigned=True
+        )
+        
+        if existing_keys.exists():
+            return Response({
+                'error': 'Has alcanzado el límite de claves de plan Básico. Si deseas publicar otra invitación, por favor compra un serial adicional.'
+            }, status=400)
+            
+        # 3. Guardar la reseña
+        reviewer_name = request.data.get('reviewer_name')
+        comment = request.data.get('comment')
+        rating = request.data.get('rating', 5)
+        
+        if not reviewer_name or not comment:
+            return Response({'error': 'El nombre del autor y el comentario son requeridos.'}, status=400)
+            
+        from profiles.models import SiteReview
+        SiteReview.objects.create(
+            user=user_profile,
+            reviewer_name=reviewer_name,
+            comment=comment,
+            rating=rating,
+            is_approved=False
+        )
+        
+        # 4. Crear una orden gratuita de $0 para simular la compra y vincular el serial
+        from sales.models import Order, OrderItem
+        order = Order.objects.create(
+            user=request.user.id,
+            subtotal_amount=0.00,
+            total_amount=0.00,
+            status=Order.StatusChoices.COMPLETED,
+            deployment=deployment
+        )
+        order_item = OrderItem.objects.create(
+            order=order,
+            product=deployment.product,
+            quantity=1,
+            price_at_sale=0.00
+        )
+        
+        # 5. Generar e importar la ProductSerialKey
+        serial_key = ProductSerialKey.objects.create(
+            product=deployment.product,
+            key_value=f"FREE-BASIC-{deployment.slug.upper()}",
+            is_assigned=True,
+            order_item=order_item,
+            assigned_at=timezone.now()
+        )
+        
+        # 6. Pasar el estado de la invitación a LIVE
+        deployment.status = Deployment.StatusChoices.LIVE
+        deployment.is_paid = True
+        deployment.save()
+        
+        return Response({
+            'success': 'Invitación de plan básico activada exitosamente con tu reseña.',
+            'status': deployment.status,
+            'serial_key': serial_key.key_value
+        })
+
+    @action(detail=True, methods=['post'], url_path='publish-product')
+    def publish_product(self, request, pk=None):
+        deployment = self.get_object()
+        
+        # Validar que el usuario sea administrador
+        from profiles.models import UserProfile
+        user_profile = get_object_or_404(UserProfile, remote_auth_id=request.user.id)
+        if user_profile.custom_role != UserProfile.Role.ADMIN:
+            return Response({'error': 'No tienes permisos de administrador para realizar esta acción.'}, status=403)
+            
+        name = request.data.get('name')
+        slug = request.data.get('slug')
+        store_id = request.data.get('store_id')
+        
+        if not name or not slug:
+            return Response({'error': 'El nombre y slug son requeridos.'}, status=400)
+            
+        # 1. Validar que el nuevo slug sea único en Deployment
+        if Deployment.objects.filter(slug=slug).exclude(id=deployment.id).exists():
+            return Response({'error': 'El slug ingresado ya está en uso por otra invitación/plantilla.'}, status=400)
+            
+        # 2. Actualizar el slug y el nombre de esta maqueta
+        deployment.slug = slug
+        deployment.status = Deployment.StatusChoices.LIVE
+        deployment.save()
+        
+        # 3. Analizar automáticamente el tier_level en base a custom_data
+        custom_data = deployment.custom_data or {}
+        has_premium_features = False
+        
+        premium_features = ['countdown', 'itinerary', 'music', 'seo', 'timeline', 'gallery', 'gift_registry']
+        
+        blocks = custom_data.get('blocks', [])
+        if isinstance(blocks, list):
+            for block in blocks:
+                block_type = str(block.get('type', '')).lower()
+                for pf in premium_features:
+                    if pf in block_type:
+                        has_premium_features = True
+                        break
+        
+        for k in custom_data.keys():
+            if str(k).lower() in premium_features:
+                has_premium_features = True
+                break
+                
+        from inventory.models import Product, Store
+        tier_level = Product.TierLevel.PREMIUM if has_premium_features else Product.TierLevel.BASIC
+        
+        # 4. Crear el Producto
+        store = None
+        if store_id:
+            store = get_object_or_404(Store, id=store_id)
+            
+        product = Product.objects.create(
+            name=name,
+            product_type=Product.ProductType.DIGITAL,
+            tier_level=tier_level,
+            base_price=0.00,
+            is_active=True,
+            has_template=True,
+            template_slug=slug,
+            created_by=user_profile,
+            store=store
+        )
+        
+        return Response({
+            'success': 'Producto de catálogo creado y vinculado a la plantilla exitosamente.',
+            'product_id': product.id,
+            'tier_assigned': product.tier_level
+        })
+
 
 from rest_framework.permissions import BasePermission
 

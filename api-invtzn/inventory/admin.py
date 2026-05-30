@@ -18,9 +18,9 @@ class StoreAdmin(admin.ModelAdmin):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     # Columnas visibles en la lista
-    list_display = ('name', 'product_type', 'tier_level', 'base_price', 'is_active', 'is_physical', 'stock_quantity', 'has_template')
+    list_display = ('name', 'product_type', 'tier_level', 'base_price', 'is_active', 'is_physical', 'stock_quantity', 'has_template', 'created_by', 'store')
     # Filtros laterales
-    list_filter = ('product_type', 'tier_level', 'is_active', 'is_physical', 'has_template')
+    list_filter = ('product_type', 'tier_level', 'is_active', 'is_physical', 'has_template', 'store')
     # Buscador
     search_fields = ('name', 'description')
     # Organizar el formulario de edición
@@ -34,7 +34,11 @@ class ProductAdmin(admin.ModelAdmin):
         ('Configuración Digital', {
             'fields': ('has_template', 'features')
         }),
+        ('Información de Origen', {
+            'fields': ('created_by', 'store')
+        }),
     )
+
 
 @admin.register(DesignTemplate)
 class DesignTemplateAdmin(admin.ModelAdmin):

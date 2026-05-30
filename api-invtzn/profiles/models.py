@@ -92,3 +92,15 @@ class CommunicationLog(models.Model):
 
     def __str__(self):
         return f"{self.channel} a User {self.user_id}: {self.subject}"
+
+
+class SiteReview(models.Model):
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='reviews')
+    reviewer_name = models.CharField(max_length=150, help_text="Nombre a mostrar del cliente que escribe la reseña")
+    rating = models.IntegerField(default=5, help_text="Calificación de 1 a 5 estrellas")
+    comment = models.TextField(help_text="Comentario o testimonio sobre la experiencia con la plataforma")
+    is_approved = models.BooleanField(default=False, help_text="Aprobado para mostrarse públicamente en la landing page")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Reseña de {self.reviewer_name} ({self.rating}★) - Aprobado: {self.is_approved}"

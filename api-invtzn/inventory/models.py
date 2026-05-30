@@ -69,6 +69,24 @@ class Product(models.Model):
         help_text="Define si este producto es el destino por defecto al presionar empezar gratis"
     )
 
+    created_by = models.ForeignKey(
+        'profiles.UserProfile', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='created_products', 
+        help_text="Creador o diseñador que generó este producto comercial"
+    )
+    store = models.ForeignKey(
+        Store, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='products', 
+        help_text="Tienda física o sucursal a la que pertenece este producto"
+    )
+
+
     def save(self, *args, **kwargs):
         if self.sku == "":
             self.sku = None
