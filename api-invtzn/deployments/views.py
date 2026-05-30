@@ -470,7 +470,6 @@ class DeploymentViewSet(viewsets.ModelViewSet):
         user_profile = get_object_or_404(UserProfile, remote_auth_id=request.user.id)
         if user_profile.custom_role != UserProfile.Role.ADMIN:
             return Response({'error': 'No tienes permisos de administrador para realizar esta acción.'}, status=403)
-            
         name = request.data.get('name')
         slug = request.data.get('slug')
         store_id = request.data.get('store_id')

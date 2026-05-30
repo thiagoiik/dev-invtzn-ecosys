@@ -25,6 +25,31 @@ class DeploymentSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('user', 'status', 'is_paid', 'created_at', 'updated_at', 'allowed_features')
 
+    def to_internal_value(self, data):
+        from inventory.models import Product
+        
+        data_copy = data.copy() if hasattr(data, 'copy') else dict(data)
+        product_id = data_copy.get('product')
+        
+        if product_id:
+            try:
+                if str(product_id) == '1' and not Product.objects.filter(id=1).exists():
+                    default_product = Product.objects.filter(display_pcard=True).first()
+                    if not default_product:
+                        default_product = Product.objects.filter(product_type=Product.ProductType.DIGITAL, tier_level=Product.TierLevel.BASIC).first()
+                    if not default_product:
+                        default_product = Product.objects.filter(product_type=Product.ProductType.DIGITAL).first()
+                    if not default_product:
+                        default_product = Product.objects.first()
+                    if default_product:
+                        data_copy['product'] = default_product.id
+            except Exception:
+                pass
+
+                
+        return super().to_internal_value(data_copy)
+
+
 
     def validate_slug(self, value):
         if value:
