@@ -2,22 +2,31 @@
   <BuilderLayout>
     <template #title>
       <div class="flex items-center gap-2 text-white max-w-full">
-        <span v-if="!isEditingSlug" class="font-semibold text-xs sm:text-sm md:text-base truncate max-w-[150px] md:max-w-xs cursor-pointer select-none" @dblclick="startEditingSlug" title="Doble clic para cambiar slug">
-          🔗 {{ deploymentSlug }}
-        </span>
-        <input 
-          v-else 
-          v-model="editableSlug" 
-          @blur="saveSlug" 
-          @keyup.enter="saveSlug"
-          type="text" 
-          class="bg-slate-800 text-white text-[10px] sm:text-xs px-2 py-1 rounded border border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 max-w-[120px] md:max-w-xs"
-          placeholder="slug-de-la-plantilla" 
-          autofocus
-        />
-        <button v-if="!isEditingSlug" @click="startEditingSlug" class="text-xs text-slate-400 hover:text-white transition-all" title="Editar slug">
-          ✏️
-        </button>
+        <!-- Si es Admin o Designer, permitimos la edición con doble clic/botón -->
+        <template v-if="isAdminOrDesigner">
+          <span v-if="!isEditingSlug" class="font-semibold text-xs sm:text-sm md:text-base truncate max-w-[150px] md:max-w-xs cursor-pointer select-none" @dblclick="startEditingSlug" title="Doble clic para cambiar slug">
+            🔗 {{ deploymentSlug }}
+          </span>
+          <input 
+            v-else 
+            v-model="editableSlug" 
+            @blur="saveSlug" 
+            @keyup.enter="saveSlug"
+            type="text" 
+            class="bg-slate-800 text-white text-[10px] sm:text-xs px-2 py-1 rounded border border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 max-w-[120px] md:max-w-xs"
+            placeholder="slug-de-la-plantilla" 
+            autofocus
+          />
+          <button v-if="!isEditingSlug" @click="startEditingSlug" class="text-xs text-slate-400 hover:text-white transition-all" title="Editar slug">
+            ✏️
+          </button>
+        </template>
+        <!-- Para otros roles (clientes): solo texto de lectura -->
+        <template v-else>
+          <span class="font-semibold text-xs sm:text-sm md:text-base truncate max-w-[150px] md:max-w-xs select-none">
+            🔗 {{ deploymentSlug }}
+          </span>
+        </template>
       </div>
     </template>
 
@@ -834,6 +843,9 @@ try {
 } catch (e) {
   // Silent fallback for unit testing environments without active Pinia
 }
+const isAdminOrDesigner = computed(() => {
+  return authStore?.role === 'ADMIN' || authStore?.role === 'DESIGNER';
+});
 const toast = useToast();
 const deploymentId = route.params.id;
 
@@ -940,7 +952,6 @@ onMounted(async () => {
       productTier.value = res.data.product_tier || 'BASIC';
       editableSlug.value = res.data.slug || '';
       
-      const isAdminOrDesigner = authStore?.role === 'ADMIN' || authStore?.role === 'DESIGNER';
       if (authStore?.role === 'ADMIN') {
         try {
           const storesRes = await crmService.fetchAllStores();
@@ -950,7 +961,7 @@ onMounted(async () => {
         }
       }
       
-      if (isAdminOrDesigner) {
+      if (isAdminOrDesigner.value) {
         allowedFeatures.value = {
           background_music: true,
           custom_audio_url: true,

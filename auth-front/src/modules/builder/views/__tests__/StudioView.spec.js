@@ -23,6 +23,13 @@ vi.mock('vue-toastification', () => ({
   })
 }));
 
+let mockUserRole = 'CLIENT';
+vi.mock('@/modules/auth/store/auth', () => ({
+  useAuthStore: () => ({
+    role: mockUserRole
+  })
+}));
+
 vi.mock('../../services/builderService', () => ({
   builderService: {
     getDeployment: vi.fn(),
@@ -35,7 +42,7 @@ const mountOptions = {
   global: {
     stubs: {
       BuilderLayout: {
-        template: '<div><slot name="actions" /><slot /></div>'
+        template: '<div><slot name="actions" /><slot name="title" /><slot /></div>'
       },
       RenderEngineMaster: {
         template: '<div class="render-engine-master-stub">RenderEngineMaster Mock</div>',
@@ -55,6 +62,7 @@ const mountOptions = {
 describe('StudioView.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUserRole = 'CLIENT';
   });
 
   it('debería renderizar la portada por defecto y cargar la configuración del backend', async () => {
@@ -138,5 +146,51 @@ describe('StudioView.vue', () => {
     wrapper.vm.localConfig.envelope_type = null;
     await wrapper.vm.$nextTick();
     expect(wrapper.vm.localConfig.envelope).toBeNull();
+  });
+
+  it('debería no permitir editar el slug si el usuario tiene rol CLIENT', async () => {
+    mockUserRole = 'CLIENT';
+    builderService.getDeployment.mockResolvedValueOnce({
+      data: {
+        slug: 'slug-cliente',
+        status: 'DRAFT',
+        allowed_features: {}
+      }
+    });
+
+    const wrapper = mount(StudioView, mountOptions);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    await wrapper.vm.$nextTick();
+
+    // No debe mostrar el botón con lápiz de edición
+    const editBtn = wrapper.find('button[title="Editar slug"]');
+    expect(editBtn.exists()).toBe(false);
+
+    // No debe permitir cambiar isEditingSlug con dblclick porque no está el elemento interactivo
+    const slugSpan = wrapper.find('span[title="Doble clic para cambiar slug"]');
+    expect(slugSpan.exists()).toBe(false);
+  });
+
+  it('debería permitir editar el slug si el usuario es ADMIN', async () => {
+    mockUserRole = 'ADMIN';
+    builderService.getDeployment.mockResolvedValueOnce({
+      data: {
+        slug: 'slug-admin',
+        status: 'DRAFT',
+        allowed_features: {}
+      }
+    });
+
+    const wrapper = mount(StudioView, mountOptions);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    await wrapper.vm.$nextTick();
+
+    // Debe mostrar el botón con lápiz de edición
+    const editBtn = wrapper.find('button[title="Editar slug"]');
+    expect(editBtn.exists()).toBe(true);
+
+    // Debe existir la opción de doble clic
+    const slugSpan = wrapper.find('span[title="Doble clic para cambiar slug"]');
+    expect(slugSpan.exists()).toBe(true);
   });
 });

@@ -16,16 +16,32 @@
       <div v-else class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
         
         <!-- Left: Product Showcase -->
-        <div class="lg:col-span-7 space-y-8">
-          <div class="group relative bg-white rounded-[2.5rem] p-4 shadow-2xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-            <div class="aspect-[4/5] md:aspect-video bg-slate-100 rounded-[2rem] flex items-center justify-center relative overflow-hidden">
+        <div class="lg:col-span-7 space-y-8 flex flex-col items-center">
+          <div class="group relative bg-slate-900 aspect-[9/16] w-full max-w-[420px] rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden">
+            <!-- Dynamic CSS Preview -->
+            <div 
+              v-if="product && product.has_template && product.template_config" 
+              class="absolute inset-0 overflow-hidden pointer-events-none"
+            >
+              <div 
+                class="absolute top-0 left-0 w-[200%] h-[200%] origin-top-left scale-50"
+              >
+                <CoverBlock 
+                  :config="getCoverConfig(product.template_config)"
+                  :style="{ minHeight: '100%', height: '100%', ...getThemeVariables(product.template_config) }"
+                />
+              </div>
+            </div>
+
+            <!-- Fallback Static Image or Gem -->
+            <template v-else-if="product">
               <img 
                 v-if="product.thumbnail_url" 
                 :src="product.thumbnail_url" 
                 alt="Vista previa del diseño" 
                 class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
               />
-              <div v-else class="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-indigo-500/10 flex items-center justify-center">
+              <div v-else class="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-primary/20 flex items-center justify-center">
                 <!-- Content fallback -->
                 <div class="relative z-10 text-center space-y-6">
                   <div class="w-32 h-32 bg-white rounded-3xl shadow-xl flex items-center justify-center text-6xl mx-auto transform -rotate-6 group-hover:rotate-0 transition-transform duration-500">
@@ -37,18 +53,18 @@
                   </div>
                 </div>
               </div>
+            </template>
 
-              <!-- Badges -->
-              <div class="absolute top-8 left-8 flex gap-2">
-                <span class="bg-primary text-white px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase shadow-lg shadow-primary/20">
-                  Best Seller
-                </span>
-              </div>
+            <!-- Badges -->
+            <div class="absolute top-6 left-6 flex gap-2">
+              <span class="bg-primary text-white px-4 py-1.5 rounded-full text-xs font-black tracking-widest uppercase shadow-lg shadow-primary/20">
+                Best Seller
+              </span>
             </div>
           </div>
 
           <!-- Description Section -->
-          <div class="bg-white rounded-[2rem] p-10 border border-slate-100 shadow-sm space-y-6">
+          <div class="bg-white rounded-[2rem] p-10 border border-slate-100 shadow-sm space-y-6 w-full">
             <h4 class="text-xl font-black text-slate-900 border-b border-slate-50 pb-4">Acerca de este diseño</h4>
             <p class="text-slate-500 leading-relaxed text-lg">
               {{ product.description || 'Este diseño ha sido meticulosamente creado para reflejar elegancia y modernidad. Con una interfaz fluida y optimizada para dispositivos móviles, tus invitados quedarán maravillados desde el primer segundo.' }}
@@ -126,6 +142,30 @@ import { catalogService } from '@/modules/ecommerce/services/catalogService';
 import { deploymentService } from '@/modules/ecommerce/services/deploymentService';
 import AddonSelector from '../components/AddonSelector.vue';
 import QuickDraftModal from '../components/QuickDraftModal.vue';
+import CoverBlock from '@/modules/engine/components/CoverBlock.vue';
+
+const getCoverConfig = (templateConfig) => {
+  if (!templateConfig) return {};
+  if (Array.isArray(templateConfig.blocks)) {
+    const coverBlock = templateConfig.blocks.find(b => b.type === 'CoverBlock');
+    if (coverBlock) {
+      return coverBlock.config || {};
+    }
+  }
+  return templateConfig.cover || {};
+};
+
+const getThemeVariables = (templateConfig) => {
+  if (!templateConfig) return {};
+  const theme = templateConfig.theme || {};
+  const h = theme.hue || 38;      // Golden hue
+  const s = theme.saturation || '80%';
+  const l = theme.lightness || '50%';
+
+  return {
+    '--p': `${h} ${s} ${l}`, // Primary brand color variable
+  };
+};
 
 const route = useRoute();
 const router = useRouter();
@@ -210,4 +250,11 @@ const buyNow = () => {
 
 <style scoped>
 /* Estilos manuales eliminados. Tailwind se encarga de todo. */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
 </style>
