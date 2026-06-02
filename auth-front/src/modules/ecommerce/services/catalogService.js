@@ -7,5 +7,8 @@ export const catalogService = {
   },
   validateCoupon(code) {
     return invtznClient.post('orders/validate-coupon/', { code });
+  },
+  fetchPublicReviews() {
+    return invtznClient.get('reviews/public/');
   }
 };

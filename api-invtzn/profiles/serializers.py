@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.db.models import Sum
-from .models import UserProfile, WalletLog, CommunicationLog
+from .models import UserProfile, WalletLog, CommunicationLog, SiteReview
 
 class WalletLogSerializer(serializers.ModelSerializer):
     class Meta:
@@ -32,3 +32,20 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'base_commission_rate', 
             'current_balance'
         ]
+
+class SiteReviewSerializer(serializers.ModelSerializer):
+    user_email = serializers.EmailField(source='user.email', read_only=True)
+
+    class Meta:
+        model = SiteReview
+        fields = [
+            'id',
+            'user',
+            'user_email',
+            'reviewer_name',
+            'rating',
+            'comment',
+            'is_approved',
+            'created_at'
+        ]
+        read_only_fields = ['id', 'user', 'created_at']

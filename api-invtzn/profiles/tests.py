@@ -40,3 +40,78 @@ def test_get_my_profile():
     # 3. Verificación
     assert response.status_code == 200
     assert response.data['remote_auth_id'] == 99
+
+@pytest.mark.django_db
+def test_public_reviews_allow_any():
+    # 1. Setup
+    from profiles.models import SiteReview
+    client = APIClient()
+    
+    user = UserProfile.objects.create(remote_auth_id=10, custom_role='CLIENT')
+    SiteReview.objects.create(user=user, reviewer_name="María", comment="Excelente", rating=5, is_approved=True)
+    SiteReview.objects.create(user=user, reviewer_name="Juan", comment="Malo", rating=2, is_approved=False)
+    
+    # 2. Acción (petición anónima a reviews/public)
+    response = client.get('/api/v1/reviews/public/')
+    
+    # 3. Verificación
+    assert response.status_code == 200
+    assert len(response.data) == 1
+    assert response.data[0]['reviewer_name'] == "María"
+
+@pytest.mark.django_db
+def test_reviews_require_auth():
+    client = APIClient()
+    response = client.get('/api/v1/reviews/')
+    assert response.status_code == 403
+
+@pytest.mark.django_db
+def test_toggle_review_approval_requires_staff_role():
+    from profiles.models import SiteReview
+    client = APIClient()
+    
+    client_user = UserProfile.objects.create(remote_auth_id=1, custom_role='CLIENT')
+    admin_user = UserProfile.objects.create(remote_auth_id=2, custom_role='ADMIN')
+    review = SiteReview.objects.create(user=client_user, reviewer_name="Test", comment="Ok", rating=4, is_approved=False)
+    
+    # 1. Intento sin autenticar
+    response = client.post(f'/api/v1/reviews/{review.id}/toggle-approve/')
+    assert response.status_code == 403
+    
+    # 2. Intento con rol CLIENT
+    client.force_authenticate(user=client_user)
+    response = client.post(f'/api/v1/reviews/{review.id}/toggle-approve/')
+    assert response.status_code == 403
+    
+    # 3. Intento con rol ADMIN
+    client.force_authenticate(user=admin_user)
+    response = client.post(f'/api/v1/reviews/{review.id}/toggle-approve/')
+    assert response.status_code == 200
+    assert response.data['is_approved'] is True
+    
+    review.refresh_from_db()
+    assert review.is_approved is True
+
+@pytest.mark.django_db
+def test_create_review_authenticated():
+    from profiles.models import SiteReview
+    client = APIClient()
+    user = UserProfile.objects.create(remote_auth_id=15, custom_role='CLIENT')
+    client.force_authenticate(user=user)
+    
+    payload = {
+        'reviewer_name': 'Test User',
+        'rating': 4,
+        'comment': 'Me encanto el servicio, muy facil de usar.'
+    }
+    
+    response = client.post('/api/v1/reviews/', payload)
+    assert response.status_code == 201
+    assert response.data['reviewer_name'] == 'Test User'
+    assert response.data['rating'] == 4
+    assert response.data['comment'] == 'Me encanto el servicio, muy facil de usar.'
+    assert response.data['is_approved'] is False  # Por defecto no aprobado
+    
+    # Verificar en BD
+    review = SiteReview.objects.get(id=response.data['id'])
+    assert review.user == user

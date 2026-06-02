@@ -74,6 +74,12 @@ export default [
           roles: ['ADMIN', 'FRANCHISEE'],
           title: 'Gestión de Cupones'
         }
+      },
+      {
+        path: 'reviews',
+        name: 'workspace-reviews',
+        component: () => import('@/modules/workspace/views/ReviewsManagerView.vue'),
+        meta: { requiresRole: ['ADMIN', 'FRANCHISEE'] }
       }
     ]
   }

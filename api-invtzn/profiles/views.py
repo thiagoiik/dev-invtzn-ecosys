@@ -1,8 +1,8 @@
 from rest_framework import viewsets, mixins, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .models import UserProfile, WalletLog
-from .serializers import UserProfileSerializer, WalletLogSerializer
+from .models import UserProfile, WalletLog, SiteReview
+from .serializers import UserProfileSerializer, WalletLogSerializer, SiteReviewSerializer
 
 class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
     serializer_class = UserProfileSerializer
@@ -148,3 +148,45 @@ class WalletLogViewSet(viewsets.ModelViewSet):
                 return WalletLog.objects.all().order_by('-timestamp')
         except: pass
         return WalletLog.objects.filter(user__remote_auth_id=self.request.user.id).order_by('-timestamp')
+
+class SiteReviewViewSet(viewsets.ModelViewSet):
+    queryset = SiteReview.objects.all().order_by('-created_at')
+    serializer_class = SiteReviewSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
+        except UserProfile.DoesNotExist:
+            from rest_framework.exceptions import ValidationError
+            raise ValidationError("El perfil de usuario no existe.")
+        serializer.save(user=profile)
+
+    def get_queryset(self):
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
+            if profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.FRANCHISEE]:
+                return SiteReview.objects.all().order_by('-created_at')
+        except UserProfile.DoesNotExist:
+            pass
+        return SiteReview.objects.filter(user__remote_auth_id=self.request.user.id).order_by('-created_at')
+
+    @action(detail=False, methods=['get'], url_path='public', permission_classes=[permissions.AllowAny])
+    def public(self, request):
+        approved_reviews = SiteReview.objects.filter(is_approved=True).order_by('-created_at')[:8]
+        serializer = self.get_serializer(approved_reviews, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='toggle-approve')
+    def toggle_approve(self, request, pk=None):
+        try:
+            current_profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            if current_profile.custom_role not in [UserProfile.Role.ADMIN, UserProfile.Role.FRANCHISEE]:
+                return Response({'error': 'No tienes permisos para moderar reseñas.'}, status=403)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'No tienes perfil asignado.'}, status=403)
+
+        review = self.get_object()
+        review.is_approved = not review.is_approved
+        review.save()
+        return Response({'success': f'Estado de aprobación cambiado a {review.is_approved}', 'is_approved': review.is_approved})

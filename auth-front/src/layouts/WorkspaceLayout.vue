@@ -89,6 +89,20 @@
             </router-link>
           </template>
           
+          <!-- Link: Moderación de Reseñas -->
+          <template v-if="['ADMIN', 'FRANCHISEE'].includes(userRole)">
+            <router-link 
+              to="/workspace/reviews" 
+              class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
+              :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
+              :title="isTablet && !isMobile ? 'Moderación de Reseñas' : ''"
+              @click="isMobile ? mobileMenuOpen = false : null"
+            >
+              <span>💬</span>
+              <span v-if="!isTablet || isMobile" class="text-sm">Reseñas</span>
+            </router-link>
+          </template>
+          
           <!-- Configuración Sección (ADMIN) -->
           <div v-if="userRole === 'ADMIN'" class="mt-4 pt-4 border-t border-slate-800 space-y-2">
             <p 

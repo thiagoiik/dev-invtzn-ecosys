@@ -77,13 +77,17 @@
               </router-link>
             </div>
             
-            <div class="mt-10 flex items-center gap-4 text-sm text-slate-500 font-medium animate-fade-in-up" style="animation-delay: 400ms;">
+            <div 
+              @click="scrollToTestimonios"
+              class="mt-10 flex items-center gap-4 text-sm text-slate-500 font-medium animate-fade-in-up cursor-pointer hover:text-slate-800 transition-colors" 
+              style="animation-delay: 400ms;"
+            >
               <div class="flex -space-x-2">
-                <div class="w-8 h-8 rounded-full bg-slate-200 border-2 border-white"></div>
-                <div class="w-8 h-8 rounded-full bg-slate-300 border-2 border-white"></div>
-                <div class="w-8 h-8 rounded-full bg-slate-400 border-2 border-white"></div>
+                <div class="w-8 h-8 rounded-full bg-primary/20 border-2 border-white flex items-center justify-center text-[10px] font-black text-primary">S</div>
+                <div class="w-8 h-8 rounded-full bg-purple-100 border-2 border-white flex items-center justify-center text-[10px] font-black text-purple-700">A</div>
+                <div class="w-8 h-8 rounded-full bg-pink-100 border-2 border-white flex items-center justify-center text-[10px] font-black text-pink-600">D</div>
               </div>
-              <p>Únete a cientos de novios y organizadores.</p>
+              <p class="hover:underline">Únete a cientos de novios y organizadores.</p>
             </div>
           </div>
 
@@ -276,6 +280,46 @@
         </div>
       </section>
 
+      <!-- Sección: Testimonios / Prueba Social -->
+      <section id="testimonios" class="py-24 bg-white border-t border-slate-100 relative">
+        <div class="max-w-7xl mx-auto px-6 space-y-16">
+          <div class="text-center max-w-3xl mx-auto space-y-4">
+            <span class="text-xs font-bold tracking-[0.2em] text-primary uppercase">Prueba Social</span>
+            <h2 class="text-4xl font-serif font-black text-slate-900 tracking-tight leading-tight">Parejas reales, momentos inolvidables</h2>
+            <div class="w-16 h-1.5 bg-gradient-to-r from-primary to-purple-600 mx-auto rounded-full"></div>
+            <p class="text-lg text-slate-500 leading-relaxed max-w-2xl mx-auto">
+              Descubre por qué cientos de novios y organizadores confían en nosotros para dar el primer gran paso de su evento.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div 
+              v-for="rev in publicReviews" 
+              :key="rev.id" 
+              class="bg-slate-50/60 p-8 rounded-3xl border border-slate-150 shadow-xs space-y-5 hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex flex-col justify-between"
+            >
+              <div class="space-y-4">
+                <div class="flex text-amber-400 text-sm gap-0.5">
+                  <span v-for="star in 5" :key="star">{{ star <= rev.rating ? '★' : '☆' }}</span>
+                </div>
+                <p class="text-slate-600 text-sm italic leading-relaxed">
+                  "{{ rev.comment }}"
+                </p>
+              </div>
+              <div class="flex items-center gap-3 pt-4 border-t border-slate-100">
+                <div class="w-9 h-9 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-black uppercase shadow-inner">
+                  {{ rev.reviewer_name?.charAt(0) || '?' }}
+                </div>
+                <div>
+                  <p class="text-xs font-black text-slate-800 tracking-wider">{{ rev.reviewer_name }}</p>
+                  <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Cliente Verificado</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <!-- Sección: Servicios a Medida (VIP Concierge) -->
       <section id="servicios" class="py-24 bg-white border-t border-slate-100 relative">
         <div class="max-w-5xl mx-auto px-6 text-center space-y-10">
@@ -383,6 +427,27 @@ const showResumePrompt = ref(false);
 const loadingAction = ref(false);
 const featuredProduct = ref(null);
 
+const publicReviews = ref([
+  {
+    id: 'mock-1',
+    reviewer_name: 'Sofía & Carlos',
+    comment: 'La mejor decisión para nuestra boda. Todos nuestros invitados confirmaron en cuestión de minutos y el panel de control es super intuitivo. ¡El diseño se ve espectacular en móvil!',
+    rating: 5
+  },
+  {
+    id: 'mock-2',
+    reviewer_name: 'Alejandro Ruiz',
+    comment: 'Como coordinador de eventos, esta plataforma me ha ahorrado días de llamadas y mensajes de confirmación. La opción de música de fondo y la cuenta regresiva le encantan a todos.',
+    rating: 5
+  },
+  {
+    id: 'mock-3',
+    reviewer_name: 'Daniela & Javier',
+    comment: 'Nos encantó el estilo del editor y la facilidad con la que pudimos enlazar los mapas de la iglesia y la recepción. Excelente soporte y atención de primer nivel.',
+    rating: 5
+  }
+]);
+
 const getCoverConfig = (templateConfig) => {
   if (!templateConfig) return {};
   if (Array.isArray(templateConfig.blocks)) {
@@ -419,7 +484,21 @@ onMounted(async () => {
   } catch (error) {
     console.error('Error al cargar producto destacado en Home:', error);
   }
+
+  // Cargar opiniones reales aprobadas de los clientes
+  try {
+    const res = await catalogService.fetchPublicReviews();
+    if (res.data && res.data.length > 0) {
+      publicReviews.value = res.data;
+    }
+  } catch (error) {
+    console.error('Error al cargar reseñas públicas:', error);
+  }
 });
+
+const scrollToTestimonios = () => {
+  document.getElementById('testimonios')?.scrollIntoView({ behavior: 'smooth' });
+};
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll);
