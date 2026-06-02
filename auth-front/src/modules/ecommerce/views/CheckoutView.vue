@@ -1,6 +1,16 @@
 <template>
   <div class="min-h-screen bg-slate-50 py-16 px-6 animate-fade-in">
-    <div class="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12">
+    <div class="max-w-5xl mx-auto">
+      <!-- Breadcrumbs -->
+      <nav class="flex mb-8 text-sm font-bold uppercase tracking-widest text-slate-400">
+        <router-link to="/" class="hover:text-primary transition-colors">Inicio</router-link>
+        <span class="mx-2">/</span>
+        <router-link to="/catalog" class="hover:text-primary transition-colors">Catálogo</router-link>
+        <span class="mx-2">/</span>
+        <span class="text-slate-600">Checkout</span>
+      </nav>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
       
       <!-- Left: Order Summary & Info -->
       <div class="lg:col-span-7 space-y-8">
@@ -9,16 +19,54 @@
           
           <div v-if="product" class="space-y-8">
             <!-- Main Product -->
-            <div class="flex gap-6 p-5 rounded-3xl bg-slate-50/80 border border-slate-100 relative overflow-hidden group hover:border-primary/20 transition-all duration-300">
+            <div class="flex flex-col sm:flex-row items-center gap-6 p-6 sm:p-5 rounded-3xl bg-slate-50/80 border border-slate-100 relative overflow-hidden group hover:border-primary/20 transition-all duration-300">
               <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-primary/10 to-transparent rounded-bl-full pointer-events-none"></div>
-              <div class="w-24 h-24 bg-white rounded-2xl shadow-md flex items-center justify-center text-4xl border border-slate-50 transform group-hover:scale-105 transition-transform duration-300">
-                💎
+              <!-- Bezel smartphone mockup (exactly 9:16 aspect ratio scaled to 0.2 of a 360px viewport) -->
+              <div 
+                class="bg-slate-950 rounded-[1.25rem] shadow-lg flex items-center justify-center border-4 border-slate-900 transform group-hover:scale-105 transition-transform duration-300 overflow-hidden relative shrink-0 z-10"
+                style="width: 80px; height: 136px;"
+              >
+                <!-- Dynamic CSS Preview -->
+                <div 
+                  v-if="product && product.has_template && product.template_config" 
+                  class="absolute inset-0 overflow-hidden pointer-events-none"
+                >
+                  <div 
+                    class="absolute top-0 left-0 origin-top-left"
+                    style="width: 360px; height: 640px; transform: scale(0.2);"
+                  >
+                    <CoverBlock 
+                      :config="getCoverConfig(product.template_config)"
+                      :style="{ minHeight: '100%', height: '100%', ...getThemeVariables(product.template_config) }"
+                    />
+                  </div>
+                </div>
+                <!-- Fallback static image or diamond -->
+                <template v-else-if="product">
+                  <img 
+                    v-if="product.thumbnail_url" 
+                    :src="product.thumbnail_url" 
+                    alt="Vista previa" 
+                    class="w-full h-full object-cover"
+                  />
+                  <span v-else class="text-4xl">💎</span>
+                </template>
               </div>
-              <div class="flex-1">
-                <span class="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider mb-2">Diseño Base</span>
+              
+              <!-- Product text information structured responsively -->
+              <div class="flex-1 text-center sm:text-left w-full z-10">
                 <h3 class="text-xl font-bold text-slate-800 leading-snug">{{ product.name }}</h3>
-                <p class="text-sm text-slate-500 mt-1 line-clamp-2">{{ product.description || 'Diseño premium interactivo.' }}</p>
-                <div class="mt-3 font-black text-slate-900 text-lg">${{ product.base_price }} MXN</div>
+                <p class="text-sm text-slate-500 mt-2 line-clamp-2">{{ product.description || 'Diseño premium interactivo.' }}</p>
+                
+                <!-- Price and badge arranged cleanly at the bottom of the content area -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4 pt-4 border-t border-slate-100/50">
+                  <div class="font-black text-slate-900 text-lg">${{ product.base_price }} MXN</div>
+                  <div>
+                    <span class="inline-block bg-primary/10 text-primary px-3.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm">
+                      Diseño Base
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -290,6 +338,7 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
@@ -298,6 +347,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useToast } from 'vue-toastification';
 import { useAuthStore } from '@/modules/auth/store/auth';
+import CoverBlock from '@/modules/engine/components/CoverBlock.vue';
 import { catalogService } from '@/modules/ecommerce/services/catalogService';
 import { orderService } from '@/modules/ecommerce/services/orderService';
 
@@ -383,6 +433,29 @@ onMounted(async () => {
     toast.error('Error al cargar la orden');
   }
 });
+
+const getCoverConfig = (templateConfig) => {
+  if (!templateConfig) return {};
+  if (Array.isArray(templateConfig.blocks)) {
+    const coverBlock = templateConfig.blocks.find(b => b.type === 'CoverBlock');
+    if (coverBlock) {
+      return coverBlock.config || {};
+    }
+  }
+  return templateConfig.cover || {};
+};
+
+const getThemeVariables = (templateConfig) => {
+  if (!templateConfig) return {};
+  const theme = templateConfig.theme || {};
+  const h = theme.hue || 38;      // Golden hue
+  const s = theme.saturation || '80%';
+  const l = theme.lightness || '50%';
+
+  return {
+    '--p': `${h} ${s} ${l}`, // Primary brand color variable
+  };
+};
 
 const validateCoupon = async () => {
   couponError.value = '';

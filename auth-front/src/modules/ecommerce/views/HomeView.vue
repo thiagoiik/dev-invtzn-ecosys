@@ -4,11 +4,11 @@
     <!-- Navbar Minimalista para el Home -->
     <header class="fixed top-0 w-full z-50 transition-all duration-300" :class="{ 'bg-white/80 backdrop-blur-md shadow-sm': scrolled, 'bg-transparent': !scrolled }">
       <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        <div class="flex items-center gap-2">
+        <router-link to="/" class="flex items-center gap-2">
           <span class="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600">
             Invitazyon
           </span>
-        </div>
+        </router-link>
         <nav class="hidden md:flex items-center gap-8 font-medium text-slate-600">
           <router-link to="/catalog" class="hover:text-slate-900 transition-colors">Catalogo</router-link>
           <a href="#servicios" class="hover:text-slate-900 transition-colors">Servicios a Medida</a>
@@ -24,6 +24,20 @@
         </button>
       </div>
     </header>
+
+    <!-- Mobile Menu Dropdown -->
+    <div 
+      v-if="isMobileMenuOpen" 
+      class="md:hidden fixed top-20 left-0 w-full bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-lg z-40 py-6 px-8 flex flex-col gap-4 animate-fade-in-up"
+    >
+      <router-link to="/catalog" class="text-lg font-bold text-slate-800" @click="isMobileMenuOpen = false">Catálogo</router-link>
+      <a href="#servicios" class="text-lg font-bold text-slate-800" @click="isMobileMenuOpen = false">Servicios a Medida</a>
+      <router-link to="/login" class="text-lg font-bold text-slate-800" @click="isMobileMenuOpen = false">Iniciar Sesión</router-link>
+      <button @click="handleStartDesigning(); isMobileMenuOpen = false" class="btn btn-primary rounded-full w-full h-12 font-black mt-2" :disabled="loadingAction">
+        <span v-if="loadingAction" class="loading loading-spinner loading-xs mr-1"></span>
+        Crear Invitación Gratis
+      </button>
+    </div>
 
     <!-- Hero Section -->
     <main class="flex-1 flex flex-col">
@@ -75,12 +89,25 @@
 
           <!-- Visual / Mockup -->
           <div class="relative lg:h-[600px] flex items-center justify-center animate-fade-in-up" style="animation-delay: 200ms;">
-            <!-- Glass Mockup -->
-            <div class="relative w-full max-w-md aspect-[9/16] bg-white/40 backdrop-blur-2xl rounded-[3rem] border-8 border-white shadow-2xl overflow-hidden flex items-center justify-center">
-              <div class="absolute inset-0 bg-gradient-to-br from-white/60 to-white/10 z-0"></div>
+            <!-- Smartphone styled mockup for dynamic CoverBlock preview -->
+            <div class="relative w-full max-w-[300px] aspect-[9/16] bg-slate-900 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] hover:shadow-[0_25px_60px_rgba(0,0,0,0.3)] hover:scale-[1.02] transition-all duration-500 border-4 border-slate-950 overflow-hidden flex items-center justify-center">
+              <!-- Dynamic CSS Preview -->
+              <div 
+                v-if="featuredProduct && featuredProduct.has_template && featuredProduct.template_config" 
+                class="absolute inset-0 overflow-hidden pointer-events-none"
+              >
+                <div 
+                  class="absolute top-0 left-0 w-[200%] h-[200%] origin-top-left scale-50"
+                >
+                  <CoverBlock 
+                    :config="getCoverConfig(featuredProduct.template_config)"
+                    :style="{ minHeight: '100%', height: '100%', ...getThemeVariables(featuredProduct.template_config) }"
+                  />
+                </div>
+              </div>
               
-              <!-- Simulación de UI dentro del teléfono -->
-              <div class="relative z-10 w-full h-full flex flex-col p-6 bg-white rounded-[2.5rem]">
+              <!-- Fallback Mockup UI -->
+              <div v-else class="relative z-10 w-full h-full flex flex-col p-6 bg-white rounded-[2.2rem]">
                 <!-- Imagen de Invitación -->
                 <div class="h-1/2 w-full rounded-2xl mb-4 overflow-hidden bg-slate-100 flex items-center justify-center relative">
                    <div class="absolute inset-0 bg-gradient-to-tr from-amber-100 to-rose-100 opacity-50"></div>
@@ -342,6 +369,8 @@ import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/modules/auth/store/auth';
 import { deploymentService } from '@/modules/ecommerce/services/deploymentService';
+import { catalogService } from '@/modules/ecommerce/services/catalogService';
+import CoverBlock from '@/modules/engine/components/CoverBlock.vue';
 import { useToast } from 'vue-toastification';
 
 const router = useRouter();
@@ -352,13 +381,44 @@ const scrolled = ref(false);
 const isMobileMenuOpen = ref(false);
 const showResumePrompt = ref(false);
 const loadingAction = ref(false);
+const featuredProduct = ref(null);
+
+const getCoverConfig = (templateConfig) => {
+  if (!templateConfig) return {};
+  if (Array.isArray(templateConfig.blocks)) {
+    const coverBlock = templateConfig.blocks.find(b => b.type === 'CoverBlock');
+    if (coverBlock) {
+      return coverBlock.config || {};
+    }
+  }
+  return templateConfig.cover || {};
+};
+
+const getThemeVariables = (templateConfig) => {
+  if (!templateConfig) return {};
+  const theme = templateConfig.theme || {};
+  const h = theme.hue || 38;      // Golden hue
+  const s = theme.saturation || '80%';
+  const l = theme.lightness || '50%';
+
+  return {
+    '--p': `${h} ${s} ${l}`, // Primary brand color variable
+  };
+};
 
 const handleScroll = () => {
   scrolled.value = window.scrollY > 20;
 };
 
-onMounted(() => {
+onMounted(async () => {
   window.addEventListener('scroll', handleScroll);
+  try {
+    const response = await catalogService.fetchProducts();
+    const allProducts = response.data || [];
+    featuredProduct.value = allProducts.find(p => p.has_template && p.template_slug === 'dfce56a7') || allProducts.find(p => p.has_template);
+  } catch (error) {
+    console.error('Error al cargar producto destacado en Home:', error);
+  }
 });
 
 onUnmounted(() => {

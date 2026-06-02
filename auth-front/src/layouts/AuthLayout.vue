@@ -2,7 +2,9 @@
   <div class="min-h-screen bg-slate-100 flex flex-col justify-center items-center py-12 sm:px-6 lg:px-8">
     <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
       <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">
-        INVITAZYON
+        <router-link to="/" class="hover:text-primary transition-colors">
+          INVITAZYON
+        </router-link>
       </h2>
       <p class="mt-2 text-sm text-slate-600">
         Tu plataforma de invitaciones digitales

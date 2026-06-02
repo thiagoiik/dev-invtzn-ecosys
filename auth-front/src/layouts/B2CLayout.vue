@@ -11,19 +11,21 @@
             </svg>
           </label>
           <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[50] p-3 shadow-2xl bg-white rounded-2xl w-52 border border-slate-100 font-bold text-slate-700">
+            <li><router-link to="/" class="py-3">Inicio</router-link></li>
             <li><router-link to="/catalog" class="py-3">Catálogo</router-link></li>
             <li v-if="authStore.isAuthenticated"><router-link to="/dashboard" class="py-3">Mis Diseños</router-link></li>
             <li v-if="authStore.isAuthenticated"><router-link to="/dashboard/orders" class="py-3">Mis Pedidos</router-link></li>
           </ul>
         </div>
 
-        <router-link to="/dashboard" class="btn btn-ghost text-xl font-extrabold tracking-widest text-slate-800">
+        <router-link to="/" class="btn btn-ghost text-xl font-extrabold tracking-widest text-slate-800">
           INVITAZYON
         </router-link>
       </div>
 
       <!-- Center Desktop Navigation Links -->
       <div class="hidden md:flex gap-8 items-center">
+        <router-link to="/" class="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Inicio</router-link>
         <router-link to="/catalog" class="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Catálogo</router-link>
         <router-link v-if="authStore.isAuthenticated" to="/dashboard" class="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Mis Diseños</router-link>
         <router-link v-if="authStore.isAuthenticated" to="/dashboard/orders" class="text-sm font-bold text-slate-500 hover:text-primary transition-colors">Mis Pedidos</router-link>
@@ -72,7 +74,9 @@
     <footer class="bg-white border-t border-slate-100 pt-20 pb-10 px-6 mt-20">
       <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
         <div class="col-span-1 md:col-span-2 space-y-6">
-          <h2 class="text-2xl font-black tracking-widest text-slate-900">INVITAZYON</h2>
+          <router-link to="/" class="inline-block text-2xl font-black tracking-widest text-slate-900 hover:text-primary transition-colors">
+            INVITAZYON
+          </router-link>
           <p class="text-slate-400 max-w-sm leading-relaxed">
             Redefiniendo la forma en que el mundo celebra. Invitaciones digitales de lujo con tecnología interactiva para eventos inolvidables.
           </p>

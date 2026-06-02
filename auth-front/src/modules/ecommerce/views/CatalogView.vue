@@ -3,6 +3,13 @@
     <HeroBanner @explore="scrollToCatalog" />
 
     <div ref="catalogSection" class="container mx-auto px-6 py-20 space-y-16">
+      <!-- Breadcrumbs -->
+      <nav class="flex text-sm font-bold uppercase tracking-widest text-slate-400">
+        <router-link to="/" class="hover:text-primary transition-colors">Inicio</router-link>
+        <span class="mx-2">/</span>
+        <span class="text-slate-600">Catálogo</span>
+      </nav>
+
       <div class="text-center max-w-3xl mx-auto space-y-4">
         <h2 class="text-4xl font-black text-slate-900 tracking-tight">Colecciones Exclusivas</h2>
         <p class="text-lg text-slate-500 leading-relaxed">Seleccionamos cuidadosamente cada diseño para garantizar que tu evento comience con la elegancia que merece.</p>

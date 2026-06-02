@@ -3,6 +3,8 @@
     <div class="max-w-7xl mx-auto">
       <!-- Breadcrumbs -->
       <nav class="flex mb-8 text-sm font-bold uppercase tracking-widest text-slate-400">
+        <router-link to="/" class="hover:text-primary transition-colors">Inicio</router-link>
+        <span class="mx-2">/</span>
         <router-link to="/catalog" class="hover:text-primary transition-colors">Catálogo</router-link>
         <span class="mx-2">/</span>
         <span class="text-slate-600">{{ product?.name || '...' }}</span>
