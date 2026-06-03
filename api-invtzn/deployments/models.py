@@ -72,6 +72,8 @@ class Deployment(models.Model):
             'timeline': False,
             'custom_theme': False,
             'custom_og': False,
+            'gift_table': False,
+            'photo_carousel': False,
         }
 
         if not self.product:
@@ -88,6 +90,8 @@ class Deployment(models.Model):
                 'timeline': True,
                 'custom_theme': True,
                 'custom_og': True,
+                'gift_table': True,
+                'photo_carousel': True,
             })
         elif tier == 'STANDARD':
             features.update({
@@ -97,6 +101,8 @@ class Deployment(models.Model):
                 'timeline': False,
                 'custom_theme': True,
                 'custom_og': False,
+                'gift_table': False,
+                'photo_carousel': False,
             })
         elif tier == 'BASIC':
             features.update({

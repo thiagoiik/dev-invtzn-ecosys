@@ -464,3 +464,23 @@ class TestDeployments:
         assert merged_dep.custom_data["rsvp"]["eventTitle"] == "Ana & Luis"
         assert merged_dep.creation_mode == template_dep.creation_mode
 
+    def test_deployment_allowed_features_by_tier(self):
+        # 1. Test Premium Tier
+        premium_prod = Product.objects.create(name='Premium Product', base_price=30.00, product_type='DIGITAL', tier_level='PREMIUM')
+        premium_dep = Deployment.objects.create(user=self.user.id, product=premium_prod)
+        assert premium_dep.allowed_features['gift_table'] is True
+        assert premium_dep.allowed_features['photo_carousel'] is True
+
+        # 2. Test Standard Tier
+        standard_prod = Product.objects.create(name='Standard Product', base_price=20.00, product_type='DIGITAL', tier_level='STANDARD')
+        standard_dep = Deployment.objects.create(user=self.user.id, product=standard_prod)
+        assert standard_dep.allowed_features['gift_table'] is False
+        assert standard_dep.allowed_features['photo_carousel'] is False
+
+        # 3. Test Basic Tier
+        basic_prod = Product.objects.create(name='Basic Product', base_price=0.00, product_type='DIGITAL', tier_level='BASIC')
+        basic_dep = Deployment.objects.create(user=self.user.id, product=basic_prod)
+        assert basic_dep.allowed_features['gift_table'] is False
+        assert basic_dep.allowed_features['photo_carousel'] is False
+
+

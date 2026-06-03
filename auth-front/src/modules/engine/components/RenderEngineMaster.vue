@@ -36,6 +36,8 @@ import AudioPlayer from './AudioPlayer.vue';
 import CountdownTimer from './CountdownTimer.vue';
 import TimelineBlock from './TimelineBlock.vue';
 import RsvpFormBlock from './RsvpFormBlock.vue';
+import GiftTableBlock from './GiftTableBlock.vue';
+import PhotoCarouselBlock from './PhotoCarouselBlock.vue';
 import { useTelemetry } from '../composables/useTelemetry';
 
 const props = defineProps({
@@ -65,7 +67,9 @@ const componentMap = {
   CoverBlock: CoverBlock,
   CountdownTimer: CountdownTimer,
   TimelineBlock: TimelineBlock,
-  RsvpFormBlock: RsvpFormBlock
+  RsvpFormBlock: RsvpFormBlock,
+  GiftTableBlock: GiftTableBlock,
+  PhotoCarouselBlock: PhotoCarouselBlock
 };
 
 // Generar el orden dinámico de bloques con fallback retrocompatible
@@ -106,6 +110,22 @@ const orderedBlocks = computed(() => {
       id: 'timeline',
       component: TimelineBlock,
       config: props.customData.timeline || {}
+    });
+  }
+
+  if (props.customData.has_gift_table || props.customData.gift_table) {
+    fallback.push({
+      id: 'gift_table',
+      component: GiftTableBlock,
+      config: props.customData.gift_table || {}
+    });
+  }
+
+  if (props.customData.has_photo_carousel || props.customData.photo_carousel) {
+    fallback.push({
+      id: 'photo_carousel',
+      component: PhotoCarouselBlock,
+      config: props.customData.photo_carousel || {}
     });
   }
 

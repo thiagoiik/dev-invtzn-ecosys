@@ -154,6 +154,27 @@
           >
             ✉️ Sobre 3D
           </button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'sections' }" 
+            @click="activeTab = 'sections'"
+          >
+            ⚙️ Estructura
+          </button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'gift' }" 
+            @click="activeTab = 'gift'"
+          >
+            🎁 Regalos
+          </button>
+          <button 
+            class="tab-btn" 
+            :class="{ active: activeTab === 'gallery' }" 
+            @click="activeTab = 'gallery'"
+          >
+            📸 Fotos
+          </button>
         </div>
         
         <div v-if="loading" class="loading-state">
@@ -564,6 +585,228 @@
               </p>
             </div>
           </div>
+
+          <!-- TAB SECCIONES (ESTRUCTURA) -->
+          <div v-if="activeTab === 'sections'" class="tab-content fade-in space-y-4">
+            <h3 class="font-extrabold text-white text-lg">Estructura de la Invitación</h3>
+            <p class="text-xs text-slate-400">Arrastra para reordenar cómo aparecerán los bloques de arriba a abajo. Prende o apaga según tu plan.</p>
+            
+            <div class="flex flex-col gap-3 mt-4">
+              <div 
+                v-for="(block, index) in localConfig.blocks" 
+                :key="block.id"
+                class="flex items-center justify-between p-4 rounded-2xl border transition-all duration-300 select-none"
+                :class="[
+                  block.visible ? 'bg-slate-900 border-slate-700/50 text-white' : 'bg-slate-950 border-slate-800/30 text-slate-500',
+                  block.locked ? 'cursor-not-allowed opacity-75' : 'cursor-move hover:border-primary/50'
+                ]"
+                :draggable="!block.locked"
+                @dragstart="onDragStart($event, index)"
+                @dragover.prevent
+                @drop="onDrop($event, index)"
+              >
+                <div class="flex items-center gap-3">
+                  <span class="text-slate-400 font-bold" v-if="!block.locked">☰</span>
+                  <span class="font-bold text-sm">{{ block.name }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span v-if="block.configKey && !allowedFeatures[block.id === 'timer' ? 'countdown_timer' : block.id]" class="text-[8px] font-black uppercase tracking-wider bg-warning/20 text-warning px-1.5 py-0.5 rounded">PRO</span>
+                  <input 
+                    v-if="block.configKey"
+                    type="checkbox" 
+                    v-model="localConfig[block.configKey]"
+                    @change="toggleBlockVisibility(block)"
+                    class="toggle toggle-primary toggle-xs"
+                  />
+                  <span v-else class="text-[9px] font-black text-primary uppercase tracking-widest">FIJO</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB REGALOS (MESA DE REGALOS) -->
+          <div v-if="activeTab === 'gift'" class="tab-content fade-in space-y-6">
+            <div class="flex items-center justify-between">
+              <h3 class="font-extrabold text-white text-lg">Mesa de Regalos</h3>
+              <span v-if="!allowedFeatures.gift_table" class="badge badge-warning text-[9px] font-black py-1 px-2 uppercase">PRO</span>
+            </div>
+
+            <!-- PRO OVERLAY BLOCK -->
+            <div v-if="!allowedFeatures.gift_table" class="bg-warning/10 border border-warning/20 p-4 rounded-2xl flex flex-col gap-3">
+              <p class="text-xs text-warning leading-relaxed font-semibold">Esta función está bloqueada en tu plan básico/estándar. Actualiza para permitir transferencias bancarias y enlaces a tiendas como Liverpool o Amazon.</p>
+              <button @click="showUpgradeModal = true" class="btn btn-warning btn-xs rounded-xl font-bold py-1.5 w-full uppercase">Comprar Plan Premium</button>
+            </div>
+
+            <div :class="{ 'opacity-40 pointer-events-none': !allowedFeatures.gift_table }" class="space-y-4">
+              <!-- Activar mesa en el formulario -->
+              <div class="flex items-center justify-between bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                <div>
+                  <h4 class="font-bold text-sm text-slate-200">Mostrar Mesa de Regalos</h4>
+                  <p class="text-[10px] text-slate-400">Activa esta sección en la invitación</p>
+                </div>
+                <input 
+                  type="checkbox" 
+                  v-model="localConfig.has_gift_table" 
+                  @change="syncGiftTableVisibility"
+                  class="toggle toggle-primary toggle-sm"
+                  :disabled="!allowedFeatures.gift_table"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Título de la Sección</label>
+                <input v-model="localConfig.gift_table.title" type="text" placeholder="Ej: Mesa de Regalos" :disabled="!allowedFeatures.gift_table || !localConfig.has_gift_table" />
+              </div>
+              <div class="form-group">
+                <label>Descripción / Mensaje</label>
+                <textarea v-model="localConfig.gift_table.description" placeholder="Escribe un mensaje para tus invitados..." :disabled="!allowedFeatures.gift_table || !localConfig.has_gift_table" rows="3"></textarea>
+              </div>
+
+              <!-- Cuentas Bancarias List -->
+              <div class="space-y-3 pt-2">
+                <div class="flex justify-between items-center">
+                  <h4 class="font-extrabold text-sm text-slate-300">Cuentas para Transferencia</h4>
+                  <button @click="addBankAccount" :disabled="!allowedFeatures.gift_table || !localConfig.has_gift_table" class="btn btn-ghost btn-xs text-primary font-bold">+ Agregar</button>
+                </div>
+                
+                <div v-for="(acc, idx) in localConfig.gift_table.bank_accounts" :key="idx" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 relative">
+                  <button @click="removeBankAccount(idx)" class="absolute top-2 right-2 text-error hover:text-error-focus text-xs">✕</button>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div class="form-group">
+                      <label class="text-[10px] uppercase font-bold text-slate-400">Banco</label>
+                      <input v-model="acc.bank" type="text" placeholder="Ej: BBVA" class="input-xs bg-slate-900 border-slate-800 text-white rounded" />
+                    </div>
+                    <div class="form-group">
+                      <label class="text-[10px] uppercase font-bold text-slate-400">Titular</label>
+                      <input v-model="acc.holder" type="text" placeholder="Ej: Juan Pérez" class="input-xs bg-slate-900 border-slate-800 text-white rounded" />
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="text-[10px] uppercase font-bold text-slate-400">Número CLABE (18 dígitos)</label>
+                    <input v-model="acc.clabe" type="text" placeholder="0123..." class="input-xs font-mono bg-slate-900 border-slate-800 text-white rounded" maxlength="18" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tiendas Registries List -->
+              <div class="space-y-3 pt-4">
+                <div class="flex justify-between items-center">
+                  <h4 class="font-extrabold text-sm text-slate-300">Mesas de Regalos en Tiendas</h4>
+                  <button @click="addGiftRegistry" :disabled="!allowedFeatures.gift_table || !localConfig.has_gift_table" class="btn btn-ghost btn-xs text-primary font-bold">+ Agregar</button>
+                </div>
+                
+                <div v-for="(reg, idx) in localConfig.gift_table.gift_registries" :key="idx" class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3 relative">
+                  <button @click="removeGiftRegistry(idx)" class="absolute top-2 right-2 text-error hover:text-error-focus text-xs">✕</button>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div class="form-group">
+                      <label class="text-[10px] uppercase font-bold text-slate-400">Tienda</label>
+                      <input v-model="reg.store" type="text" placeholder="Ej: Liverpool" class="input-xs bg-slate-900 border-slate-800 text-white rounded" />
+                    </div>
+                    <div class="form-group">
+                      <label class="text-[10px] uppercase font-bold text-slate-400">ID Evento (Opcional)</label>
+                      <input v-model="reg.event_id" type="text" placeholder="Ej: 501234" class="input-xs bg-slate-900 border-slate-800 text-white rounded" />
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="text-[10px] uppercase font-bold text-slate-400">URL del Registro</label>
+                    <input v-model="reg.url" type="url" placeholder="https://..." class="input-xs font-mono bg-slate-900 border-slate-800 text-white rounded" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB GALERÍA (FOTOS) -->
+          <div v-if="activeTab === 'gallery'" class="tab-content fade-in space-y-6">
+            <div class="flex items-center justify-between">
+              <h3 class="font-extrabold text-white text-lg">Galería de Fotos</h3>
+              <span v-if="!allowedFeatures.photo_carousel" class="badge badge-warning text-[9px] font-black py-1 px-2 uppercase">PRO</span>
+            </div>
+
+            <!-- PRO OVERLAY BLOCK -->
+            <div v-if="!allowedFeatures.photo_carousel" class="bg-warning/10 border border-warning/20 p-4 rounded-2xl flex flex-col gap-3">
+              <p class="text-xs text-warning leading-relaxed font-semibold">Esta función está bloqueada en tu plan básico/estándar. Actualiza para permitir desplegar un hermoso carrusel fotográfico de tu historia de amor.</p>
+              <button @click="showUpgradeModal = true" class="btn btn-warning btn-xs rounded-xl font-bold py-1.5 w-full uppercase">Comprar Plan Premium</button>
+            </div>
+
+            <div :class="{ 'opacity-40 pointer-events-none': !allowedFeatures.photo_carousel }" class="space-y-4">
+              <!-- Activar galería -->
+              <div class="flex items-center justify-between bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                <div>
+                  <h4 class="font-bold text-sm text-slate-200">Mostrar Galería</h4>
+                  <p class="text-[10px] text-slate-400">Activa esta sección en la invitación</p>
+                </div>
+                <input 
+                  type="checkbox" 
+                  v-model="localConfig.has_photo_carousel" 
+                  @change="syncPhotoCarouselVisibility"
+                  class="toggle toggle-primary toggle-sm"
+                  :disabled="!allowedFeatures.photo_carousel"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Título de la Sección</label>
+                <input v-model="localConfig.photo_carousel.title" type="text" placeholder="Ej: Nuestra Historia" :disabled="!allowedFeatures.photo_carousel || !localConfig.has_photo_carousel" />
+              </div>
+
+              <div class="form-group">
+                <label>Descripción (Opcional)</label>
+                <input v-model="localConfig.photo_carousel.description" type="text" placeholder="Ej: Momentos especiales" :disabled="!allowedFeatures.photo_carousel || !localConfig.has_photo_carousel" />
+              </div>
+
+              <!-- Input para agregar nueva imagen URL -->
+              <div class="space-y-2 pt-2">
+                <label class="font-bold text-xs text-slate-300 block">Agregar Enlace de Imagen (URL)</label>
+                <div class="flex gap-2">
+                  <input 
+                    v-model="newImageUrl" 
+                    type="url" 
+                    placeholder="https://images.unsplash.com/..." 
+                    class="input-xs w-full font-mono bg-slate-950 border-slate-800 text-white rounded-xl h-9 px-3"
+                    :disabled="!allowedFeatures.photo_carousel || !localConfig.has_photo_carousel"
+                    @keyup.enter="addImageUrl"
+                  />
+                  <button 
+                    @click="addImageUrl" 
+                    :disabled="!allowedFeatures.photo_carousel || !localConfig.has_photo_carousel || !newImageUrl"
+                    class="btn btn-primary btn-xs h-9 rounded-xl font-bold px-4"
+                  >
+                    + Agregar
+                  </button>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-normal">Pega la URL de una foto guardada en la web (ej: Unsplash, Pinterest, tu drive público, etc.).</p>
+              </div>
+
+              <!-- Listado de imágenes agregadas -->
+              <div class="space-y-3 pt-4">
+                <h4 class="font-extrabold text-sm text-slate-300">Imágenes Agregadas ({{ localConfig.photo_carousel.images ? localConfig.photo_carousel.images.length : 0 }})</h4>
+                
+                <div v-if="!localConfig.photo_carousel.images || localConfig.photo_carousel.images.length === 0" class="text-center py-6 text-xs text-slate-500 font-medium">
+                  Aún no has agregado enlaces de imágenes.
+                </div>
+
+                <div v-else class="grid grid-cols-2 gap-3">
+                  <div 
+                    v-for="(imgUrl, idx) in localConfig.photo_carousel.images" 
+                    :key="idx" 
+                    class="bg-slate-950 p-2 rounded-2xl border border-slate-800 flex flex-col gap-2 relative group"
+                  >
+                    <div class="aspect-video w-full rounded-lg overflow-hidden bg-slate-900 border border-slate-800">
+                      <img :src="imgUrl" class="object-cover w-full h-full" alt="Miniatura" />
+                    </div>
+                    <p class="text-[10px] font-mono text-slate-500 truncate w-full select-all px-1">{{ imgUrl }}</p>
+                    <button 
+                      @click="removeImageUrl(idx)" 
+                      class="absolute top-4 right-4 bg-error text-white font-bold rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-error-focus opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </form>
       </aside>
 
@@ -876,6 +1119,15 @@ const whatsappShareUrl = computed(() => {
   return `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
 });
 
+const defaultBlocks = [
+  { id: 'cover', type: 'CoverBlock', name: '🌅 Portada del Evento', visible: true, locked: true },
+  { id: 'timer', type: 'CountdownTimer', name: '🕰️ Cuenta Regresiva', visible: false, configKey: 'has_timer' },
+  { id: 'rsvp', type: 'RsvpFormBlock', name: '✉️ Confirmación RSVP', visible: true, locked: true },
+  { id: 'timeline', type: 'TimelineBlock', name: '📅 Cronograma / Itinerario', visible: false, configKey: 'has_timeline' },
+  { id: 'gift_table', type: 'GiftTableBlock', name: '🎁 Mesa de Regalos', visible: false, configKey: 'has_gift_table' },
+  { id: 'photo_carousel', type: 'PhotoCarouselBlock', name: '📸 Galería de Fotos', visible: false, configKey: 'has_photo_carousel' }
+];
+
 const allowedFeatures = ref({
   background_music: false,
   custom_audio_url: false,
@@ -883,6 +1135,8 @@ const allowedFeatures = ref({
   timeline: false,
   custom_theme: false,
   custom_og: false,
+  gift_table: false,
+  photo_carousel: false,
 });
 const deploymentSlug = ref('');
 const deploymentStatus = ref('DRAFT');
@@ -935,7 +1189,21 @@ const localConfig = ref({
   og_description: '',
   og_image: '',
   envelope_type: null,
-  envelope: null
+  envelope: null,
+  has_gift_table: false,
+  gift_table: {
+    title: 'Mesa de Regalos',
+    description: 'Tu presencia es nuestro mejor regalo, pero si deseas tener un detalle con nosotros...',
+    bank_accounts: [],
+    gift_registries: []
+  },
+  has_photo_carousel: false,
+  photo_carousel: {
+    title: 'Nuestra Galería',
+    description: '',
+    images: []
+  },
+  blocks: []
 });
 
 onMounted(async () => {
@@ -969,6 +1237,8 @@ onMounted(async () => {
           timeline: true,
           custom_theme: true,
           custom_og: true,
+          gift_table: true,
+          photo_carousel: true,
         };
       } else if (res.data.allowed_features) {
         allowedFeatures.value = res.data.allowed_features;
@@ -993,17 +1263,45 @@ onMounted(async () => {
         if (custom.theme) {
           localConfig.value.theme = { ...localConfig.value.theme, ...custom.theme };
         }
+        if (custom.gift_table) {
+          localConfig.value.gift_table = { ...localConfig.value.gift_table, ...custom.gift_table };
+        }
+        if (custom.photo_carousel) {
+          localConfig.value.photo_carousel = { ...localConfig.value.photo_carousel, ...custom.photo_carousel };
+        }
         
         // Copiar otros campos planos
         localConfig.value.has_timer = custom.has_timer ?? false;
         localConfig.value.has_timeline = custom.has_timeline ?? false;
         localConfig.value.has_music = custom.has_music ?? false;
+        localConfig.value.has_gift_table = custom.has_gift_table ?? false;
+        localConfig.value.has_photo_carousel = custom.has_photo_carousel ?? false;
         localConfig.value.audioUrl = custom.audioUrl ?? '';
         localConfig.value.og_title = custom.og_title ?? '';
         localConfig.value.og_description = custom.og_description ?? '';
         localConfig.value.og_image = custom.og_image ?? '';
         localConfig.value.envelope_type = custom.envelope_type ?? custom.envelope ?? null;
         localConfig.value.envelope = custom.envelope_type ?? custom.envelope ?? null;
+
+        // Cargar blocks dinámicos o inicializar fallback
+        if (Array.isArray(custom.blocks)) {
+          localConfig.value.blocks = custom.blocks.map(b => {
+            const db = defaultBlocks.find(d => d.id === b.id);
+            return { ...db, ...b };
+          });
+        } else {
+          localConfig.value.blocks = defaultBlocks.map(db => {
+            let visible = db.visible;
+            if (db.id === 'timer') visible = custom.has_timer ?? false;
+            if (db.id === 'timeline') visible = custom.has_timeline ?? false;
+            if (db.id === 'gift_table') visible = custom.has_gift_table ?? false;
+            if (db.id === 'photo_carousel') visible = custom.has_photo_carousel ?? false;
+            return { ...db, visible };
+          });
+        }
+      } else {
+        // Inicializar blocks por defecto en invitaciones vacías
+        localConfig.value.blocks = [...defaultBlocks];
       }
     }
   } catch (error) {
@@ -1189,6 +1487,146 @@ watch(localConfig, () => {
     }
   }, 2000);
 }, { deep: true });
+
+// --- Lógica del Gestor de Secciones y Bloques Premium ---
+const dragIndex = ref(null);
+const newImageUrl = ref('');
+
+const onDragStart = (event, index) => {
+  if (localConfig.value.blocks[index].locked) {
+    event.preventDefault();
+    return;
+  }
+  dragIndex.value = index;
+  event.dataTransfer.effectAllowed = 'move';
+};
+
+const onDrop = (event, index) => {
+  if (localConfig.value.blocks[index].locked) {
+    return;
+  }
+  const fromIndex = dragIndex.value;
+  if (fromIndex !== null && fromIndex !== index) {
+    const temp = localConfig.value.blocks[fromIndex];
+    localConfig.value.blocks.splice(fromIndex, 1);
+    localConfig.value.blocks.splice(index, 0, temp);
+  }
+  dragIndex.value = null;
+};
+
+const toggleBlockVisibility = (block) => {
+  if (block.locked) return;
+
+  const configKey = block.configKey;
+  const isNowVisible = localConfig.value[configKey];
+
+  let allowed = true;
+  if (block.id === 'timer' && !allowedFeatures.value.countdown_timer) allowed = false;
+  if (block.id === 'timeline' && !allowedFeatures.value.timeline) allowed = false;
+  if (block.id === 'gift_table' && !allowedFeatures.value.gift_table) allowed = false;
+  if (block.id === 'photo_carousel' && !allowedFeatures.value.photo_carousel) allowed = false;
+
+  if (!allowed && isNowVisible) {
+    localConfig.value[configKey] = false;
+    showUpgradeModal.value = true;
+    return;
+  }
+
+  const b = localConfig.value.blocks.find(x => x.id === block.id);
+  if (b) {
+    b.visible = isNowVisible;
+  }
+};
+
+const syncGiftTableVisibility = () => {
+  if (!allowedFeatures.value.gift_table && localConfig.value.has_gift_table) {
+    localConfig.value.has_gift_table = false;
+    showUpgradeModal.value = true;
+    return;
+  }
+  const b = localConfig.value.blocks?.find(x => x.id === 'gift_table');
+  if (b) b.visible = localConfig.value.has_gift_table;
+};
+
+const syncPhotoCarouselVisibility = () => {
+  if (!allowedFeatures.value.photo_carousel && localConfig.value.has_photo_carousel) {
+    localConfig.value.has_photo_carousel = false;
+    showUpgradeModal.value = true;
+    return;
+  }
+  const b = localConfig.value.blocks?.find(x => x.id === 'photo_carousel');
+  if (b) b.visible = localConfig.value.has_photo_carousel;
+};
+
+// Cuentas Bancarias
+const addBankAccount = () => {
+  if (!localConfig.value.gift_table.bank_accounts) {
+    localConfig.value.gift_table.bank_accounts = [];
+  }
+  localConfig.value.gift_table.bank_accounts.push({
+    bank: '',
+    holder: '',
+    clabe: ''
+  });
+};
+
+const removeBankAccount = (index) => {
+  localConfig.value.gift_table.bank_accounts.splice(index, 1);
+};
+
+// Mesas de Regalos en Tiendas
+const addGiftRegistry = () => {
+  if (!localConfig.value.gift_table.gift_registries) {
+    localConfig.value.gift_table.gift_registries = [];
+  }
+  localConfig.value.gift_table.gift_registries.push({
+    store: '',
+    event_id: '',
+    url: ''
+  });
+};
+
+const removeGiftRegistry = (index) => {
+  localConfig.value.gift_table.gift_registries.splice(index, 1);
+};
+
+// Galería de Imágenes
+const addImageUrl = () => {
+  if (newImageUrl.value && newImageUrl.value.trim() !== '') {
+    if (!localConfig.value.photo_carousel.images) {
+      localConfig.value.photo_carousel.images = [];
+    }
+    localConfig.value.photo_carousel.images.push(newImageUrl.value.trim());
+    newImageUrl.value = '';
+    toast.success('¡Enlace de imagen agregado!');
+  }
+};
+
+const removeImageUrl = (index) => {
+  localConfig.value.photo_carousel.images.splice(index, 1);
+  toast.info('Imagen eliminada de la lista.');
+};
+
+// Watchers de sincronización bidireccional reactiva para previsualización instantánea
+watch(() => localConfig.value.has_timer, (val) => {
+  const b = localConfig.value.blocks?.find(x => x.id === 'timer');
+  if (b) b.visible = val;
+});
+
+watch(() => localConfig.value.has_timeline, (val) => {
+  const b = localConfig.value.blocks?.find(x => x.id === 'timeline');
+  if (b) b.visible = val;
+});
+
+watch(() => localConfig.value.has_gift_table, (val) => {
+  const b = localConfig.value.blocks?.find(x => x.id === 'gift_table');
+  if (b) b.visible = val;
+});
+
+watch(() => localConfig.value.has_photo_carousel, (val) => {
+  const b = localConfig.value.blocks?.find(x => x.id === 'photo_carousel');
+  if (b) b.visible = val;
+});
 
 const scaleFactor = ref(1);
 
