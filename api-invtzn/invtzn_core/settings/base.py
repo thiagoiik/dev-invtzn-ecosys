@@ -131,3 +131,6 @@ FACTURAPI_API_KEY = os.environ.get('FACTURAPI_API_KEY', '')
 
 # Unsplash integration settings
 UNSPLASH_ACCESS_KEY = os.environ.get('UNSPLASH_ACCESS_KEY', 'dummy_unsplash_key_for_testing')
+
+# Jamendo integration settings
+JAMENDO_CLIENT_ID = os.environ.get('JAMENDO_CLIENT_ID', 'dummy_jamendo_key_for_testing')

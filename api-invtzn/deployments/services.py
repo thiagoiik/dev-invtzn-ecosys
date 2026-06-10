@@ -44,3 +44,44 @@ class UnsplashService:
             }
         except requests.exceptions.RequestException as e:
             return {"results": [], "total": 0, "total_pages": 0, "error": f"Fallo de conexión a Unsplash: {str(e)}"}
+
+class JamendoService:
+    API_URL = "https://api.jamendo.com/v3.0/tracks/"
+
+    @classmethod
+    def search_tracks(cls, query, limit=20):
+        client_id = getattr(settings, 'JAMENDO_CLIENT_ID', '')
+        if not client_id:
+            return {"results": [], "error": "JAMENDO_CLIENT_ID no está configurada."}
+
+        params = {
+            "client_id": client_id,
+            "format": "json",
+            "limit": limit,
+            "audioformat": "mp32",
+            "search": query
+        }
+
+        try:
+            response = requests.get(cls.API_URL, params=params, timeout=10)
+            if response.status_code != 200:
+                return {"results": [], "error": f"Error Jamendo API ({response.status_code}): {response.text}"}
+            
+            data = response.json()
+            results = []
+            for item in data.get("results", []):
+                results.append({
+                    "id": item.get("id"),
+                    "title": item.get("name"),
+                    "artist": item.get("artist_name"),
+                    "duration": item.get("duration"),
+                    "cover": item.get("album_image"),
+                    "audio": item.get("audio")
+                })
+            
+            return {
+                "results": results
+            }
+        except requests.exceptions.RequestException as e:
+            return {"results": [], "error": f"Fallo de conexión a Jamendo: {str(e)}"}
+

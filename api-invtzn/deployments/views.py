@@ -107,11 +107,18 @@ class DeploymentViewSet(viewsets.ModelViewSet):
         if str(attending).lower() in ['false', 'no', '0']:
             is_attending = False
 
+        companions_count = int(request.data.get('companions_count', 0))
+        menu_selection = request.data.get('menu_selection', '')
+        dietary_notes = request.data.get('dietary_notes', '')
+
         from .models import Guest
         guest = Guest.objects.create(
             deployment=deployment,
             full_name=full_name,
-            attending=is_attending
+            attending=is_attending,
+            companions_count=companions_count,
+            menu_selection=menu_selection,
+            dietary_notes=dietary_notes
         )
         
         return Response({'success': 'Confirmación recibida', 'guest_id': guest.id})
@@ -382,6 +389,36 @@ class DeploymentViewSet(viewsets.ModelViewSet):
             'recent': recent_list
         })
 
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='guests')
+    def get_guests(self, request, pk=None):
+        deployment = self.get_object()
+        
+        # Check permissions
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            has_role = profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]
+        except Exception:
+            has_role = False
+            
+        if not has_role and str(deployment.user) != str(request.user.id):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("No tienes permisos para ver los invitados de esta invitación.")
+            
+        guests = deployment.guests.all().order_by('-created_at')
+        
+        data = [{
+            'id': guest.id,
+            'full_name': guest.full_name,
+            'attending': guest.attending,
+            'companions_count': guest.companions_count,
+            'menu_selection': guest.menu_selection or '',
+            'dietary_notes': guest.dietary_notes or '',
+            'created_at': guest.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        } for guest in guests]
+        
+        return Response(data)
+
     @action(detail=True, methods=['post'], url_path='activate-basic')
     def activate_basic(self, request, pk=None):
         deployment = self.get_object()
@@ -547,6 +584,20 @@ class DeploymentViewSet(viewsets.ModelViewSet):
 
         from .services import UnsplashService
         result = UnsplashService.search_photos(query, page, per_page)
+        
+        if 'error' in result:
+            return Response({'error': result['error']}, status=500)
+            
+        return Response(result)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='jamendo-search')
+    def jamendo_search(self, request):
+        query = request.query_params.get('q', '')
+        if not query:
+            return Response({'error': 'El parámetro de búsqueda (q) es obligatorio.'}, status=400)
+
+        from .services import JamendoService
+        result = JamendoService.search_tracks(query)
         
         if 'error' in result:
             return Response({'error': result['error']}, status=500)

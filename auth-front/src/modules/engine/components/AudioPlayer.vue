@@ -55,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps, onBeforeUnmount } from 'vue';
+import { ref, defineProps, onBeforeUnmount, watch } from 'vue';
 
 const props = defineProps({
   config: {
@@ -74,6 +74,11 @@ const togglePlay = () => {
     audioRef.value.pause();
     isPlaying.value = false;
   } else {
+    // Set start offset if current playback has not started yet
+    if (audioRef.value.currentTime === 0 && props.config.audioStartOffset) {
+      audioRef.value.currentTime = props.config.audioStartOffset;
+    }
+    
     audioRef.value.play()
       .then(() => {
         isPlaying.value = true;
@@ -83,6 +88,13 @@ const togglePlay = () => {
       });
   }
 };
+
+// Seek in real-time when the user adjusts the offset in the builder
+watch(() => props.config.audioStartOffset, (newOffset) => {
+  if (audioRef.value) {
+    audioRef.value.currentTime = newOffset || 0;
+  }
+});
 
 onBeforeUnmount(() => {
   if (audioRef.value) {
