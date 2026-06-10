@@ -147,6 +147,8 @@ class Guest(models.Model):
     
     attending = models.BooleanField(default=True)
     companions_count = models.IntegerField(default=0, help_text="Número de acompañantes extra")
+    menu_selection = models.CharField(max_length=100, blank=True, null=True, help_text="Menú seleccionado por el invitado")
+    dietary_notes = models.TextField(blank=True, null=True, help_text="Alergias o notas de comida")
     
     status = models.CharField(max_length=20, choices=StatusChoices.choices, default=StatusChoices.PENDING)
     

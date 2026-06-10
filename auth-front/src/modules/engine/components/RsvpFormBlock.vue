@@ -76,6 +76,41 @@
           </div>
         </div>
 
+        <!-- Companions Selection (STANDARD & PREMIUM) -->
+        <div v-if="['STANDARD', 'PREMIUM'].includes(tierLevel) && form.attending === 'yes'" class="space-y-2 animate-fade-in">
+          <label class="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Acompañantes Adicionales</label>
+          <select 
+            v-model.number="form.companions_count" 
+            class="select select-bordered w-full h-14 rounded-2xl border-slate-200 focus:border-primary text-slate-800 font-medium focus:ring-2 focus:ring-primary/10 transition-all bg-white"
+          >
+            <option :value="0">Ninguno (Vengo solo)</option>
+            <option v-for="n in 5" :key="n" :value="n">{{ n }} {{ n === 1 ? 'acompañante' : 'acompañantes' }}</option>
+          </select>
+        </div>
+
+        <!-- Menu Selection (PREMIUM ONLY) -->
+        <div v-if="tierLevel === 'PREMIUM' && form.attending === 'yes'" class="space-y-2 animate-fade-in">
+          <label class="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Selección de Menú</label>
+          <select 
+            v-model="form.menu_selection" 
+            class="select select-bordered w-full h-14 rounded-2xl border-slate-200 focus:border-primary text-slate-800 font-medium focus:ring-2 focus:ring-primary/10 transition-all bg-white"
+          >
+            <option value="Menú Tradicional">Menú Tradicional 🥩</option>
+            <option value="Menú Vegetariano">Menú Vegetariano 🥗</option>
+            <option value="Menú Infantil">Menú Infantil 🍟</option>
+          </select>
+        </div>
+
+        <!-- Dietary Notes (PREMIUM ONLY) -->
+        <div v-if="tierLevel === 'PREMIUM' && form.attending === 'yes'" class="space-y-2 animate-fade-in">
+          <label class="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Alergias o Restricciones</label>
+          <textarea 
+            v-model="form.dietary_notes" 
+            placeholder="Ej: Alérgico a nueces, vegetariano, etc." 
+            class="textarea textarea-bordered w-full h-24 rounded-2xl border-slate-200 focus:border-primary text-slate-800 font-medium focus:ring-2 focus:ring-primary/10 transition-all bg-white py-3"
+          ></textarea>
+        </div>
+
         <!-- Submit Button -->
         <button 
           type="submit" 
@@ -110,7 +145,10 @@ const loading = ref(false);
 const submitted = ref(false);
 const form = ref({
   full_name: '',
-  attending: ''
+  attending: '',
+  companions_count: 0,
+  menu_selection: 'Menú Tradicional',
+  dietary_notes: ''
 });
 
 const handleFormSubmit = () => {
@@ -158,11 +196,21 @@ const submitRSVP = async () => {
   try {
     const isAttending = form.value.attending === 'yes';
     
-    // 1. Submit to DB
-    await engineService.submitRSVP(props.slug, {
+    const payload = {
       full_name: form.value.full_name,
       attending: isAttending
-    });
+    };
+
+    if (['STANDARD', 'PREMIUM'].includes(props.tierLevel) && isAttending) {
+      payload.companions_count = form.value.companions_count;
+    }
+    if (props.tierLevel === 'PREMIUM' && isAttending) {
+      payload.menu_selection = form.value.menu_selection;
+      payload.dietary_notes = form.value.dietary_notes;
+    }
+
+    // 1. Submit to DB
+    await engineService.submitRSVP(props.slug, payload);
 
     // 2. Track Telemetry silently
     await telemetry.trackRsvpSubmit(props.slug);

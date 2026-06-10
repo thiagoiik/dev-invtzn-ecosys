@@ -25,7 +25,7 @@
         <component
           :is="block.component"
           :config="block.config"
-          v-bind="block.component === RsvpFormBlock ? { slug: slug, tierLevel: tierLevel } : {}"
+          v-bind="block.id === 'rsvp' ? { slug: slug, tierLevel: tierLevel } : {}"
         />
       </template>
     </div>
