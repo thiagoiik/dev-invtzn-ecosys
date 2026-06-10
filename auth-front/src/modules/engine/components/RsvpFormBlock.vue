@@ -18,7 +18,7 @@
       class="card w-full max-w-md bg-white rounded-[2.5rem] p-10 shadow-xl border border-slate-100 space-y-8 animate-fade-in"
     >
       <header class="text-center space-y-2">
-        <span class="text-[9px] font-black text-amber-500 uppercase tracking-[0.4em]">Pase & Confirmación</span>
+        <span class="text-[9px] font-black text-amber-500 uppercase tracking-[0.4em]">Confirma tu presencia</span>
         <h2 class="text-3xl font-serif font-bold text-slate-900">
           {{ config.title || 'Confirma tu Asistencia' }}
         </h2>

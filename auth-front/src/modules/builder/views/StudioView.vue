@@ -96,85 +96,25 @@
           <h3>Ajustes de Diseño</h3>
         </div>
 
-        <!-- TABS GRID -->
-        <div class="tabs-grid">
-          <button 
-            class="tab-btn" 
-            :class="{ active: activeTab === 'cover' }" 
-            @click="activeTab = 'cover'"
+        <!-- SELECTOR DE SECCIONES (DROPDOWN PREMIUM) -->
+        <div class="px-6 pb-6">
+          <label class="text-[10px] uppercase font-bold text-slate-400 block mb-2 tracking-wider">Sección a editar</label>
+          <select 
+            v-model="activeTab" 
+            class="select-input cursor-pointer"
           >
-            🌅 Portada
-          </button>
-          <button 
-            class="tab-btn" 
-            :class="{ active: activeTab === 'rsvp' }" 
-            @click="activeTab = 'rsvp'"
-          >
-            ✉ RSVP
-          </button>
-          <button 
-            class="tab-btn" 
-            :class="{ active: activeTab === 'timer' }" 
-            @click="activeTab = 'timer'"
-          >
-            🕰️ Contador
-          </button>
-          <button 
-            class="tab-btn" 
-            :class="{ active: activeTab === 'timeline' }" 
-            @click="activeTab = 'timeline'"
-          >
-            📅 Cronograma
-          </button>
-          <button 
-            class="tab-btn" 
-            :class="{ active: activeTab === 'music' }" 
-            @click="activeTab = 'music'"
-          >
-            🎵 Música
-          </button>
-          <button 
-            class="tab-btn" 
-            :class="{ active: activeTab === 'theme' }" 
-            @click="activeTab = 'theme'"
-          >
-            🎨 Estilos
-          </button>
-          <button 
-            class="tab-btn" 
-            :class="{ active: activeTab === 'og' }" 
-            @click="activeTab = 'og'"
-          >
-            ⚙️ SEO/OG
-          </button>
-          <button 
-            class="tab-btn" 
-            :class="{ active: activeTab === 'envelope' }" 
-            @click="activeTab = 'envelope'"
-          >
-            ✉️ Sobre 3D
-          </button>
-          <button 
-            class="tab-btn" 
-            :class="{ active: activeTab === 'sections' }" 
-            @click="activeTab = 'sections'"
-          >
-            ⚙️ Estructura
-          </button>
-          <button 
-            class="tab-btn" 
-            :class="{ active: activeTab === 'gift' }" 
-            @click="activeTab = 'gift'"
-          >
-            🎁 Regalos
-          </button>
-          <button 
-            class="tab-btn" 
-            :class="{ active: activeTab === 'gallery' }" 
-            @click="activeTab = 'gallery'"
-          >
-            📸 Fotos
-          </button>
+            <option value="cover">🌅 Portada del Evento</option>
+            <option value="rsvp">✉️ Confirmación RSVP</option>
+            <option value="timer">🕰️ Cuenta Regresiva</option>
+            <option value="timeline">📅 Cronograma / Itinerario</option>
+            <option value="music">🎵 Música de Fondo</option>
+            <option value="theme">🎨 Paleta y Estilos</option>
+            <option value="og">⚙️ SEO / Metadatos OG</option>
+            <option value="envelope">✉️ Sobre 3D / Apertura</option>
+            <option value="sections">⚙️ Estructura / Orden</option>
+            <option value="gift">🎁 Mesa de Regalos</option>
+            <option value="gallery">📸 Galería de Fotos</option>
+          </select>
         </div>
         
         <div v-if="loading" class="loading-state">
@@ -212,6 +152,41 @@
                 <button type="button" @click="isGalleryOpen = true" class="btn btn-sm btn-outline text-xs h-[42px] px-3 bg-white/5 border-white/10 text-amber-400 hover:bg-white/10 shrink-0">
                   ✨ Galería
                 </button>
+              </div>
+            </div>
+
+            <!-- Ajuste de posición de la foto (Enfoque) -->
+            <div class="space-y-4" v-if="localConfig.cover.coverPhoto">
+              <!-- Posición Horizontal -->
+              <div class="form-group">
+                <label class="flex justify-between">
+                  <span>Enfoque Horizontal (X)</span>
+                  <span class="font-bold font-mono">{{ (localConfig.cover.backgroundPositionX !== undefined && localConfig.cover.backgroundPositionX !== null) ? localConfig.cover.backgroundPositionX : 50 }}%</span>
+                </label>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  v-model.number="localConfig.cover.backgroundPositionX" 
+                  class="hue-range"
+                />
+                <span class="help-text text-xs text-slate-400 mt-1 block">Desplaza la foto a la izquierda (0%) o derecha (100%). Útil para fotos horizontales en celulares.</span>
+              </div>
+
+              <!-- Posición Vertical -->
+              <div class="form-group">
+                <label class="flex justify-between">
+                  <span>Enfoque Vertical (Y)</span>
+                  <span class="font-bold font-mono">{{ (localConfig.cover.backgroundPositionY !== undefined && localConfig.cover.backgroundPositionY !== null) ? localConfig.cover.backgroundPositionY : 50 }}%</span>
+                </label>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  v-model.number="localConfig.cover.backgroundPositionY" 
+                  class="hue-range"
+                />
+                <span class="help-text text-xs text-slate-400 mt-1 block">Desplaza la foto hacia arriba (0%) o abajo (100%). Útil para fotos verticales en monitores.</span>
               </div>
             </div>
 
@@ -1195,7 +1170,9 @@ const localConfig = ref({
     titleColor: '#ffffff',
     headerLabel: 'Nuestra Invitación',
     fontFamily: 'serif',
-    frame_overlay: null
+    frame_overlay: null,
+    backgroundPositionX: 50,
+    backgroundPositionY: 50
   },
   rsvp: {
     bgColor: '#f8fafc',
@@ -1692,7 +1669,7 @@ const scaleStyle = computed(() => {
   }
   return {
     transform: `scale(${scaleFactor.value})`,
-    transformOrigin: 'center center',
+    transformOrigin: 'top center',
     transition: 'transform 0.2s ease-out'
   };
 });
@@ -2303,5 +2280,16 @@ onBeforeUnmount(() => {
 
 .preview-canvas::-webkit-scrollbar {
   width: 0px;
+}
+
+.preview-canvas :deep(h1) {
+  font-size: 2.5rem !important;
+  line-height: 1.1 !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+.preview-canvas :deep(.min-h-screen) {
+  min-height: 800px !important;
 }
 </style>

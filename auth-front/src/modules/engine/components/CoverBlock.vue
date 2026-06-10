@@ -2,9 +2,10 @@
   <div class="relative min-h-screen flex items-center justify-center overflow-hidden bg-slate-950 text-white">
     <!-- Ken Burns Effect Zoom Background -->
     <div 
-      class="absolute inset-0 bg-cover bg-center transition-transform duration-[20000ms] ease-out scale-110 hover:scale-100"
+      class="absolute inset-0 bg-cover transition-transform duration-[20000ms] ease-out scale-110 hover:scale-100"
       :style="{ 
         backgroundImage: `url(${config.coverPhoto || 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80'})`,
+        backgroundPosition: `${(config.backgroundPositionX !== undefined && config.backgroundPositionX !== null) ? config.backgroundPositionX : 50}% ${(config.backgroundPositionY !== undefined && config.backgroundPositionY !== null) ? config.backgroundPositionY : 50}%`
       }"
     ></div>
     
@@ -14,8 +15,8 @@
     <!-- Decorative Frame Overlay -->
     <div 
       v-if="config.frame_overlay" 
-      class="absolute inset-0 pointer-events-none bg-contain bg-center bg-no-repeat z-[5]"
-      :style="{ backgroundImage: `url(${config.frame_overlay})` }"
+      class="absolute inset-0 pointer-events-none bg-[100%_100%] bg-no-repeat z-[5]"
+      :style="{ backgroundImage: `url(${frameOverlayUrl})` }"
     ></div>
 
     <!-- Content Card -->
@@ -27,7 +28,7 @@
 
       <!-- Main Custom Typography Title -->
       <h1 
-        class="text-6xl md:text-7xl lg:text-8xl font-light leading-none drop-shadow-2xl font-serif text-white tracking-wide"
+        class="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-light leading-none drop-shadow-2xl font-serif text-white tracking-wide break-words"
         :style="titleStyles"
       >
         {{ config.title || 'Ana & Luis' }}
@@ -69,6 +70,13 @@ const props = defineProps({
     type: Object,
     default: () => ({})
   }
+});
+
+const frameOverlayUrl = computed(() => {
+  if (!props.config.frame_overlay) return '';
+  // Append cache buster to force browser to reload the updated SVGs
+  const separator = props.config.frame_overlay.includes('?') ? '&' : '?';
+  return `${props.config.frame_overlay}${separator}v=3`;
 });
 
 const titleStyles = computed(() => {

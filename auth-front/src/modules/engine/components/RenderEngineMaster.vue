@@ -16,11 +16,11 @@
     />
 
     <!-- Render Blocks dynamically based on configuration -->
-    <div class="master-canvas" :class="{ 'pt-[44px]': status === 'DRAFT' }">
+    <div class="master-canvas" :class="{ 'pt-[44px]': status === 'DRAFT' && !isStudioMode }">
       <template v-for="(block, idx) in orderedBlocks" :key="block.id">
         <SectionDivider 
           v-if="idx > 0 && customData.theme?.divider_style" 
-          :styleName="customData.theme.divider_style" 
+          :style-name="customData.theme.divider_style" 
         />
         <component
           :is="block.component"
@@ -77,17 +77,34 @@ const componentMap = {
   PhotoCarouselBlock: PhotoCarouselBlock
 };
 
-// Generar el orden dinámico de bloques con fallback retrocompatible
 const orderedBlocks = computed(() => {
   // Caso 1: Estructura moderna con ordenamiento dinámico
   if (Array.isArray(props.customData.blocks)) {
     return props.customData.blocks
-      .map(b => ({
-        id: b.id,
-        component: componentMap[b.type],
-        config: b.config || {},
-        visible: b.visible !== false
-      }))
+      .map(b => {
+        // Resolver la configuración desde las llaves de nivel superior para garantizar reactividad en tiempo real
+        let resolvedConfig = b.config || {};
+        if (b.id === 'cover') {
+          resolvedConfig = props.customData.cover || {};
+        } else if (b.id === 'rsvp') {
+          resolvedConfig = props.customData.rsvp || {};
+        } else if (b.id === 'timer') {
+          resolvedConfig = props.customData.timer || {};
+        } else if (b.id === 'timeline') {
+          resolvedConfig = props.customData.timeline || {};
+        } else if (b.id === 'gift_table') {
+          resolvedConfig = props.customData.gift_table || {};
+        } else if (b.id === 'photo_carousel') {
+          resolvedConfig = props.customData.photo_carousel || {};
+        }
+
+        return {
+          id: b.id,
+          component: componentMap[b.type],
+          config: resolvedConfig,
+          visible: b.visible !== false
+        };
+      })
       .filter(b => b.component && b.visible);
   }
 
