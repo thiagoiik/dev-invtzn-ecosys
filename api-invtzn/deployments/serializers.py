@@ -81,27 +81,42 @@ class DeploymentSerializer(serializers.ModelSerializer):
             except Exception:
                 pass
 
-        allowed = deployment.allowed_features
-        blocks = value.get('blocks', [])
+        try:
+            allowed = deployment.allowed_features
+            blocks = value.get('blocks', [])
 
-        # 1. Validar bloques dinámicos
-        for block in blocks:
-            b_type = block.get('type')
-            if b_type == 'CountdownTimer' and not allowed.get('countdown_timer'):
-                raise serializers.ValidationError("El bloque de Cuenta Regresiva (CountdownTimer) requiere plan Standard o Premium.")
-            if b_type == 'TimelineBlock' and not allowed.get('timeline'):
-                raise serializers.ValidationError("El bloque de Itinerario (TimelineBlock) requiere plan Premium.")
+            # 1. Validar bloques dinámicos
+            for block in blocks:
+                b_type = block.get('type')
+                b_visible = block.get('visible', True)
+                if b_visible:
+                    if b_type == 'CountdownTimer' and not allowed.get('countdown_timer'):
+                        raise serializers.ValidationError("El bloque de Cuenta Regresiva (CountdownTimer) requiere plan Standard o Premium.")
+                    if b_type == 'TimelineBlock' and not allowed.get('timeline'):
+                        raise serializers.ValidationError("El bloque de Itinerario (TimelineBlock) requiere plan Premium.")
+                    if b_type == 'GiftTableBlock' and not allowed.get('gift_table'):
+                        raise serializers.ValidationError("El bloque de Mesa de Regalos (GiftTableBlock) requiere plan Premium.")
+                    if b_type == 'PhotoCarouselBlock' and not allowed.get('photo_carousel'):
+                        raise serializers.ValidationError("El bloque de Galería de Fotos (PhotoCarouselBlock) requiere plan Premium.")
 
-        # 2. Validar audio/música
-        music = value.get('music', {})
-        has_music_enabled = value.get('audioUrl') or value.get('has_music') or music.get('audioUrl') or music.get('has_music')
-        if has_music_enabled and not allowed.get('background_music'):
-            raise serializers.ValidationError("La música de fondo no está permitida en este plan.")
+            # 2. Validar audio/música
+            music = value.get('music', {})
+            has_music_enabled = value.get('has_music', False) or music.get('has_music', False)
+            if has_music_enabled and not allowed.get('background_music'):
+                raise serializers.ValidationError("La música de fondo no está permitida en este plan.")
 
-        # 3. Validar metadatos Open Graph personalizados
-        has_custom_og = any(value.get(key) for key in ['og_title', 'og_description', 'og_image'])
-        if has_custom_og and not allowed.get('custom_og'):
-            raise serializers.ValidationError("La personalización de metadatos Open Graph requiere plan Premium.")
+            # 3. Validar metadatos Open Graph personalizados
+            has_custom_og = any(value.get(key) for key in ['og_title', 'og_description', 'og_image'])
+            if has_custom_og and not allowed.get('custom_og'):
+                raise serializers.ValidationError("La personalización de metadatos Open Graph requiere plan Premium.")
+        except serializers.ValidationError as e:
+            print("--- DEBUG VALIDATION ERROR ---")
+            print("Deployment ID:", deployment.id)
+            print("Allowed features:", allowed)
+            print("Received custom_data:", value)
+            print("Validation error:", str(e))
+            print("------------------------------")
+            raise e
 
         return value
 

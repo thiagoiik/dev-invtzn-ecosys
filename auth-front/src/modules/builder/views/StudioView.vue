@@ -219,6 +219,17 @@
           
           <!-- TAB RSVP -->
           <div v-if="activeTab === 'rsvp'" class="tab-content fade-in">
+            <!-- Simular Nivel RSVP (Sólo Admin/Diseñador) -->
+            <div v-if="isAdminOrDesigner" class="form-group mb-4">
+              <label class="block text-xs font-black text-amber-600 uppercase tracking-widest pl-1 mb-2">Simular Nivel RSVP (Admin)</label>
+              <select v-model="productTier" class="select-input w-full">
+                <option value="BASIC">Básico (Confirmación a WhatsApp)</option>
+                <option value="STANDARD">Estándar (Base de datos + Acompañantes)</option>
+                <option value="PREMIUM">Premium (Base de datos + Menú + Alergias)</option>
+              </select>
+              <p class="text-[10px] text-slate-450 mt-1">Te permite cambiar la vista previa en caliente para probar los distintos formularios.</p>
+            </div>
+
             <div class="form-group">
               <label>Título Sección RSVP</label>
               <input v-model="localConfig.rsvp.title" type="text" placeholder="Ej: Confirma tu Asistencia" />
@@ -237,10 +248,29 @@
               </div>
             </div>
 
-            <div class="form-group">
+            <div v-if="productTier === 'BASIC'" class="form-group">
               <label>WhatsApp de Confirmación</label>
               <input v-model="localConfig.rsvp.whatsappPhone" type="tel" placeholder="Ej. +5215512345678" />
               <p class="text-[10px] text-slate-400 mt-1">Los invitados del plan básico enviarán confirmaciones directas a este número de WhatsApp.</p>
+            </div>
+
+            <!-- Tarjeta de Estatus de Plan y Upgrade (Coherente y Oscura) -->
+            <div v-if="productTier !== 'PREMIUM'" class="schedule-item-card mt-6 border border-amber-500/10">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-xs font-bold text-amber-500 uppercase tracking-wider">Upgrade de Plan RSVP</span>
+                <span class="badge badge-sm font-black text-white bg-slate-700 border-slate-600">{{ productTier }}</span>
+              </div>
+              <p class="text-xs text-slate-300 leading-relaxed mb-3">
+                <span v-if="productTier === 'BASIC'">
+                  Desbloquea el guardado automático de invitados en la Base de Datos, conteo de acompañantes, menús y alergias con un Pase superior.
+                </span>
+                <span v-else-if="productTier === 'STANDARD'">
+                  Permite a tus invitados seleccionar su tipo de menú y reportar alergias o restricciones de alimentos con el Pase Premium.
+                </span>
+              </p>
+              <button @click="showUpgradeModal = true" class="upgrade-btn w-full">
+                🔓 Desbloquear RSVP {{ productTier === 'BASIC' ? 'Standard / Premium' : 'Premium' }}
+              </button>
             </div>
           </div>
 
@@ -431,14 +461,43 @@
             <div :class="{ 'opacity-40 pointer-events-none': !localConfig.has_music || !allowedFeatures.background_music }" class="space-y-4">
               <div class="form-group">
                 <label>URL del Archivo de Audio (MP3)</label>
+                <div class="flex gap-2">
+                  <input 
+                    v-model="localConfig.audioUrl" 
+                    type="url" 
+                    placeholder="https://..." 
+                    class="flex-grow"
+                    :disabled="!localConfig.has_music || !allowedFeatures.background_music"
+                    @input="syncAudioUrl"
+                  />
+                  <button 
+                    v-if="false"
+                    type="button" 
+                    @click="isMusicGalleryOpen = true" 
+                    class="btn btn-sm btn-outline text-xs h-[42px] px-3 bg-white/5 border-white/10 text-amber-400 hover:bg-white/10 shrink-0"
+                    :disabled="!localConfig.has_music || !allowedFeatures.background_music"
+                  >
+                    ✨ Buscar Melodías
+                  </button>
+                </div>
+                <span class="help-text">Ingresa una URL directa o busca melodías libres de derechos.</span>
+              </div>
+
+              <!-- Punto de Inicio (Offset) -->
+              <div class="form-group" v-if="localConfig.music">
+                <label class="flex justify-between">
+                  <span>Segundo de Inicio (Trim)</span>
+                  <span class="font-bold font-mono">{{ (localConfig.music.audioStartOffset !== undefined && localConfig.music.audioStartOffset !== null) ? localConfig.music.audioStartOffset : 0 }}s</span>
+                </label>
                 <input 
-                  v-model="localConfig.audioUrl" 
-                  type="url" 
-                  placeholder="https://..." 
+                  type="range" 
+                  min="0" 
+                  max="180" 
+                  v-model.number="localConfig.music.audioStartOffset" 
                   :disabled="!localConfig.has_music || !allowedFeatures.background_music"
-                  @input="syncAudioUrl"
+                  class="hue-range"
                 />
-                <span class="help-text">Ingresa una URL directa a un archivo MP3 público.</span>
+                <span class="help-text text-xs text-slate-400 mt-1 block">Desplaza el deslizador para elegir en qué segundo exacto empezará a sonar la melodía al abrir la invitación (ej: el coro).</span>
               </div>
             </div>
           </div>
@@ -837,6 +896,7 @@
                   :customData="localConfig" 
                   :slug="deploymentSlug" 
                   :deploymentId="deploymentId"
+                  :tierLevel="productTier"
                   :isStudioMode="true"
                   @purchase="showUpgradeModal = true"
                 />
@@ -847,6 +907,7 @@
                 :customData="localConfig" 
                 :slug="deploymentSlug" 
                 :deploymentId="deploymentId"
+                :tierLevel="productTier"
                 :isStudioMode="true"
                 @purchase="showUpgradeModal = true"
               />
@@ -874,6 +935,14 @@
       @close="isGalleryOpen = false" 
       @select-background="handleSelectBackground"
       @select-frame="handleSelectFrame"
+    />
+
+    <!-- Modal de Galería de Música Jamendo -->
+    <MusicGalleryModal
+      v-if="isMusicGalleryOpen"
+      :isOpen="isMusicGalleryOpen"
+      @close="isMusicGalleryOpen = false"
+      @select-audio="handleSelectAudio"
     />
 
     <!-- Modal de Celebración de Pago Exitoso (Success Modal) -->
@@ -1066,6 +1135,7 @@ import RenderEngineMaster from '@/modules/engine/components/RenderEngineMaster.v
 import EnvelopeWrapper from '@/modules/engine/components/EnvelopeWrapper.vue';
 import UpgradeModal from '@/modules/builder/components/UpgradeModal.vue';
 import GraphicsGalleryModal from '@/modules/builder/components/GraphicsGalleryModal.vue';
+import MusicGalleryModal from '@/modules/builder/components/MusicGalleryModal.vue';
 
 // Variables de estado adicionales v0.8.4
 const productTier = ref('BASIC');
@@ -1116,6 +1186,15 @@ const handleSelectBackground = (url) => {
 };
 const handleSelectFrame = (url) => {
   localConfig.value.cover.frame_overlay = url;
+};
+
+const isMusicGalleryOpen = ref(false);
+const handleSelectAudio = (url) => {
+  localConfig.value.audioUrl = url;
+  syncAudioUrl();
+  if (localConfig.value.music) {
+    localConfig.value.music.audioStartOffset = 0;
+  }
 };
 
 const handleTierSelection = (productId) => {
@@ -1200,7 +1279,8 @@ const localConfig = ref({
   audioUrl: '',
   music: {
     audioUrl: '',
-    has_music: false
+    has_music: false,
+    audioStartOffset: 0
   },
   theme: {
     hue: 38,

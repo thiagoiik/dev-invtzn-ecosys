@@ -524,4 +524,92 @@ class TestDeployments:
         response_empty = self.client.get('/api/v1/deployments/unsplash-search/')
         assert response_empty.status_code == 400
 
+    @mock.patch('requests.get')
+    def test_jamendo_search_proxy(self, mock_get):
+        class MockResponse:
+            status_code = 200
+            def json(self):
+                return {
+                    "headers": {
+                        "status": "success",
+                        "code": 0
+                    },
+                    "results": [
+                        {
+                            "id": "track123",
+                            "name": "Romantic Acoustic",
+                            "duration": 180,
+                            "artist_name": "Lovely Artist",
+                            "album_image": "http://album.image/cover.jpg",
+                            "audio": "http://jamendo.com/track123.mp3"
+                        }
+                    ]
+                }
+        
+        mock_get.return_value = MockResponse()
+
+        response = self.client.get('/api/v1/deployments/jamendo-search/?q=romantic')
+        assert response.status_code == 200
+        assert len(response.data['results']) == 1
+        assert response.data['results'][0]['id'] == 'track123'
+        assert response.data['results'][0]['title'] == 'Romantic Acoustic'
+        assert response.data['results'][0]['artist'] == 'Lovely Artist'
+        assert response.data['results'][0]['duration'] == 180
+        assert response.data['results'][0]['cover'] == 'http://album.image/cover.jpg'
+        assert response.data['results'][0]['audio'] == 'http://jamendo.com/track123.mp3'
+        
+        # Probar caso sin parametro q
+        response_empty = self.client.get('/api/v1/deployments/jamendo-search/')
+        assert response_empty.status_code == 400
+
+    def test_dynamic_blocks_validation_by_visibility(self):
+        from inventory.models import Product
+        product_basic = Product.objects.create(
+            name="Basic Invitation",
+            base_price=0.00,
+            product_type=Product.ProductType.DIGITAL,
+            tier_level=Product.TierLevel.BASIC
+        )
+        
+        from rest_framework.test import APIClient
+        client = APIClient()
+        from django.contrib.auth.models import User as DjangoUser
+        from profiles.models import UserProfile
+        django_user = DjangoUser.objects.create_user(username="client_user_test", password="password")
+        UserProfile.objects.create(remote_auth_id=django_user.id, custom_role="CLIENT")
+        client.force_authenticate(user=django_user)
+
+        deployment = Deployment.objects.create(
+            product=product_basic,
+            slug="test-validation-visibility",
+            user=django_user.id
+        )
+        
+        url = f'/api/v1/deployments/{deployment.id}/'
+        
+        # 1. Con visible: False (debería pasar en verde)
+        data_inactive = {
+            "custom_data": {
+                "blocks": [
+                    {"id": "timer", "type": "CountdownTimer", "visible": False}
+                ]
+            }
+        }
+        response = client.patch(url, data_inactive, format='json')
+        assert response.status_code == 200, f"Debería permitir guardar bloques inactivos. Error: {response.data}"
+        
+        # 2. Con visible: True (debería fallar con 400 Bad Request)
+        data_active = {
+            "custom_data": {
+                "blocks": [
+                    {"id": "timer", "type": "CountdownTimer", "visible": True}
+                ]
+            }
+        }
+        response_active = client.patch(url, data_active, format='json')
+        assert response_active.status_code == 400, "Debería rechazar bloques premium activos en plan básico."
+        assert "CountdownTimer" in str(response_active.data['custom_data'][0])
+
+
+
 
