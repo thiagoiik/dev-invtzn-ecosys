@@ -98,6 +98,14 @@
             <button v-if="dep.slug" @click="openShareModal(dep)" class="btn btn-primary rounded-xl font-black text-xs shadow-lg shadow-primary/10 w-full py-2.5 flex items-center justify-center gap-1">
               🔗 Compartir
             </button>
+            <!-- If Standard or Premium, let the user see the Guest List -->
+            <button 
+              v-if="dep.product_tier !== 'BASIC' && dep.slug" 
+              @click="openGuestsModal(dep)" 
+              class="btn btn-outline btn-sm border-slate-200 text-slate-700 rounded-xl font-black text-xs w-full py-2.5 flex items-center justify-center gap-1 mt-1 hover:bg-slate-50"
+            >
+              👥 Invitados y Asistencia
+            </button>
           </div>
           
           <button @click="onDelete(dep.id)" class="btn btn-error btn-xs btn-ghost mt-4 w-full text-error/50 hover:text-error opacity-0 group-hover:opacity-100 transition-opacity">
@@ -165,6 +173,126 @@
         </div>
       </div>
     </div>
+
+    <!-- Modal Premium de Lista de Invitados -->
+    <div v-if="showGuestsModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" @click="closeGuestsModal"></div>
+      <div class="relative w-full max-w-4xl bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-2xl p-8 border border-slate-100/50 overflow-hidden flex flex-col gap-6 max-h-[90vh]">
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary to-indigo-500"></div>
+        
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="text-2xl font-black text-slate-900">Lista de Asistencia y RSVPs</h3>
+            <p class="text-xs text-slate-500 mt-1">
+              Diseño: <strong class="text-primary">/i/{{ selectedDepForGuests?.slug || selectedDepForGuests?.id }}</strong>
+            </p>
+          </div>
+          <button @click="closeGuestsModal" class="text-slate-450 hover:text-slate-650 font-bold text-xl">✕</button>
+        </div>
+
+        <!-- Loader -->
+        <div v-if="loadingGuests" class="flex flex-col items-center justify-center py-20 gap-3">
+          <span class="loading loading-spinner loading-lg text-primary"></span>
+          <span class="text-sm font-medium text-slate-500">Cargando invitados...</span>
+        </div>
+
+        <template v-else>
+          <!-- Resumen de Métricas / Tarjetas Rápidas -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Card 1: Confirmados -->
+            <div class="p-4 bg-emerald-50 rounded-2xl border border-emerald-100/50 flex flex-col justify-center">
+              <span class="text-[10px] font-black text-emerald-600 uppercase tracking-widest block mb-1">Confirmados Totales</span>
+              <span class="text-3xl font-black text-slate-900">{{ totalConfirmedCount }}</span>
+              <span class="text-[10px] text-slate-500 font-medium mt-1">Incluye acompañantes adicionales</span>
+            </div>
+
+            <!-- Card 2: No Asistirán -->
+            <div class="p-4 bg-red-50 rounded-2xl border border-red-100/50 flex flex-col justify-center">
+              <span class="text-[10px] font-black text-red-600 uppercase tracking-widest block mb-1">Declinados</span>
+              <span class="text-3xl font-black text-slate-900">{{ totalDeclinedCount }}</span>
+              <span class="text-[10px] text-slate-500 font-medium mt-1">Personas que avisaron que no irán</span>
+            </div>
+
+            <!-- Card 3: Menús -->
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col justify-center">
+              <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                {{ selectedDepForGuests?.product_tier === 'PREMIUM' ? 'Desglose de Menús' : 'Nivel de RSVP' }}
+              </span>
+              <div v-if="selectedDepForGuests?.product_tier === 'PREMIUM'" class="text-xs text-slate-700 font-medium space-y-1 mt-1">
+                <div class="flex justify-between"><span>🥩 Tradicional:</span> <strong class="text-slate-900 font-bold">{{ menuBreakdown.traditional }}</strong></div>
+                <div class="flex justify-between"><span>🥗 Vegetariano:</span> <strong class="text-slate-900 font-bold">{{ menuBreakdown.vegetarian }}</strong></div>
+                <div class="flex justify-between"><span>🍟 Infantil:</span> <strong class="text-slate-900 font-bold">{{ menuBreakdown.kids }}</strong></div>
+              </div>
+              <div v-else class="flex items-center gap-1.5 mt-2">
+                <span class="badge badge-info badge-sm font-bold uppercase tracking-wider text-[9px] px-2 py-2">Tier Estándar</span>
+                <span class="text-[10px] text-slate-400 leading-normal block">Menús habilitados en plan Premium.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Buscador y Tabla -->
+          <div class="space-y-3 flex-grow flex flex-col overflow-hidden">
+            <div class="flex gap-2">
+              <input 
+                v-model="guestsSearchQuery" 
+                type="text" 
+                placeholder="Buscar invitado por nombre..." 
+                class="input input-bordered w-full h-12 rounded-xl text-sm px-4 border border-slate-200 bg-white focus:ring-2 focus:ring-primary/10 transition-all"
+              />
+            </div>
+
+            <!-- Tabla de Invitados -->
+            <div class="border border-slate-100 rounded-2xl overflow-y-auto flex-grow bg-slate-50/50">
+              <div v-if="filteredGuests.length === 0" class="p-12 text-center text-slate-400">
+                <p class="italic">No se encontraron invitados confirmados.</p>
+              </div>
+              <table v-else class="table table-zebra w-full text-left">
+                <thead class="sticky top-0 bg-white border-b border-slate-100 z-10 text-slate-500 font-bold text-xs uppercase tracking-wider">
+                  <tr>
+                    <th class="px-6 py-4">Invitado</th>
+                    <th class="px-6 py-4">Asistencia</th>
+                    <th class="px-6 py-4">Acompañantes</th>
+                    <th v-if="selectedDepForGuests?.product_tier === 'PREMIUM'" class="px-6 py-4">Menú</th>
+                    <th v-if="selectedDepForGuests?.product_tier === 'PREMIUM'" class="px-6 py-4">Alergias / Notas</th>
+                  </tr>
+                </thead>
+                <tbody class="text-sm">
+                  <tr v-for="guest in filteredGuests" :key="guest.id" class="border-b border-slate-100 bg-white hover:bg-slate-50 transition-colors">
+                    <td class="px-6 py-4 font-bold text-slate-800">
+                      {{ guest.full_name }}
+                      <span class="text-[10px] text-slate-400 block font-normal font-mono">{{ guest.created_at }}</span>
+                    </td>
+                    <td class="px-6 py-4">
+                      <span :class="[
+                        'badge badge-sm font-black text-[10px] px-2.5 py-1.5 rounded-lg border-none uppercase',
+                        guest.attending ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                      ]">
+                        {{ guest.attending ? 'Sí, asistirá' : 'No podré' }}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 font-semibold text-slate-700">
+                      {{ guest.attending ? `+${guest.companions_count}` : '-' }}
+                    </td>
+                    <td v-if="selectedDepForGuests?.product_tier === 'PREMIUM'" class="px-6 py-4 text-slate-700">
+                      {{ guest.attending ? guest.menu_selection : '-' }}
+                    </td>
+                    <td v-if="selectedDepForGuests?.product_tier === 'PREMIUM'" class="px-6 py-4 text-xs max-w-xs truncate text-slate-500 italic" :title="guest.dietary_notes">
+                      {{ guest.attending ? (guest.dietary_notes || 'Ninguna') : '-' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </template>
+
+        <div class="flex justify-end pt-2">
+          <button @click="closeGuestsModal" class="btn btn-ghost text-slate-400 font-bold uppercase tracking-widest text-[10px]">
+            Cerrar Panel
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -188,6 +316,64 @@ const showShareModal = ref(false);
 const selectedDep = ref(null);
 const newSlug = ref('');
 const savingSlug = ref(false);
+
+const showGuestsModal = ref(false);
+const selectedDepForGuests = ref(null);
+const guestsList = ref([]);
+const loadingGuests = ref(false);
+const guestsSearchQuery = ref('');
+
+const openGuestsModal = async (dep) => {
+  selectedDepForGuests.value = dep;
+  showGuestsModal.value = true;
+  loadingGuests.value = true;
+  guestsList.value = [];
+  guestsSearchQuery.value = '';
+  try {
+    const res = await deploymentService.fetchDeploymentGuests(dep.id);
+    guestsList.value = res.data || [];
+  } catch (e) {
+    toast.error('Error al cargar la lista de invitados.');
+    closeGuestsModal();
+  } finally {
+    loadingGuests.value = false;
+  }
+};
+
+const closeGuestsModal = () => {
+  showGuestsModal.value = false;
+  selectedDepForGuests.value = null;
+  guestsList.value = [];
+};
+
+const filteredGuests = computed(() => {
+  if (!guestsSearchQuery.value) return guestsList.value;
+  const q = guestsSearchQuery.value.toLowerCase();
+  return guestsList.value.filter(g => g.full_name.toLowerCase().includes(q));
+});
+
+const totalConfirmedCount = computed(() => {
+  return guestsList.value
+    .filter(g => g.attending)
+    .reduce((acc, g) => acc + 1 + (g.companions_count || 0), 0);
+});
+
+const totalDeclinedCount = computed(() => {
+  return guestsList.value.filter(g => !g.attending).length;
+});
+
+const menuBreakdown = computed(() => {
+  const counts = { traditional: 0, vegetarian: 0, kids: 0 };
+  guestsList.value
+    .filter(g => g.attending)
+    .forEach(g => {
+      const menu = g.menu_selection || 'Menú Tradicional';
+      if (menu.includes('Vegetariano')) counts.vegetarian++;
+      else if (menu.includes('Infantil')) counts.kids++;
+      else counts.traditional++;
+    });
+  return counts;
+});
 
 const openShareModal = (dep) => {
   selectedDep.value = dep;

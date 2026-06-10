@@ -19,5 +19,9 @@ export const deploymentService = {
   
   deleteDeployment(id) {
     return invtznClient.delete(`deployments/${id}/`);
+  },
+  
+  fetchDeploymentGuests(id) {
+    return invtznClient.get(`deployments/${id}/guests/`);
   }
 };
