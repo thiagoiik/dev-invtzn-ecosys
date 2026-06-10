@@ -207,7 +207,20 @@
 
             <div class="form-group">
               <label>URL de Imagen de Fondo</label>
-              <input v-model="localConfig.cover.coverPhoto" type="url" placeholder="https://..." />
+              <div class="flex gap-2">
+                <input v-model="localConfig.cover.coverPhoto" type="url" placeholder="https://..." class="flex-grow" />
+                <button type="button" @click="isGalleryOpen = true" class="btn btn-sm btn-outline text-xs h-[42px] px-3 bg-white/5 border-white/10 text-amber-400 hover:bg-white/10 shrink-0">
+                  ✨ Galería
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group" v-if="localConfig.cover.frame_overlay">
+              <label>Marco Decorativo Activo</label>
+              <div class="flex items-center justify-between p-2 rounded bg-white/5 border border-white/10 text-xs">
+                <span class="truncate max-w-[180px]">{{ localConfig.cover.frame_overlay.split('/').pop().replace('.svg', '').replace('frame_', '').replace('_', ' ') }}</span>
+                <button type="button" @click="localConfig.cover.frame_overlay = null" class="text-red-400 hover:text-red-300">Quitar</button>
+              </div>
             </div>
             
             <div class="form-group">
@@ -501,6 +514,19 @@
                   ></div>
                   <span class="text-xs text-slate-400">Color principal de botones y detalles</span>
                 </div>
+              </div>
+
+              <!-- Control de Separador de Secciones -->
+              <div class="form-group mt-4">
+                <label>Separador de Secciones</label>
+                <select v-model="localConfig.theme.divider_style" class="select-input">
+                  <option value="none">Ninguno (Línea en blanco)</option>
+                  <option value="simple-line">Línea Minimalista</option>
+                  <option value="geometric-diamonds">Diamantes Geométricos</option>
+                  <option value="floral-twigs">Follaje & Ramas</option>
+                  <option value="soft-wave">Onda Suave</option>
+                </select>
+                <span class="help-text">Elige el estilo visual para los divisores entre secciones del lienzo.</span>
               </div>
             </div>
           </div>
@@ -866,6 +892,15 @@
       @select-tier="handleTierSelection" 
     />
 
+    <!-- Modal de Galería de Recursos Gráficos -->
+    <GraphicsGalleryModal 
+      v-if="isGalleryOpen" 
+      :isOpen="isGalleryOpen" 
+      @close="isGalleryOpen = false" 
+      @select-background="handleSelectBackground"
+      @select-frame="handleSelectFrame"
+    />
+
     <!-- Modal de Celebración de Pago Exitoso (Success Modal) -->
     <div v-if="showSuccessModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6">
       <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" @click="showSuccessModal = false"></div>
@@ -1055,6 +1090,7 @@ import { crmService } from '@/modules/workspace/services/crmService';
 import RenderEngineMaster from '@/modules/engine/components/RenderEngineMaster.vue';
 import EnvelopeWrapper from '@/modules/engine/components/EnvelopeWrapper.vue';
 import UpgradeModal from '@/modules/builder/components/UpgradeModal.vue';
+import GraphicsGalleryModal from '@/modules/builder/components/GraphicsGalleryModal.vue';
 
 // Variables de estado adicionales v0.8.4
 const productTier = ref('BASIC');
@@ -1098,6 +1134,14 @@ const activeTab = ref('cover'); // 'cover', 'rsvp', 'timer', 'timeline', 'music'
 const showMobilePreview = ref(false);
 const showUpgradeModal = ref(false);
 const showSuccessModal = ref(false);
+
+const isGalleryOpen = ref(false);
+const handleSelectBackground = (url) => {
+  localConfig.value.cover.coverPhoto = url;
+};
+const handleSelectFrame = (url) => {
+  localConfig.value.cover.frame_overlay = url;
+};
 
 const handleTierSelection = (productId) => {
   if (deploymentId) {
@@ -1150,7 +1194,8 @@ const localConfig = ref({
     coverPhoto: '',
     titleColor: '#ffffff',
     headerLabel: 'Nuestra Invitación',
-    fontFamily: 'serif'
+    fontFamily: 'serif',
+    frame_overlay: null
   },
   rsvp: {
     bgColor: '#f8fafc',
@@ -1183,7 +1228,8 @@ const localConfig = ref({
   theme: {
     hue: 38,
     saturation: '80%',
-    lightness: '50%'
+    lightness: '50%',
+    divider_style: 'none'
   },
   og_title: '',
   og_description: '',

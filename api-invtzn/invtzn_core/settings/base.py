@@ -128,3 +128,6 @@ DEFAULT_FROM_EMAIL = os.environ.get('AUTH_DEFAULT_FROM_EMAIL', 'ECOSYS <no-reply
 
 # Facturapi integration settings
 FACTURAPI_API_KEY = os.environ.get('FACTURAPI_API_KEY', '')
+
+# Unsplash integration settings
+UNSPLASH_ACCESS_KEY = os.environ.get('UNSPLASH_ACCESS_KEY', 'dummy_unsplash_key_for_testing')

@@ -17,13 +17,17 @@
 
     <!-- Render Blocks dynamically based on configuration -->
     <div class="master-canvas" :class="{ 'pt-[44px]': status === 'DRAFT' }">
-      <component
-        v-for="block in orderedBlocks"
-        :key="block.id"
-        :is="block.component"
-        :config="block.config"
-        v-bind="block.component === RsvpFormBlock ? { slug: slug, tierLevel: tierLevel } : {}"
-      />
+      <template v-for="(block, idx) in orderedBlocks" :key="block.id">
+        <SectionDivider 
+          v-if="idx > 0 && customData.theme?.divider_style" 
+          :styleName="customData.theme.divider_style" 
+        />
+        <component
+          :is="block.component"
+          :config="block.config"
+          v-bind="block.component === RsvpFormBlock ? { slug: slug, tierLevel: tierLevel } : {}"
+        />
+      </template>
     </div>
   </div>
 </template>
@@ -38,6 +42,7 @@ import TimelineBlock from './TimelineBlock.vue';
 import RsvpFormBlock from './RsvpFormBlock.vue';
 import GiftTableBlock from './GiftTableBlock.vue';
 import PhotoCarouselBlock from './PhotoCarouselBlock.vue';
+import SectionDivider from './SectionDivider.vue';
 import { useTelemetry } from '../composables/useTelemetry';
 
 const props = defineProps({

@@ -532,6 +532,27 @@ class DeploymentViewSet(viewsets.ModelViewSet):
             'tier_assigned': product.tier_level
         })
 
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='unsplash-search')
+    def unsplash_search(self, request):
+        query = request.query_params.get('query', '')
+        if not query:
+            return Response({'error': 'La consulta de búsqueda (query) es obligatoria.'}, status=400)
+        
+        try:
+            page = int(request.query_params.get('page', 1))
+            per_page = int(request.query_params.get('per_page', 20))
+        except ValueError:
+            page = 1
+            per_page = 20
+
+        from .services import UnsplashService
+        result = UnsplashService.search_photos(query, page, per_page)
+        
+        if 'error' in result:
+            return Response({'error': result['error']}, status=500)
+            
+        return Response(result)
+
 
 from rest_framework.permissions import BasePermission
 

@@ -1,4 +1,5 @@
 import pytest
+from unittest import mock
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from deployments.models import Deployment
@@ -482,5 +483,45 @@ class TestDeployments:
         basic_dep = Deployment.objects.create(user=self.user.id, product=basic_prod)
         assert basic_dep.allowed_features['gift_table'] is False
         assert basic_dep.allowed_features['photo_carousel'] is False
+
+    @mock.patch('requests.get')
+    def test_unsplash_search_proxy(self, mock_get):
+        from unittest import mock
+        class MockResponse:
+            status_code = 200
+            def json(self):
+                return {
+                    "total": 1,
+                    "total_pages": 1,
+                    "results": [
+                        {
+                            "id": "img123",
+                            "urls": {
+                                "regular": "http://regular.url",
+                                "small": "http://small.url"
+                            },
+                            "user": {
+                                "name": "Test Photographer",
+                                "links": {
+                                    "html": "http://unsplash-user.url"
+                                }
+                            }
+                        }
+                    ]
+                }
+        
+        mock_get.return_value = MockResponse()
+
+        response = self.client.get('/api/v1/deployments/unsplash-search/?query=wedding')
+        assert response.status_code == 200
+        assert response.data['total'] == 1
+        assert len(response.data['results']) == 1
+        assert response.data['results'][0]['id'] == 'img123'
+        assert response.data['results'][0]['url'] == 'http://regular.url'
+        assert response.data['results'][0]['author'] == 'Test Photographer'
+        
+        # Probar caso sin query
+        response_empty = self.client.get('/api/v1/deployments/unsplash-search/')
+        assert response_empty.status_code == 400
 
 

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1200" width="100%" height="100%">
+  <!-- Outer Border -->
+  <rect x="20" y="20" width="760" height="1160" fill="none" stroke="#d4af37" stroke-width="3" rx="10"/>
+  <!-- Inner Border -->
+  <rect x="35" y="35" width="730" height="1130" fill="none" stroke="#d4af37" stroke-width="1" stroke-dasharray="4 2" rx="6"/>
+  <!-- Geometric corner details -->
+  <path d="M 20 60 L 60 20 M 780 60 L 740 20 M 20 1140 L 60 1180 M 780 1140 L 740 1180" fill="none" stroke="#d4af37" stroke-width="2"/>
+  <polygon points="50,50 65,35 50,20 35,35" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+  <polygon points="750,50 765,35 750,20 735,35" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+  <polygon points="50,1150 65,1165 50,1180 35,1165" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+  <polygon points="750,1150 765,1165 750,1180 735,1165" fill="none" stroke="#d4af37" stroke-width="1.5"/>
+</svg>

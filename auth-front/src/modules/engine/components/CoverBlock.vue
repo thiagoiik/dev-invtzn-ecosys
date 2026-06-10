@@ -11,6 +11,13 @@
     <!-- Sophisticated Overlay Layer -->
     <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-slate-950/60"></div>
 
+    <!-- Decorative Frame Overlay -->
+    <div 
+      v-if="config.frame_overlay" 
+      class="absolute inset-0 pointer-events-none bg-contain bg-center bg-no-repeat z-[5]"
+      :style="{ backgroundImage: `url(${config.frame_overlay})` }"
+    ></div>
+
     <!-- Content Card -->
     <div class="relative z-10 text-center max-w-2xl px-6 space-y-8 animate-fade-in-up">
       <!-- Header Label -->
