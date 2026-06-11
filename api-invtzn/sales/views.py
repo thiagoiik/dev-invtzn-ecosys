@@ -292,8 +292,17 @@ class OrderViewSet(viewsets.ModelViewSet):
             from deployments.models import Deployment
             try:
                 dep = Deployment.objects.get(id=deployment_id)
-                # Reclamar si es anónimo
-                if dep.user is None:
+                # Obtener el rol del propietario actual (si tiene)
+                current_owner_role = None
+                if dep.user:
+                    try:
+                        owner_profile = UserProfile.objects.get(remote_auth_id=dep.user)
+                        current_owner_role = owner_profile.custom_role
+                    except UserProfile.DoesNotExist:
+                        pass
+                        
+                # Transferir propiedad si es anónimo o si pertenecía al Staff (Admin/Diseñador)
+                if dep.user is None or current_owner_role in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]:
                     dep.user = self.request.user.id
                     dep.save()
                 
