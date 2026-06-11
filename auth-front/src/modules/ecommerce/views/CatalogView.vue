@@ -197,13 +197,16 @@ import CoverBlock from '@/modules/engine/components/CoverBlock.vue';
 
 const getCoverConfig = (templateConfig) => {
   if (!templateConfig) return {};
+  if (templateConfig.cover) {
+    return templateConfig.cover;
+  }
   if (Array.isArray(templateConfig.blocks)) {
     const coverBlock = templateConfig.blocks.find(b => b.type === 'CoverBlock');
     if (coverBlock) {
       return coverBlock.config || {};
     }
   }
-  return templateConfig.cover || {};
+  return {};
 };
 
 const getThemeVariables = (templateConfig) => {
