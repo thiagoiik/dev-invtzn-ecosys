@@ -115,3 +115,56 @@ def test_create_review_authenticated():
     # Verificar en BD
     review = SiteReview.objects.get(id=response.data['id'])
     assert review.user == user
+
+
+@pytest.mark.django_db
+def test_notifications_list_and_self_cleaning_for_admin():
+    client = APIClient()
+    
+    # 1. Setup Admin user
+    admin_user = UserProfile.objects.create(remote_auth_id=100, custom_role='ADMIN')
+    client.force_authenticate(user=admin_user)
+    
+    # 2. Setup Deployments (one DRAFT, one ACTIVE)
+    from deployments.models import Deployment
+    from inventory.models import Product
+    product = Product.objects.create(name='Test Product', base_price=10.00, product_type='DIGITAL')
+    
+    draft_dep = Deployment.objects.create(user=99, product=product, status=Deployment.StatusChoices.DRAFT)
+    active_dep = Deployment.objects.create(user=99, product=product, status=Deployment.StatusChoices.ACTIVE)
+    
+    # 3. Create CommunicationLog notifications
+    from profiles.models import CommunicationLog
+    
+    # Notif 1 for draft_dep (should be shown)
+    CommunicationLog.objects.create(
+        user=admin_user,
+        channel=CommunicationLog.Channel.SYSTEM,
+        subject=f"El Diseñador Leopardo solicita revisión (ID: {draft_dep.id})"
+    )
+    
+    # Notif 2 for active_dep (should NOT be shown - self-cleaning)
+    CommunicationLog.objects.create(
+        user=admin_user,
+        channel=CommunicationLog.Channel.SYSTEM,
+        subject=f"El Diseñador Mamba solicita revisión (ID: {active_dep.id})"
+    )
+    
+    # Notif 3 without ID in subject (should be shown)
+    CommunicationLog.objects.create(
+        user=admin_user,
+        channel=CommunicationLog.Channel.SYSTEM,
+        subject="Notificación del sistema sin ID de invitación"
+    )
+    
+    # 4. Request notifications endpoint
+    response = client.get('/api/v1/profiles/notifications/')
+    assert response.status_code == 200
+    assert len(response.data) == 2
+    
+    subjects = [n['subject'] for n in response.data]
+    # Verify the DRAFT one and the one without ID are returned
+    assert f"El Diseñador Leopardo solicita revisión (ID: {draft_dep.id})" in subjects
+    assert "Notificación del sistema sin ID de invitación" in subjects
+    # Verify the ACTIVE template one is filtered out (self-cleaned)
+    assert f"El Diseñador Mamba solicita revisión (ID: {active_dep.id})" not in subjects

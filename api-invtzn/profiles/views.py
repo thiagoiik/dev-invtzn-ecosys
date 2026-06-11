@@ -1,8 +1,8 @@
 from rest_framework import viewsets, mixins, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from .models import UserProfile, WalletLog, SiteReview
-from .serializers import UserProfileSerializer, WalletLogSerializer, SiteReviewSerializer
+from .models import UserProfile, WalletLog, SiteReview, CommunicationLog
+from .serializers import UserProfileSerializer, WalletLogSerializer, SiteReviewSerializer, CommunicationLogSerializer
 
 class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewsets.GenericViewSet):
     serializer_class = UserProfileSerializer
@@ -100,6 +100,44 @@ class UserProfileViewSet(mixins.ListModelMixin, mixins.UpdateModelMixin, viewset
             return Response(serializer.data)
         except UserProfile.DoesNotExist:
             return Response({'error': 'Usuario no encontrado'}, status=404)
+
+    @action(detail=False, methods=['get'])
+    def notifications(self, request):
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'No tienes perfil asignado.'}, status=403)
+            
+        if profile.custom_role != UserProfile.Role.ADMIN:
+            return Response([])
+            
+        import re
+        from deployments.models import Deployment
+        
+        logs = CommunicationLog.objects.filter(
+            user=profile,
+            channel=CommunicationLog.Channel.SYSTEM
+        ).order_by('-sent_at')[:100]
+        
+        filtered_notifications = []
+        for log in logs:
+            match = re.search(r'\(ID:\s*(\d+)\)', log.subject)
+            if match:
+                deployment_id = int(match.group(1))
+                try:
+                    deployment = Deployment.objects.get(id=deployment_id)
+                    if deployment.status == Deployment.StatusChoices.DRAFT:
+                        filtered_notifications.append(log)
+                except Deployment.DoesNotExist:
+                    pass
+            else:
+                filtered_notifications.append(log)
+                
+            if len(filtered_notifications) >= 20:
+                break
+                
+        serializer = CommunicationLogSerializer(filtered_notifications, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['patch'], url_path='change-role')
     def change_role(self, request, remote_auth_id=None):

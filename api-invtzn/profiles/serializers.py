@@ -49,3 +49,9 @@ class SiteReviewSerializer(serializers.ModelSerializer):
             'created_at'
         ]
         read_only_fields = ['id', 'user', 'created_at']
+
+
+class CommunicationLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CommunicationLog
+        fields = ['id', 'user', 'channel', 'subject', 'sent_at']
