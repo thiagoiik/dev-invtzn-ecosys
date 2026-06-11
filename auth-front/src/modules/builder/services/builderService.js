@@ -22,6 +22,10 @@ export const builderService = {
   
   publishProduct(id, productData) {
     return invtznClient.post(`deployments/${id}/publish-product/`, productData);
+  },
+  
+  requestReview(id) {
+    return invtznClient.post(`deployments/${id}/request-review/`);
   }
 
 };

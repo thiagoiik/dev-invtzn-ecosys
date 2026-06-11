@@ -36,6 +36,9 @@
           <span v-if="deploymentStatus === 'LIVE'" class="badge bg-emerald-500 text-white font-bold text-[10px] sm:text-xs uppercase px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
             🟢<span class="hidden sm:inline"> En Vivo</span>
           </span>
+          <span v-else-if="deploymentStatus === 'ACTIVE'" class="badge bg-indigo-600 text-white font-bold text-[10px] sm:text-xs uppercase px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
+            🎨<span class="hidden sm:inline"> Plantilla</span>
+          </span>
           <span v-else class="badge bg-amber-500 text-white font-bold text-[10px] sm:text-xs uppercase px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg flex items-center gap-1 shadow-sm">
             🧪<span class="hidden sm:inline"> Borrador</span>
           </span>
@@ -56,11 +59,11 @@
         
         <!-- Botón de publicar dinámico -->
         <button 
-          v-if="deploymentStatus !== 'LIVE'"
+          v-if="deploymentStatus !== 'LIVE' && deploymentStatus !== 'ACTIVE'"
           @click="handlePublishClick"
           class="btn btn-sm bg-gradient-to-r from-pink-500 to-indigo-600 hover:from-pink-600 hover:to-indigo-700 text-white font-black px-2.5 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-md transition-all flex items-center gap-1 text-[10px] sm:text-xs"
         >
-          ✨<span class="hidden sm:inline"> Publicar</span>
+          ✨<span class="hidden sm:inline"> {{ authStore?.role === 'DESIGNER' ? 'Enviar a revisión' : 'Publicar' }}</span>
         </button>
 
         <button 
@@ -1119,6 +1122,39 @@
         </form>
       </div>
     </div>
+
+    <!-- Modal de Confirmación Genérico (Premium) -->
+    <div v-if="confirmModal.show" class="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-6">
+      <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-md" @click="confirmModal.show = false"></div>
+      <div class="relative w-full max-w-md bg-white rounded-3xl shadow-2xl p-6 md:p-8 flex flex-col gap-6 border border-slate-100 overflow-hidden text-center">
+        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-pink-500 to-indigo-600"></div>
+        
+        <div class="space-y-2 mt-2">
+          <span class="text-4xl block">{{ confirmModal.emoji }}</span>
+          <h3 class="text-xl font-black text-slate-800">{{ confirmModal.title }}</h3>
+          <p class="text-slate-500 text-xs sm:text-sm whitespace-pre-line">
+            {{ confirmModal.message }}
+          </p>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+          <button 
+            type="button" 
+            @click="confirmModal.show = false" 
+            class="btn btn-outline border-slate-200 text-slate-500 hover:bg-slate-50 flex-1 py-2.5 rounded-xl font-bold text-sm transition-all"
+          >
+            {{ confirmModal.cancelText }}
+          </button>
+          <button 
+            type="button" 
+            @click="handleConfirmModalAction" 
+            class="btn bg-indigo-600 hover:bg-indigo-700 text-white flex-1 py-2.5 rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all"
+          >
+            {{ confirmModal.confirmText }}
+          </button>
+        </div>
+      </div>
+    </div>
   </BuilderLayout>
 
 </template>
@@ -1157,6 +1193,37 @@ const adminPublishForm = ref({
   slug: '',
   store_id: null
 });
+
+// Modal de confirmación premium reusable
+const confirmModal = ref({
+  show: false,
+  title: '',
+  message: '',
+  emoji: '⚠️',
+  confirmText: 'Confirmar',
+  cancelText: 'Cancelar',
+  onConfirm: null
+});
+
+const openConfirmModal = (options) => {
+  confirmModal.value = {
+    show: true,
+    title: options.title || '¿Estás seguro?',
+    message: options.message || '',
+    emoji: options.emoji || '⚠️',
+    confirmText: options.confirmText || 'Confirmar',
+    cancelText: options.cancelText || 'Cancelar',
+    onConfirm: options.onConfirm
+  };
+};
+
+const handleConfirmModalAction = async () => {
+  const callback = confirmModal.value.onConfirm;
+  confirmModal.value.show = false;
+  if (callback) {
+    await callback();
+  }
+};
 
 
 const route = useRoute();
@@ -1464,7 +1531,7 @@ const handlePublishClick = () => {
     adminPublishForm.value.store_id = null;
     showAdminPublishModal.value = true;
   } else if (role === 'DESIGNER') {
-    toast.info('Los cambios del diseño se guardaron en tu biblioteca.');
+    confirmRequestReview();
   } else {
     if (productTier.value === 'BASIC') {
       reviewForm.value.reviewer_name = '';
@@ -1481,28 +1548,61 @@ const handlePublishClick = () => {
   }
 };
 
-const confirmPublishPaid = async () => {
-  if (confirm('¿Estás seguro de que deseas poner tu invitación en vivo?')) {
-    try {
-      await builderService.updateDeployment(deploymentId, { status: 'LIVE' });
-      deploymentStatus.value = 'LIVE';
-      toast.success('¡Tu invitación está En Vivo!');
-    } catch (e) {
-      toast.error('Error al publicar la invitación.');
+const confirmRequestReview = () => {
+  openConfirmModal({
+    title: 'Solicitar Revisión',
+    message: '¿Estás seguro de que deseas enviar este diseño a revisión por el administrador? Se notificará al equipo de control de calidad para su aprobación.',
+    emoji: '📨',
+    confirmText: 'Enviar a Revisión',
+    cancelText: 'Cancelar',
+    onConfirm: async () => {
+      try {
+        await builderService.requestReview(deploymentId);
+        toast.success('Solicitud de revisión enviada al administrador.');
+      } catch (error) {
+        const errMsg = error.response?.data?.error || 'Error al enviar la solicitud de revisión.';
+        toast.error(errMsg);
+      }
     }
-  }
+  });
 };
 
-const pauseInvitation = async () => {
-  if (confirm('¿Estás seguro de que deseas pausar tu invitación? Esto desactivará el acceso público temporalmente.')) {
-    try {
-      await builderService.updateDeployment(deploymentId, { status: 'DRAFT' });
-      deploymentStatus.value = 'DRAFT';
-      toast.info('Invitación pausada correctamente.');
-    } catch (e) {
-      toast.error('Error al pausar la invitación.');
+const confirmPublishPaid = () => {
+  openConfirmModal({
+    title: 'Publicar Invitación',
+    message: '¿Estás seguro de que deseas poner tu invitación en vivo? Esto la hará accesible para todos tus invitados.',
+    emoji: '🚀',
+    confirmText: 'Publicar Ahora',
+    cancelText: 'Cancelar',
+    onConfirm: async () => {
+      try {
+        await builderService.updateDeployment(deploymentId, { status: 'LIVE' });
+        deploymentStatus.value = 'LIVE';
+        toast.success('¡Tu invitación está En Vivo!');
+      } catch (e) {
+        toast.error('Error al publicar la invitación.');
+      }
     }
-  }
+  });
+};
+
+const pauseInvitation = () => {
+  openConfirmModal({
+    title: 'Pausar Invitación',
+    message: '¿Estás seguro de que deseas pausar tu invitación? Esto desactivará el acceso público temporalmente y la devolverá al estado borrador.',
+    emoji: '⏸️',
+    confirmText: 'Pausar',
+    cancelText: 'Cancelar',
+    onConfirm: async () => {
+      try {
+        await builderService.updateDeployment(deploymentId, { status: 'DRAFT' });
+        deploymentStatus.value = 'DRAFT';
+        toast.info('Invitación pausada correctamente.');
+      } catch (e) {
+        toast.error('Error al pausar la invitación.');
+      }
+    }
+  });
 };
 
 const submitReviewAndActivate = async () => {
