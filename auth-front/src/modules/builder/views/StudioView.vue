@@ -108,6 +108,7 @@
           >
             <option value="cover">🌅 Portada del Evento</option>
             <option value="rsvp">✉️ Confirmación RSVP</option>
+            <option value="location">📍 Ubicación / Mapa</option>
             <option value="timer">🕰️ Cuenta Regresiva</option>
             <option value="timeline">📅 Cronograma / Itinerario</option>
             <option value="music">🎵 Música de Fondo</option>
@@ -274,6 +275,100 @@
               <button @click="showUpgradeModal = true" class="upgrade-btn w-full">
                 🔓 Desbloquear RSVP {{ productTier === 'BASIC' ? 'Standard / Premium' : 'Premium' }}
               </button>
+            </div>
+          </div>
+
+          <!-- TAB UBICACIÓN -->
+          <div v-if="activeTab === 'location'" class="tab-content fade-in space-y-6">
+            <div class="flex items-center justify-between">
+              <h3 class="font-extrabold text-white text-lg">Ubicación del Evento</h3>
+            </div>
+            <p class="text-xs text-slate-400">Configura la ubicación física y el mapa interactivo del evento para tus invitados.</p>
+
+            <!-- Feature Switch -->
+            <div class="switch-container">
+              <label class="switch-label">
+                <span class="flex items-center gap-2">
+                  📍 Habilitar Ubicación
+                </span>
+                <input 
+                  type="checkbox" 
+                  v-model="localConfig.has_location" 
+                  class="switch-input"
+                />
+              </label>
+            </div>
+
+            <!-- Fields wrapper -->
+            <div :class="{ 'opacity-40 pointer-events-none': !localConfig.has_location }" class="space-y-6">
+              <div class="form-group flex flex-col gap-2">
+                <label>Título de la Sección</label>
+                <input 
+                  v-model="localConfig.location.title" 
+                  type="text" 
+                  placeholder="Ej: Ubicación del Evento o Ceremonia" 
+                  :disabled="!localConfig.has_location"
+                />
+              </div>
+
+              <div class="form-group flex flex-col gap-2">
+                <label>Nombre del Lugar / Salón</label>
+                <input 
+                  v-model="localConfig.location.venueName" 
+                  type="text" 
+                  placeholder="Ej: Salón de Eventos Las Nubes" 
+                  :disabled="!localConfig.has_location"
+                />
+              </div>
+
+              <div class="form-group flex flex-col gap-2">
+                <label>Dirección</label>
+                <input 
+                  v-model="localConfig.location.address" 
+                  type="text" 
+                  placeholder="Ej: Av. Paseo de la Reforma #123, Col. Centro" 
+                  :disabled="!localConfig.has_location"
+                />
+              </div>
+
+              <div class="form-group flex flex-col gap-2">
+                <label>Enlace de Mapas (Google Maps, Waze, etc.)</label>
+                <input 
+                  v-model="localConfig.location.googleMapsUrl" 
+                  type="text" 
+                  placeholder="Ej: https://maps.app.goo.gl/..." 
+                  :disabled="!localConfig.has_location"
+                />
+                <p class="text-[10px] text-slate-400 mt-1">Este enlace se usará para el botón "Cómo llegar". Abre directamente en las apps de navegación de los invitados.</p>
+              </div>
+
+              <!-- Nivel de Zoom (Bloqueado a partir de Standard) -->
+              <div class="form-group flex flex-col gap-2">
+                <div class="flex justify-between items-center">
+                  <label>Zoom del Mapa Integrado</label>
+                  <span v-if="!allowedFeatures.countdown_timer" class="badge-lock">STANDARD 👑</span>
+                  <span v-else class="text-xs font-black text-indigo-400 font-mono">{{ localConfig.location.zoom || 14 }}x</span>
+                </div>
+                <p class="text-[10px] text-slate-500">
+                  Aumenta el zoom para enfocar la calle o redúcelo para ver la zona general.
+                </p>
+                
+                <input 
+                  :value="allowedFeatures.countdown_timer ? localConfig.location.zoom : 14"
+                  @input="allowedFeatures.countdown_timer ? (localConfig.location.zoom = Number($event.target.value)) : null"
+                  :disabled="!allowedFeatures.countdown_timer || !localConfig.has_location"
+                  type="range" 
+                  min="10" 
+                  max="20" 
+                  step="1"
+                  class="w-full accent-indigo-500 cursor-pointer"
+                  :class="{ 'opacity-50 cursor-not-allowed': !allowedFeatures.countdown_timer || !localConfig.has_location }"
+                />
+                
+                <p v-if="!allowedFeatures.countdown_timer" class="text-[10px] text-amber-500 font-semibold mt-1">
+                  El ajuste de zoom requiere un plan <strong>Standard</strong> o superior. El zoom para el plan básico está fijo en 14x.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -1287,6 +1382,7 @@ const whatsappShareUrl = computed(() => {
 const defaultBlocks = [
   { id: 'cover', type: 'CoverBlock', name: '🌅 Portada del Evento', visible: true, locked: true },
   { id: 'timer', type: 'CountdownTimer', name: '🕰️ Cuenta Regresiva', visible: false, configKey: 'has_timer' },
+  { id: 'location', type: 'LocationBlock', name: '📍 Ubicación del Evento', visible: false, configKey: 'has_location' },
   { id: 'rsvp', type: 'RsvpFormBlock', name: '✉️ Confirmación RSVP', visible: true, locked: true },
   { id: 'timeline', type: 'TimelineBlock', name: '📅 Cronograma / Itinerario', visible: false, configKey: 'has_timeline' },
   { id: 'gift_table', type: 'GiftTableBlock', name: '🎁 Mesa de Regalos', visible: false, configKey: 'has_gift_table' },
@@ -1302,6 +1398,7 @@ const allowedFeatures = ref({
   custom_og: false,
   gift_table: false,
   photo_carousel: false,
+  location: true,
 });
 const deploymentSlug = ref('');
 const deploymentStatus = ref('DRAFT');
@@ -1327,6 +1424,14 @@ const localConfig = ref({
     subtitle: 'Nos encantaría contar con tu presencia.',
     whatsappPhone: '',
     tier: 'BASIC'
+  },
+  has_location: false,
+  location: {
+    title: 'Ubicación del Evento',
+    venueName: '',
+    address: '',
+    googleMapsUrl: '',
+    zoom: 14
   },
   has_timer: false,
   timer: {
@@ -1443,6 +1548,9 @@ onMounted(async () => {
         if (custom.photo_carousel) {
           localConfig.value.photo_carousel = { ...localConfig.value.photo_carousel, ...custom.photo_carousel };
         }
+        if (custom.location) {
+          localConfig.value.location = { ...localConfig.value.location, ...custom.location };
+        }
         
         // Copiar otros campos planos
         localConfig.value.has_timer = custom.has_timer ?? false;
@@ -1450,6 +1558,7 @@ onMounted(async () => {
         localConfig.value.has_music = custom.has_music ?? false;
         localConfig.value.has_gift_table = custom.has_gift_table ?? false;
         localConfig.value.has_photo_carousel = custom.has_photo_carousel ?? false;
+        localConfig.value.has_location = custom.has_location ?? false;
         localConfig.value.audioUrl = custom.audioUrl ?? '';
         localConfig.value.og_title = custom.og_title ?? '';
         localConfig.value.og_description = custom.og_description ?? '';
@@ -1459,10 +1568,14 @@ onMounted(async () => {
 
         // Cargar blocks dinámicos o inicializar fallback
         if (Array.isArray(custom.blocks)) {
-          localConfig.value.blocks = custom.blocks.map(b => {
+          const loadedBlocks = custom.blocks.map(b => {
             const db = defaultBlocks.find(d => d.id === b.id);
             return { ...db, ...b };
-          });
+          }).filter(b => b.id);
+          
+          // Asegurar que cualquier block nuevo por defecto (ej: location) esté presente en localConfig
+          const missingBlocks = defaultBlocks.filter(db => !loadedBlocks.some(lb => lb.id === db.id));
+          localConfig.value.blocks = [...loadedBlocks, ...missingBlocks];
         } else {
           localConfig.value.blocks = defaultBlocks.map(db => {
             let visible = db.visible;
@@ -1470,6 +1583,7 @@ onMounted(async () => {
             if (db.id === 'timeline') visible = custom.has_timeline ?? false;
             if (db.id === 'gift_table') visible = custom.has_gift_table ?? false;
             if (db.id === 'photo_carousel') visible = custom.has_photo_carousel ?? false;
+            if (db.id === 'location') visible = custom.has_location ?? false;
             return { ...db, visible };
           });
         }
@@ -1833,6 +1947,11 @@ watch(() => localConfig.value.has_gift_table, (val) => {
 
 watch(() => localConfig.value.has_photo_carousel, (val) => {
   const b = localConfig.value.blocks?.find(x => x.id === 'photo_carousel');
+  if (b) b.visible = val;
+});
+
+watch(() => localConfig.value.has_location, (val) => {
+  const b = localConfig.value.blocks?.find(x => x.id === 'location');
   if (b) b.visible = val;
 });
 
