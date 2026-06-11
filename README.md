@@ -286,3 +286,23 @@ La versión **v0.7.0** introduce un cambio estructural en el proceso de creació
   ```bash
   docker exec -it api-invtzn-redis-1 redis-cli info keyspace
   ```
+
+---
+
+## 💎 Versión v0.9.5 — Visualización en Vivo Dinámica por Roles y Traspaso de Propiedad
+
+La versión **v0.9.5** refina la experiencia de previsualización en vivo (`/i/:slug`) protegiendo los borradores y simplificando la entrega de diseños personalizados por el staff hacia clientes finales:
+
+*   **Control de Vista en Vivo por Roles (`DRAFT`):**
+    *   **Invitados Finales (Externos/Anónimos):** Visualizan una pantalla premium con el mensaje *"¡Invitación en edición! El organizador está puliendo los detalles. Estará disponible públicamente muy pronto"*, previniendo la exposición de contenido incompleto o de botones de compra.
+    *   **Cliente Propietario:** Visualiza la invitación completa acompañada del banner de *"MODO VISTA PREVIA"* y el botón flotante de *"Comprar"*.
+    *   **Personal de la Plataforma:** Visualiza el diseño limpio de marcas de agua e inyecta una barra flotante en cabecera personalizada:
+        *   `ADMIN` $\rightarrow$ `Modo Administrador | [Editar en Builder]`
+        *   `DESIGNER` $\rightarrow$ `Modo Diseñador | [Editar en Builder]`
+        *   `VENDOR` $\rightarrow$ `Modo Vendedor` (Solo lectura)
+        *   `FRANCHISEE` $\rightarrow$ `Modo Franquicia` (Solo lectura)
+*   **Traspaso de Propiedad al Pagar (Handoff Flow):**
+    *   Si una invitación en borrador pertenece a un Administrador/Diseñador (creación de diseños a medida para un cliente) o es un sandbox anónimo (`dep.user is None`), el backend de órdenes (`sales/views.py`) transfiere la propiedad de forma automática al cliente comprador en el checkout (`dep.user = request.user.id`).
+*   **Soporte Técnico de Diseñadores:**
+    *   Cuando un Diseñador o Administrador asiste a un cliente en una invitación ya pagada (`LIVE`), el diseñador conserva acceso total de edición pero **la propiedad sigue perteneciendo al cliente**, evitando la pérdida de control del recurso.
+
