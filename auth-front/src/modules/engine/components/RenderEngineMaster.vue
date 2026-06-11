@@ -75,6 +75,7 @@ import TimelineBlock from './TimelineBlock.vue';
 import RsvpFormBlock from './RsvpFormBlock.vue';
 import GiftTableBlock from './GiftTableBlock.vue';
 import PhotoCarouselBlock from './PhotoCarouselBlock.vue';
+import LocationBlock from './LocationBlock.vue';
 import SectionDivider from './SectionDivider.vue';
 import { useTelemetry } from '../composables/useTelemetry';
 
@@ -140,7 +141,8 @@ const componentMap = {
   TimelineBlock: TimelineBlock,
   RsvpFormBlock: RsvpFormBlock,
   GiftTableBlock: GiftTableBlock,
-  PhotoCarouselBlock: PhotoCarouselBlock
+  PhotoCarouselBlock: PhotoCarouselBlock,
+  LocationBlock: LocationBlock
 };
 
 const orderedBlocks = computed(() => {
@@ -162,6 +164,8 @@ const orderedBlocks = computed(() => {
           resolvedConfig = props.customData.gift_table || {};
         } else if (b.id === 'photo_carousel') {
           resolvedConfig = props.customData.photo_carousel || {};
+        } else if (b.id === 'location') {
+          resolvedConfig = props.customData.location || {};
         }
 
         return {
@@ -214,6 +218,14 @@ const orderedBlocks = computed(() => {
       id: 'photo_carousel',
       component: PhotoCarouselBlock,
       config: props.customData.photo_carousel || {}
+    });
+  }
+
+  if (props.customData.has_location || props.customData.location) {
+    fallback.push({
+      id: 'location',
+      component: LocationBlock,
+      config: props.customData.location || {}
     });
   }
 
