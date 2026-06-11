@@ -14,6 +14,12 @@ vi.mock('@/modules/auth/store/auth', () => ({
   })
 }));
 
+vi.mock('@/modules/dashboard/services/profileService', () => ({
+  profileService: {
+    fetchNotifications: vi.fn(() => Promise.resolve({ data: [] }))
+  }
+}));
+
 vi.mock('vue-router', () => ({
   useRouter: () => ({
     push: vi.fn()

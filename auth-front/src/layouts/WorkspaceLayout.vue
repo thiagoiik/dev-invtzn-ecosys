@@ -198,6 +198,37 @@
         
         <!-- User Profile Dropdown -->
         <div class="flex items-center gap-6">
+          <!-- Campana de Notificaciones de Sistema -->
+          <div v-if="userRole === 'ADMIN'" class="dropdown dropdown-end">
+            <label tabindex="0" class="btn btn-ghost btn-circle relative bg-slate-50 hover:bg-slate-100 transition-colors">
+              <span class="text-xl">🔔</span>
+              <span v-if="notifications.length > 0" class="badge badge-sm badge-primary absolute top-1 right-1 w-2.5 h-2.5 p-0 rounded-full border-none ring-2 ring-white animate-pulse"></span>
+            </label>
+            <div tabindex="0" class="mt-3 z-[50] shadow-2xl dropdown-content bg-white rounded-xl w-80 sm:w-96 border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2">
+              <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+                <span class="font-black tracking-wide text-xs uppercase">Notificaciones del Sistema</span>
+                <span class="badge badge-sm font-bold bg-amber-500 text-slate-950 border-none">{{ notifications.length }} pendientes</span>
+              </div>
+              <ul class="max-h-80 overflow-y-auto divide-y divide-slate-50 py-1">
+                <li v-if="notifications.length === 0" class="p-6 text-center text-slate-400 font-medium italic text-xs">
+                  Sin notificaciones pendientes.
+                </li>
+                <li 
+                  v-for="notif in notifications" 
+                  :key="notif.id" 
+                  class="hover:bg-slate-50 transition-colors"
+                >
+                  <a 
+                    @click="handleNotificationClick(notif)" 
+                    class="block p-4 cursor-pointer text-left space-y-1"
+                  >
+                    <p class="text-xs text-slate-700 font-semibold leading-relaxed">{{ notif.subject }}</p>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{{ formatTime(notif.sent_at) }}</p>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
           <div class="flex items-center gap-3 cursor-pointer group" @click="toggleMenu">
             <div class="text-right hidden sm:block">
               <p class="font-bold text-slate-800 group-hover:text-primary transition-colors">{{ authStore.user?.username || 'Staff' }}</p>
@@ -284,18 +315,50 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useAuthStore } from '@/modules/auth/store/auth';
 import { useDevice } from '@/composables/useDevice';
 import { useRouter } from 'vue-router';
+import { profileService } from '@/modules/dashboard/services/profileService';
 
 const authStore = useAuthStore();
 const router = useRouter();
 const userRole = computed(() => authStore.role);
 const menuOpen = ref(false);
 const mobileMenuOpen = ref(false);
+const notifications = ref([]);
+let intervalId = null;
 
 const { isMobile, isTablet, isDesktop } = useDevice();
+
+const loadNotifications = async () => {
+  if (userRole.value !== 'ADMIN') return;
+  try {
+    const res = await profileService.fetchNotifications();
+    notifications.value = res.data || [];
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+  }
+};
+
+const formatTime = (timeStr) => {
+  if (!timeStr) return '';
+  const date = new Date(timeStr);
+  return date.toLocaleString('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+const handleNotificationClick = (notif) => {
+  const match = notif.subject.match(/ID:\s*(\d+)/);
+  if (match) {
+    const deploymentId = match[1];
+    router.push(`/builder/${deploymentId}`);
+  }
+};
 
 const toggleMenu = () => {
   menuOpen.value = !menuOpen.value;
@@ -304,6 +367,19 @@ const handleLogout = () => {
   authStore.logout();
   router.push('/login');
 };
+
+onMounted(() => {
+  loadNotifications();
+  if (userRole.value === 'ADMIN') {
+    intervalId = setInterval(loadNotifications, 30000);
+  }
+});
+
+onBeforeUnmount(() => {
+  if (intervalId) {
+    clearInterval(intervalId);
+  }
+});
 </script>
 
 <style scoped>

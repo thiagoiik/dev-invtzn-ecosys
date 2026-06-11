@@ -14,5 +14,10 @@ export const profileService = {
   // Actualiza los datos de perfil como el número de teléfono
   updateMyProfile(data) {
     return invtznClient.patch('profiles/me/', data);
+  },
+
+  // Obtiene notificaciones de sistema del administrador
+  fetchNotifications() {
+    return invtznClient.get('profiles/notifications/');
   }
 };
