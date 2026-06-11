@@ -521,7 +521,7 @@ class DeploymentViewSet(viewsets.ModelViewSet):
             
         # 2. Actualizar el slug y el nombre de esta maqueta
         deployment.slug = slug
-        deployment.status = Deployment.StatusChoices.LIVE
+        deployment.status = Deployment.StatusChoices.ACTIVE
         deployment.save()
         
         # 3. Analizar automáticamente el tier_level en base a custom_data
@@ -568,6 +568,53 @@ class DeploymentViewSet(viewsets.ModelViewSet):
             'success': 'Producto de catálogo creado y vinculado a la plantilla exitosamente.',
             'product_id': product.id,
             'tier_assigned': product.tier_level
+        })
+
+    @action(detail=True, methods=['post'], url_path='request-review')
+    def request_review(self, request, pk=None):
+        deployment = self.get_object()
+        
+        # Validar que el usuario tenga perfil y sea al menos DESIGNER o ADMIN
+        from profiles.models import UserProfile
+        user_profile = get_object_or_404(UserProfile, remote_auth_id=request.user.id)
+        
+        if user_profile.custom_role not in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]:
+            return Response({'error': 'No tienes permisos para solicitar revisión.'}, status=403)
+            
+        # Verificar que el deployment esté en DRAFT
+        if deployment.status != Deployment.StatusChoices.DRAFT:
+            return Response({'error': 'Solo se pueden enviar a revisión invitaciones en estado Borrador.'}, status=400)
+            
+        # Registrar entrada en SystemLog
+        username_val = user_profile.full_name or user_profile.email or f"User {request.user.id}"
+        SystemLog.objects.create(
+            log_type=SystemLog.LogType.USER_ACTION,
+            message=f"El usuario {username_val} (ID: {request.user.id}) solicitó revisión para el diseño {deployment.slug} (ID: {deployment.id}).",
+            user_id=request.user.id,
+            username=username_val,
+            metadata={
+                'deployment_id': deployment.id,
+                'slug': deployment.slug,
+                'status': deployment.status
+            }
+        )
+        
+        # Crear notificación SYSTEM en CommunicationLog para todos los administradores
+        from profiles.models import CommunicationLog
+        admins = UserProfile.objects.filter(custom_role=UserProfile.Role.ADMIN)
+        
+        designer_name = user_profile.full_name or user_profile.email or f"User {request.user.id}"
+        subject_text = f"El Diseñador {designer_name} solicita revisión del diseño (ID: {deployment.id})"
+        
+        for admin in admins:
+            CommunicationLog.objects.create(
+                user=admin,
+                channel=CommunicationLog.Channel.SYSTEM,
+                subject=subject_text
+            )
+            
+        return Response({
+            'success': 'Solicitud de revisión enviada al administrador exitosamente.'
         })
 
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='unsplash-search')

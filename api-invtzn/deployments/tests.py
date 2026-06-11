@@ -610,6 +610,59 @@ class TestDeployments:
         assert response_active.status_code == 400, "Debería rechazar bloques premium activos en plan básico."
         assert "CountdownTimer" in str(response_active.data['custom_data'][0])
 
+    def test_designer_can_request_review_and_notify_admins(self):
+        # 1. Create a designer user and a draft deployment
+        designer_user = User.objects.create_user(username='designer_review_test', password='password123')
+        UserProfile.objects.create(remote_auth_id=designer_user.id, custom_role=UserProfile.Role.DESIGNER)
+        deployment = Deployment.objects.create(user=designer_user.id, product=self.product, status=Deployment.StatusChoices.DRAFT)
+        
+        # 2. Create some admins
+        admin_user1 = User.objects.create_user(username='admin_review_test1', password='password123')
+        UserProfile.objects.create(remote_auth_id=admin_user1.id, custom_role=UserProfile.Role.ADMIN)
+        admin_user2 = User.objects.create_user(username='admin_review_test2', password='password123')
+        UserProfile.objects.create(remote_auth_id=admin_user2.id, custom_role=UserProfile.Role.ADMIN)
+
+        self.client.force_authenticate(user=designer_user)
+        
+        # 3. Call request-review action
+        response = self.client.post(f'/api/v1/deployments/{deployment.id}/request-review/')
+        assert response.status_code == 200
+        assert response.data['success'] == 'Solicitud de revisión enviada al administrador exitosamente.'
+        
+        # 4. Check that system logs and communication logs are created
+        from deployments.models import SystemLog
+        assert SystemLog.objects.filter(log_type=SystemLog.LogType.USER_ACTION, user_id=designer_user.id).exists()
+        
+        from profiles.models import CommunicationLog
+        # 2 logs should exist, one for each admin
+        admin1_logs = CommunicationLog.objects.filter(user__remote_auth_id=admin_user1.id, channel=CommunicationLog.Channel.SYSTEM)
+        admin2_logs = CommunicationLog.objects.filter(user__remote_auth_id=admin_user2.id, channel=CommunicationLog.Channel.SYSTEM)
+        assert admin1_logs.count() == 1
+        assert admin2_logs.count() == 1
+        assert f"(ID: {deployment.id})" in admin1_logs.first().subject
+
+    def test_publish_product_sets_status_to_active(self):
+        # 1. Create an admin user and a draft deployment
+        admin_user = User.objects.create_user(username='admin_publish_test', password='password123')
+        UserProfile.objects.create(remote_auth_id=admin_user.id, custom_role=UserProfile.Role.ADMIN)
+        deployment = Deployment.objects.create(user=self.user.id, product=self.product, status=Deployment.StatusChoices.DRAFT, slug='temp-publish-slug')
+        
+        self.client.force_authenticate(user=admin_user)
+        
+        # 2. Call publish-product action
+        payload = {
+            'name': 'Template Catalog Invitation',
+            'slug': 'temp-publish-slug-new',
+            'store_id': None
+        }
+        response = self.client.post(f'/api/v1/deployments/{deployment.id}/publish-product/', payload, format='json')
+        assert response.status_code == 200
+        
+        # 3. Verify status in database is ACTIVE (not LIVE)
+        deployment.refresh_from_db()
+        assert deployment.status == Deployment.StatusChoices.ACTIVE
+        assert deployment.slug == 'temp-publish-slug-new'
+
 
 
 
