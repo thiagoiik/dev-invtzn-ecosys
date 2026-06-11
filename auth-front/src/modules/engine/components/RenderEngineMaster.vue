@@ -3,38 +3,68 @@
     class="min-h-screen relative overflow-x-hidden"
     :style="themeVariables"
   >
-    <!-- Background Music Audio player if configured -->
-    <AudioPlayer 
-      v-if="customData.audioUrl || customData.has_music" 
-      :config="customData.music || { audioUrl: customData.audioUrl }" 
+    <!-- Under Construction Screen for external guests if Draft status -->
+    <UnderConstructionScreen 
+      v-if="status === 'DRAFT' && !isStudioMode && !isOwner && !isTeamMember" 
     />
 
-    <!-- Sandbox Premium Overlay if Draft status -->
-    <DraftWatermarkOverlay 
-      v-if="status === 'DRAFT' && !isStudioMode" 
-      @purchase="handlePurchaseRedirect" 
-    />
+    <template v-else>
+      <!-- Background Music Audio player if configured -->
+      <AudioPlayer 
+        v-if="customData.audioUrl || customData.has_music" 
+        :config="customData.music || { audioUrl: customData.audioUrl }" 
+      />
 
-    <!-- Render Blocks dynamically based on configuration -->
-    <div class="master-canvas" :class="{ 'pt-[44px]': status === 'DRAFT' && !isStudioMode }">
-      <template v-for="(block, idx) in orderedBlocks" :key="block.id">
-        <SectionDivider 
-          v-if="idx > 0 && customData.theme?.divider_style" 
-          :style-name="customData.theme.divider_style" 
-        />
-        <component
-          :is="block.component"
-          :config="block.config"
-          v-bind="block.id === 'rsvp' ? { slug: slug, tierLevel: tierLevel } : {}"
-        />
-      </template>
-    </div>
+      <!-- Sandbox Premium Overlay if Draft status and visitor is Owner -->
+      <DraftWatermarkOverlay 
+        v-if="status === 'DRAFT' && !isStudioMode && showWatermark" 
+        @purchase="handlePurchaseRedirect" 
+      />
+
+      <!-- Floating team member bar if Draft status -->
+      <div 
+        v-if="status === 'DRAFT' && !isStudioMode && isTeamMember" 
+        class="fixed top-0 left-0 right-0 bg-slate-900 text-white text-center py-2 z-50 flex items-center justify-center gap-4 text-xs font-black tracking-wider shadow-md px-4"
+      >
+        <span class="uppercase">🛠️ {{ barLabel }}</span>
+        <a 
+          v-if="['ADMIN', 'DESIGNER'].includes(currentRole)"
+          :href="`/builder/${deploymentId}`"
+          class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-black px-3 py-1 rounded-lg uppercase transition-colors text-[10px]"
+        >
+          Editar en Builder
+        </a>
+      </div>
+
+      <!-- Render Blocks dynamically based on configuration -->
+      <div 
+        class="master-canvas" 
+        :class="{ 
+          'pt-[44px]': (status === 'DRAFT' && !isStudioMode && showWatermark),
+          'pt-[36px]': (status === 'DRAFT' && !isStudioMode && isTeamMember)
+        }"
+      >
+        <template v-for="(block, idx) in orderedBlocks" :key="block.id">
+          <SectionDivider 
+            v-if="idx > 0 && customData.theme?.divider_style" 
+            :style-name="customData.theme.divider_style" 
+          />
+          <component
+            :is="block.component"
+            :config="block.config"
+            v-bind="block.id === 'rsvp' ? { slug: slug, tierLevel: tierLevel } : {}"
+          />
+        </template>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted } from 'vue';
 import DraftWatermarkOverlay from './DraftWatermarkOverlay.vue';
+import UnderConstructionScreen from './UnderConstructionScreen.vue';
+import { useAuthStore } from '@/modules/auth/store/auth';
 import CoverBlock from './CoverBlock.vue';
 import AudioPlayer from './AudioPlayer.vue';
 import CountdownTimer from './CountdownTimer.vue';
@@ -51,12 +81,45 @@ const props = defineProps({
   slug: { type: String, required: true },
   deploymentId: { type: [Number, String], default: null },
   isStudioMode: { type: Boolean, default: false },
-  tierLevel: { type: String, default: 'BASIC' }
+  tierLevel: { type: String, default: 'BASIC' },
+  ownerId: { type: [Number, String], default: null }
 });
 
 const emit = defineEmits(['purchase']);
 
 const telemetry = useTelemetry();
+
+let authStore = null;
+try {
+  authStore = useAuthStore();
+} catch (e) {
+  // Fail-safe for unit testing
+}
+
+const currentRole = computed(() => authStore?.role || null);
+
+const isTeamMember = computed(() => {
+  return ['ADMIN', 'DESIGNER', 'VENDOR', 'FRANCHISEE'].includes(currentRole.value);
+});
+
+const isOwner = computed(() => {
+  const isMatched = authStore?.user && (authStore.user.pk === props.ownerId || authStore.user.id === props.ownerId);
+  const isLocalSandbox = !props.ownerId && localStorage.getItem('pending_sandbox_id') == props.deploymentId;
+  return !!(isMatched || isLocalSandbox);
+});
+
+const showWatermark = computed(() => {
+  return props.status === 'DRAFT' && !props.isStudioMode && isOwner.value;
+});
+
+const barLabel = computed(() => {
+  const role = currentRole.value;
+  if (role === 'ADMIN') return 'Modo Administrador';
+  if (role === 'DESIGNER') return 'Modo Diseñador';
+  if (role === 'VENDOR') return 'Modo Vendedor';
+  if (role === 'FRANCHISEE') return 'Modo Franquicia';
+  return 'Modo Staff';
+});
 
 onMounted(() => {
   // Silent tracking of page visits upon master load

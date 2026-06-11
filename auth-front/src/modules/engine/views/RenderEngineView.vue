@@ -29,6 +29,7 @@
         :slug="route.params.slug" 
         :deploymentId="deploymentId"
         :tierLevel="tierLevel"
+        :ownerId="ownerId"
         @purchase="goToCheckout"
       />
     </EnvelopeWrapper>
@@ -54,6 +55,7 @@ const status = ref('');
 const deploymentId = ref(null);
 const tierLevel = ref('BASIC');
 const productId = ref(null);
+const ownerId = ref(null);
 
 const authStore = useAuthStore();
 
@@ -82,6 +84,7 @@ onMounted(async () => {
     deploymentId.value = response.data.id;
     tierLevel.value = response.data.tier_level || 'BASIC';
     productId.value = response.data.product_id || null;
+    ownerId.value = response.data.user_id || null;
     
     if (['EXPIRED', 'INACTIVE'].includes(status.value)) {
       // El template se encargará de mostrar ExpiredEventScreen basándose en el status
