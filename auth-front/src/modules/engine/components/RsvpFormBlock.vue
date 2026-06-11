@@ -77,7 +77,7 @@
         </div>
 
         <!-- Companions Selection (STANDARD & PREMIUM) -->
-        <div v-if="['STANDARD', 'PREMIUM'].includes(tierLevel) && form.attending === 'yes'" class="space-y-2 animate-fade-in">
+        <div v-if="['STANDARD', 'PREMIUM'].includes(resolvedTier) && form.attending === 'yes'" class="space-y-2 animate-fade-in">
           <label class="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Acompañantes Adicionales</label>
           <select 
             v-model.number="form.companions_count" 
@@ -89,7 +89,7 @@
         </div>
 
         <!-- Menu Selection (PREMIUM ONLY) -->
-        <div v-if="tierLevel === 'PREMIUM' && form.attending === 'yes'" class="space-y-2 animate-fade-in">
+        <div v-if="resolvedTier === 'PREMIUM' && form.attending === 'yes'" class="space-y-2 animate-fade-in">
           <label class="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Selección de Menú</label>
           <select 
             v-model="form.menu_selection" 
@@ -102,7 +102,7 @@
         </div>
 
         <!-- Dietary Notes (PREMIUM ONLY) -->
-        <div v-if="tierLevel === 'PREMIUM' && form.attending === 'yes'" class="space-y-2 animate-fade-in">
+        <div v-if="resolvedTier === 'PREMIUM' && form.attending === 'yes'" class="space-y-2 animate-fade-in">
           <label class="text-xs font-black text-slate-400 uppercase tracking-widest pl-1">Alergias o Restricciones</label>
           <textarea 
             v-model="form.dietary_notes" 
@@ -117,8 +117,8 @@
           class="btn btn-primary btn-lg w-full h-16 rounded-2xl text-lg font-black shadow-lg shadow-primary/20 mt-4"
           :disabled="loading || !form.attending"
         >
-          <span v-if="loading && tierLevel !== 'BASIC'" class="loading loading-spinner"></span>
-          {{ tierLevel === 'BASIC' ? 'Confirmar por WhatsApp 🟢' : (loading ? 'Enviando...' : 'Confirmar Asistencia') }}
+          <span v-if="loading && resolvedTier !== 'BASIC'" class="loading loading-spinner"></span>
+          {{ resolvedTier === 'BASIC' ? 'Confirmar por WhatsApp 🟢' : (loading ? 'Enviando...' : 'Confirmar Asistencia') }}
         </button>
       </form>
     </div>
@@ -126,7 +126,7 @@
 </template>
 
 <script setup>
-import { ref, defineProps } from 'vue';
+import { ref, defineProps, computed } from 'vue';
 import { engineService } from '@/modules/engine/services/engineService';
 import { useTelemetry } from '../composables/useTelemetry';
 import { useToast } from 'vue-toastification';
@@ -141,6 +141,8 @@ const props = defineProps({
 const toast = useToast();
 const telemetry = useTelemetry();
 
+const resolvedTier = computed(() => props.config?.tier || props.tierLevel);
+
 const loading = ref(false);
 const submitted = ref(false);
 const form = ref({
@@ -152,7 +154,7 @@ const form = ref({
 });
 
 const handleFormSubmit = () => {
-  if (props.tierLevel === 'BASIC') {
+  if (resolvedTier.value === 'BASIC') {
     sendWhatsAppRSVP();
   } else {
     submitRSVP();
@@ -201,10 +203,10 @@ const submitRSVP = async () => {
       attending: isAttending
     };
 
-    if (['STANDARD', 'PREMIUM'].includes(props.tierLevel) && isAttending) {
+    if (['STANDARD', 'PREMIUM'].includes(resolvedTier.value) && isAttending) {
       payload.companions_count = form.value.companions_count;
     }
-    if (props.tierLevel === 'PREMIUM' && isAttending) {
+    if (resolvedTier.value === 'PREMIUM' && isAttending) {
       payload.menu_selection = form.value.menu_selection;
       payload.dietary_notes = form.value.dietary_notes;
     }

@@ -221,13 +221,13 @@
           <div v-if="activeTab === 'rsvp'" class="tab-content fade-in">
             <!-- Simular Nivel RSVP (Sólo Admin/Diseñador) -->
             <div v-if="isAdminOrDesigner" class="form-group mb-4">
-              <label class="block text-xs font-black text-amber-600 uppercase tracking-widest pl-1 mb-2">Simular Nivel RSVP (Admin)</label>
-              <select v-model="productTier" class="select-input w-full">
+              <label class="block text-xs font-black text-amber-600 uppercase tracking-widest pl-1 mb-2">Nivel RSVP</label>
+              <select v-model="localConfig.rsvp.tier" class="select-input w-full">
                 <option value="BASIC">Básico (Confirmación a WhatsApp)</option>
                 <option value="STANDARD">Estándar (Base de datos + Acompañantes)</option>
                 <option value="PREMIUM">Premium (Base de datos + Menú + Alergias)</option>
               </select>
-              <p class="text-[10px] text-slate-450 mt-1">Te permite cambiar la vista previa en caliente para probar los distintos formularios.</p>
+              <p class="text-[10px] text-slate-450 mt-1">Permite seleccionar el tipo de RSVP.</p>
             </div>
 
             <div class="form-group">
@@ -248,14 +248,14 @@
               </div>
             </div>
 
-            <div v-if="productTier === 'BASIC'" class="form-group">
+            <div v-if="localConfig.rsvp.tier === 'BASIC'" class="form-group">
               <label>WhatsApp de Confirmación</label>
               <input v-model="localConfig.rsvp.whatsappPhone" type="tel" placeholder="Ej. +5215512345678" />
               <p class="text-[10px] text-slate-400 mt-1">Los invitados del plan básico enviarán confirmaciones directas a este número de WhatsApp.</p>
             </div>
 
             <!-- Tarjeta de Estatus de Plan y Upgrade (Coherente y Oscura) -->
-            <div v-if="productTier !== 'PREMIUM'" class="schedule-item-card mt-6 border border-amber-500/10">
+            <div v-if="productTier !== 'PREMIUM' && !isAdminOrDesigner" class="schedule-item-card mt-6 border border-amber-500/10">
               <div class="flex justify-between items-center mb-2">
                 <span class="text-xs font-bold text-amber-500 uppercase tracking-wider">Upgrade de Plan RSVP</span>
                 <span class="badge badge-sm font-black text-white bg-slate-700 border-slate-600">{{ productTier }}</span>
@@ -896,7 +896,7 @@
                   :customData="localConfig" 
                   :slug="deploymentSlug" 
                   :deploymentId="deploymentId"
-                  :tierLevel="productTier"
+                  :tierLevel="localConfig.rsvp.tier || productTier"
                   :isStudioMode="true"
                   @purchase="showUpgradeModal = true"
                 />
@@ -907,7 +907,7 @@
                 :customData="localConfig" 
                 :slug="deploymentSlug" 
                 :deploymentId="deploymentId"
-                :tierLevel="productTier"
+                :tierLevel="localConfig.rsvp.tier || productTier"
                 :isStudioMode="true"
                 @purchase="showUpgradeModal = true"
               />
@@ -1258,7 +1258,8 @@ const localConfig = ref({
     btnColor: '#3b82f6',
     title: 'Confirma tu Asistencia',
     subtitle: 'Nos encantaría contar con tu presencia.',
-    whatsappPhone: ''
+    whatsappPhone: '',
+    tier: 'BASIC'
   },
   has_timer: false,
   timer: {
@@ -1353,6 +1354,9 @@ onMounted(async () => {
         // Fusionar datos existentes para no romper la reactividad profunda
         localConfig.value.cover = { ...localConfig.value.cover, ...(custom.cover || {}) };
         localConfig.value.rsvp = { ...localConfig.value.rsvp, ...(custom.rsvp || {}) };
+        if (!localConfig.value.rsvp.tier) {
+          localConfig.value.rsvp.tier = res.data.product_tier || 'BASIC';
+        }
         
         if (custom.timer) {
           localConfig.value.timer = { ...localConfig.value.timer, ...custom.timer };
@@ -1405,6 +1409,7 @@ onMounted(async () => {
       } else {
         // Inicializar blocks por defecto en invitaciones vacías
         localConfig.value.blocks = [...defaultBlocks];
+        localConfig.value.rsvp.tier = res.data.product_tier || 'BASIC';
       }
     }
   } catch (error) {
