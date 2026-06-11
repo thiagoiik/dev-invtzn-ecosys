@@ -7,6 +7,7 @@ User = get_user_model()
 class Deployment(models.Model):
     class StatusChoices(models.TextChoices):
         DRAFT = 'DRAFT', 'Borrador / Sandbox'
+        ACTIVE = 'ACTIVE', 'Activo (Plantilla)'
         LIVE = 'LIVE', 'Publicado'
         EXPIRED = 'EXPIRED', 'Expirado / Inactivo'
 
