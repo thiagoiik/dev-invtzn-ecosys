@@ -21,12 +21,15 @@
         @purchase="handlePurchaseRedirect" 
       />
 
-      <!-- Floating team member bar if Draft status -->
+      <!-- Floating team member bar if Draft or Active status -->
       <div 
-        v-if="status === 'DRAFT' && !isStudioMode && isTeamMember" 
+        v-if="['DRAFT', 'ACTIVE'].includes(status) && !isStudioMode && isTeamMember" 
         class="fixed top-0 left-0 right-0 bg-slate-900 text-white text-center py-2 z-50 flex items-center justify-center gap-4 text-xs font-black tracking-wider shadow-md px-4"
       >
-        <span class="uppercase">🛠️ {{ barLabel }}</span>
+        <span class="uppercase">
+          <template v-if="status === 'ACTIVE'">🎨 Plantilla de Catálogo</template>
+          <template v-else>🛠️ {{ barLabel }}</template>
+        </span>
         <a 
           v-if="['ADMIN', 'DESIGNER'].includes(currentRole)"
           :href="`/builder/${deploymentId}`"
@@ -41,7 +44,7 @@
         class="master-canvas" 
         :class="{ 
           'pt-[44px]': (status === 'DRAFT' && !isStudioMode && showWatermark),
-          'pt-[36px]': (status === 'DRAFT' && !isStudioMode && isTeamMember)
+          'pt-[36px]': (['DRAFT', 'ACTIVE'].includes(status) && !isStudioMode && isTeamMember)
         }"
       >
         <template v-for="(block, idx) in orderedBlocks" :key="block.id">
