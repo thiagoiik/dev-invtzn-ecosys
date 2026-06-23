@@ -1,7 +1,13 @@
 <template>
   <div 
-    class="min-h-screen relative overflow-x-hidden"
-    :style="themeVariables"
+    class="min-h-screen relative overflow-x-hidden transition-all duration-500"
+    :class="[
+      `style-${customData.theme?.block_style || 'glassmorphic'}`
+    ]"
+    :style="[
+      themeVariables,
+      contentBgStyle
+    ]"
   >
     <!-- Under Construction Screen for external guests if Draft status -->
     <UnderConstructionScreen 
@@ -81,6 +87,7 @@ import { useTelemetry } from '../composables/useTelemetry';
 import DressCodeBlock from './DressCodeBlock.vue';
 import ProtocolWordsBlock from './ProtocolWordsBlock.vue';
 import InvitationTextBlock from './InvitationTextBlock.vue';
+import { COLOR_PALETTES, CONTENT_TEXTURES } from '@/modules/builder/constants/palettes';
 
 const props = defineProps({
   status: { type: String, required: true },
@@ -286,34 +293,138 @@ const orderedBlocks = computed(() => {
   return fallback;
 });
 
+const activePalette = computed(() => {
+  const theme = props.customData.theme || {};
+  const paletteId = theme.palette_id || 'classic_navy';
+  return COLOR_PALETTES.find(p => p.id === paletteId) || COLOR_PALETTES[0];
+});
+
+const activeTexture = computed(() => {
+  const theme = props.customData.theme || {};
+  if (theme.content_bg_type !== 'texture') return null;
+  const textureId = theme.content_bg_texture || 'none';
+  return CONTENT_TEXTURES.find(t => t.id === textureId) || null;
+});
+
+const contentBgStyle = computed(() => {
+  const theme = props.customData.theme || {};
+  if (theme.content_bg_type === 'texture') {
+    const texture = activeTexture.value;
+    if (texture && texture.style) {
+      const styleObj = {};
+      if (texture.id === 'starry_night') {
+        styleObj.background = 'radial-gradient(circle, rgba(20,20,35,1) 0%, rgba(3,7,18,1) 100%)';
+        styleObj.backgroundImage = 'radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 40px), radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px)';
+        styleObj.backgroundSize = '550px 550px, 350px 350px';
+        styleObj.backgroundPosition = '0 0, 40px 60px';
+      } else if (texture.url) {
+        styleObj.backgroundImage = `url("${texture.url}")`;
+        styleObj.backgroundRepeat = 'repeat';
+        if (texture.id === 'watercolor_soft') {
+          styleObj.backgroundRepeat = 'no-repeat';
+          styleObj.backgroundSize = 'cover';
+          styleObj.backgroundPosition = 'center';
+        }
+      }
+      return styleObj;
+    }
+  }
+  return {
+    backgroundColor: activePalette.value.colors.contentBg
+  };
+});
+
 // Generates dynamic brand color palletes using HSL variables
 const themeVariables = computed(() => {
+  const palette = activePalette.value;
   const theme = props.customData.theme || {};
-  // Golden style pallete fallback
   const h = theme.hue || 38;      // Golden hue
   const s = theme.saturation || '80%';
   const l = theme.lightness || '50%';
 
-  return {
+  const vars = {
     '--p': `${h} ${s} ${l}`, // Primary brand color variable
+    '--color-primary': palette.colors.primary,
+    '--color-secondary': palette.colors.secondary,
+    '--color-accent': palette.colors.accent,
+    '--color-block-bg': palette.colors.blockBg,
+    '--color-card-bg': palette.colors.cardBg,
+    '--color-content-bg': palette.colors.contentBg,
   };
+
+  if (palette.colors.primaryGradient) {
+    vars['--color-accent-gradient'] = palette.colors.primaryGradient;
+  }
+
+  return vars;
 });
 </script>
 
 <style scoped>
-/* Inject HSL primary variables for daisyUI elements inside master */
+/* Divisores dinámicos del estilo de bloques */
+.style-solid_bands :deep(.max-w-4xl),
+.style-solid_bands :deep(.max-w-6xl) {
+  max-width: 100% !important;
+  border-radius: 0px !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin-top: 0px !important;
+  margin-bottom: 0px !important;
+  background-color: var(--color-block-bg) !important;
+  backdrop-filter: none !important;
+}
+
+.style-minimal :deep(.max-w-4xl),
+.style-minimal :deep(.max-w-6xl) {
+  max-width: 100% !important;
+  border-radius: 0px !important;
+  border: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  margin-top: 1rem !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Inyección de variables cromáticas en textos y elementos */
+:deep(h2),
+:deep(h3:not(.text-primary)) {
+  color: var(--color-primary) !important;
+}
+
+:deep(p) {
+  color: var(--color-secondary) !important;
+}
+
+:deep(.text-primary),
+:deep(.text-indigo-500),
+:deep(.text-amber-500) {
+  color: var(--color-accent) !important;
+}
+
 :deep(.btn-primary) {
-  background-color: hsl(var(--p));
-  border-color: hsl(var(--p));
-  color: white;
+  background: var(--color-accent-gradient, var(--color-accent)) !important;
+  border-color: var(--color-accent) !important;
+  color: white !important;
 }
-:deep(.text-primary) {
-  color: hsl(var(--p));
+
+:deep(.border-primary),
+:deep(.border-indigo-500) {
+  border-color: var(--color-accent) !important;
 }
-:deep(.border-primary) {
-  border-color: hsl(var(--p));
-}
+
 :deep(.bg-primary) {
-  background-color: hsl(var(--p));
+  background-color: var(--color-accent) !important;
+}
+
+/* Tarjetas y detalles internos adaptados a la paleta */
+:deep(.max-w-4xl) .bg-white\/80,
+:deep(.max-w-4xl) .bg-white,
+:deep(.max-w-4xl) .bg-slate-50,
+:deep(.max-w-6xl) .bg-white\/80,
+:deep(.max-w-6xl) .bg-white,
+:deep(.max-w-6xl) .bg-slate-50 {
+  background-color: var(--color-card-bg) !important;
+  border-color: rgba(255,255,255,0.08) !important;
 }
 </style>

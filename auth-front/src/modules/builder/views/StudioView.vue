@@ -633,65 +633,192 @@
           </div>
 
           <!-- TAB ESTILO -->
-          <div v-if="activeTab === 'theme'" class="tab-content fade-in">
-            <!-- Feature Switch with Lock Option -->
-            <div class="switch-container">
-              <label class="switch-label">
-                <span class="flex items-center gap-2">
-                  🎨 Paleta de Color Premium
-                  <span v-if="!allowedFeatures.custom_theme" class="badge-lock">STANDARD 👑</span>
-                </span>
-              </label>
+          <div v-if="activeTab === 'theme'" class="tab-content fade-in space-y-6">
+            <!-- Bloque 1: Estructura de Secciones (Tema) -->
+            <div class="space-y-3">
+              <h4 class="font-extrabold text-sm text-slate-350">1. Estructura de Secciones (Tema)</h4>
+              <div class="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  @click="localConfig.theme.block_style = 'glassmorphic'; saveStatus = 'unsaved';"
+                  class="py-3 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5"
+                  :class="[
+                    localConfig.theme.block_style === 'glassmorphic'
+                      ? 'bg-primary border-primary text-white shadow-md'
+                      : 'bg-slate-900 border-slate-700/50 text-slate-400 hover:border-slate-500'
+                  ]"
+                >
+                  <span class="text-lg">🔮</span>
+                  <span>Glassmorphic</span>
+                </button>
+                <button
+                  type="button"
+                  @click="localConfig.theme.block_style = 'solid_bands'; saveStatus = 'unsaved';"
+                  class="py-3 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5"
+                  :class="[
+                    localConfig.theme.block_style === 'solid_bands'
+                      ? 'bg-primary border-primary text-white shadow-md'
+                      : 'bg-slate-900 border-slate-700/50 text-slate-400 hover:border-slate-500'
+                  ]"
+                >
+                  <span class="text-lg">➖</span>
+                  <span>Bandas</span>
+                </button>
+                <button
+                  type="button"
+                  @click="localConfig.theme.block_style = 'minimal'; saveStatus = 'unsaved';"
+                  class="py-3 px-2 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1.5"
+                  :class="[
+                    localConfig.theme.block_style === 'minimal'
+                      ? 'bg-primary border-primary text-white shadow-md'
+                      : 'bg-slate-900 border-slate-700/50 text-slate-400 hover:border-slate-500'
+                  ]"
+                >
+                  <span class="text-lg">🍃</span>
+                  <span>Minimalista</span>
+                </button>
+              </div>
             </div>
 
-            <!-- Upgrade Block Overlay -->
-            <div v-if="!allowedFeatures.custom_theme" class="upgrade-block-overlay">
-              <div class="lock-icon">🔒</div>
-              <p class="lock-text">La paleta de color personalizada requiere un plan <strong>Standard</strong> o superior.</p>
-              <button @click="showUpgradeModal = true" class="upgrade-btn">🔓 Desbloquear con Pase Standard</button>
-            </div>
+            <!-- Bloque 2: Paleta de Colores -->
+            <div class="space-y-3 pt-2">
+              <div class="flex justify-between items-center">
+                <h4 class="font-extrabold text-sm text-slate-350">2. Paleta de Colores</h4>
+                <span v-if="!allowedFeatures.custom_theme" class="text-[9px] font-black uppercase tracking-wider bg-warning/20 text-warning px-1.5 py-0.5 rounded">MODO BASIC</span>
+              </div>
+              
+              <!-- Categorías de Paletas -->
+              <div class="flex gap-1 overflow-x-auto pb-1 scrollbar-none text-[10px]">
+                <button
+                  type="button"
+                  @click="setPaletteCategory('basic')"
+                  class="px-2.5 py-1.5 rounded-lg font-bold shrink-0 transition-colors"
+                  :class="selectedPaletteCategory === 'basic' ? 'bg-primary text-white' : 'bg-slate-900 text-slate-400 hover:text-white'"
+                >
+                  Básicos
+                </button>
+                <button
+                  type="button"
+                  @click="setPaletteCategory('pastel')"
+                  class="px-2.5 py-1.5 rounded-lg font-bold shrink-0 transition-colors flex items-center gap-1"
+                  :class="selectedPaletteCategory === 'pastel' ? 'bg-primary text-white' : 'bg-slate-900 text-slate-400 hover:text-white'"
+                >
+                  Pastel 👑
+                </button>
+                <button
+                  type="button"
+                  @click="setPaletteCategory('candy')"
+                  class="px-2.5 py-1.5 rounded-lg font-bold shrink-0 transition-colors flex items-center gap-1"
+                  :class="selectedPaletteCategory === 'candy' ? 'bg-primary text-white' : 'bg-slate-900 text-slate-400 hover:text-white'"
+                >
+                  Candy 👑
+                </button>
+                <button
+                  type="button"
+                  @click="setPaletteCategory('neon')"
+                  class="px-2.5 py-1.5 rounded-lg font-bold shrink-0 transition-colors flex items-center gap-1"
+                  :class="selectedPaletteCategory === 'neon' ? 'bg-primary text-white' : 'bg-slate-900 text-slate-400 hover:text-white'"
+                >
+                  Neón 👑
+                </button>
+                <button
+                  type="button"
+                  @click="setPaletteCategory('metallic')"
+                  class="px-2.5 py-1.5 rounded-lg font-bold shrink-0 transition-colors flex items-center gap-1"
+                  :class="selectedPaletteCategory === 'metallic' ? 'bg-primary text-white' : 'bg-slate-900 text-slate-400 hover:text-white'"
+                >
+                  Metálicos 👑
+                </button>
+              </div>
 
-            <!-- Fields wrapper -->
-            <div :class="{ 'opacity-40 pointer-events-none': !allowedFeatures.custom_theme }" class="space-y-4">
-              <div class="form-group">
-                <label class="flex justify-between">
-                  <span>Tono de Color (HUE)</span>
-                  <span class="font-bold font-mono">{{ localConfig.theme.hue }}°</span>
-                </label>
-                <input 
-                  type="range" 
-                  min="0" 
-                  max="360" 
-                  v-model.number="localConfig.theme.hue" 
-                  :disabled="!allowedFeatures.custom_theme"
-                  class="hue-range"
-                />
-                
-                <!-- Color Preview bar -->
-                <div class="color-hue-preview-bar"></div>
-                
-                <!-- Single Color Preview circle -->
-                <div class="flex items-center gap-3 mt-2">
-                  <div 
-                    class="w-8 h-8 rounded-full border border-slate-700 shadow-md"
-                    :style="{ backgroundColor: `hsl(${localConfig.theme.hue}, 80%, 50%)` }"
-                  ></div>
-                  <span class="text-xs text-slate-400">Color principal de botones y detalles</span>
+              <!-- Rejilla de Opciones de Paletas -->
+              <div class="grid grid-cols-1 gap-2.5 max-h-[220px] overflow-y-auto pr-1">
+                <div
+                  v-for="p in filteredPalettes"
+                  :key="p.id"
+                  @click="selectColorPalette(p)"
+                  class="p-3 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between group"
+                  :class="[
+                    localConfig.theme.palette_id === p.id
+                      ? 'bg-slate-800 border-primary text-white'
+                      : 'bg-slate-900/60 border-slate-700/50 hover:border-slate-600 text-slate-300'
+                  ]"
+                >
+                  <div class="flex flex-col gap-1">
+                    <span class="text-xs font-black flex items-center gap-1">
+                      {{ p.name }}
+                      <span v-if="p.premium && !allowedFeatures.custom_theme" class="text-[8px] font-black bg-warning/20 text-warning px-1 py-0.5 rounded">PRO</span>
+                    </span>
+                    <span class="text-[9px] text-slate-400 capitalize">{{ p.category }} theme</span>
+                  </div>
+                  
+                  <!-- Vista Previa de Colores (Círculos) -->
+                  <div class="flex items-center gap-1">
+                    <div class="w-4 h-4 rounded-full border border-slate-950" :style="{ backgroundColor: p.colors.primary }" title="Primario"></div>
+                    <div class="w-4 h-4 rounded-full border border-slate-950" :style="{ backgroundColor: p.colors.accent }" title="Acento"></div>
+                    <div class="w-4 h-4 rounded-full border border-slate-950" :style="{ backgroundColor: p.colors.contentBg }" title="Fondo"></div>
+                  </div>
                 </div>
               </div>
+            </div>
 
-              <!-- Control de Separador de Secciones -->
-              <div class="form-group mt-4">
-                <label>Separador de Secciones</label>
-                <select v-model="localConfig.theme.divider_style" class="select-input">
-                  <option value="none">Ninguno (Línea en blanco)</option>
-                  <option value="simple-line">Línea Minimalista</option>
-                  <option value="geometric-diamonds">Diamantes Geométricos</option>
-                  <option value="floral-twigs">Follaje & Ramas</option>
-                  <option value="soft-wave">Onda Suave</option>
+            <!-- Bloque 3: Fondo del Contenido -->
+            <div class="space-y-3 pt-2">
+              <h4 class="font-extrabold text-sm text-slate-350">3. Fondo del Contenido</h4>
+              
+              <div class="form-group">
+                <label>Tipo de Fondo</label>
+                <select 
+                  v-model="localConfig.theme.content_bg_type" 
+                  @change="localConfig.theme.content_bg_texture = 'none'; saveStatus = 'unsaved';"
+                  class="select-input"
+                >
+                  <option value="color">Color Liso de la Paleta</option>
+                  <option value="texture">Textura Decorativa 👑</option>
                 </select>
-                <span class="help-text">Elige el estilo visual para los divisores entre secciones del lienzo.</span>
               </div>
+
+              <!-- Selector de Texturas Premium -->
+              <div v-if="localConfig.theme.content_bg_type === 'texture'" class="space-y-2">
+                <label class="text-[10px] text-slate-400 uppercase font-black tracking-wider block">Elige la Textura</label>
+                <div class="grid grid-cols-1 gap-2 max-h-[160px] overflow-y-auto pr-1">
+                  <div
+                    v-for="t in CONTENT_TEXTURES.filter(x => x.id !== 'none')"
+                    :key="t.id"
+                    @click="selectContentTexture(t)"
+                    class="p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between"
+                    :class="[
+                      localConfig.theme.content_bg_texture === t.id
+                        ? 'bg-slate-800 border-primary text-white'
+                        : 'bg-slate-900/60 border-slate-700/50 hover:border-slate-600 text-slate-400 hover:text-white'
+                    ]"
+                  >
+                    <span class="text-xs font-extrabold flex items-center gap-1.5">
+                      📄 {{ t.name }}
+                      <span v-if="t.premium && !allowedFeatures.custom_theme" class="text-[8px] font-black bg-warning/20 text-warning px-1 py-0.5 rounded">PRO</span>
+                    </span>
+                    
+                    <!-- Previsualización Mini-textura -->
+                    <div 
+                      class="w-8 h-8 rounded-lg border border-slate-950 shadow-inner bg-slate-900"
+                      :style="t.style"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Divisores de Secciones (Mantener) -->
+            <div class="form-group pt-2">
+              <label>Separador de Secciones</label>
+              <select v-model="localConfig.theme.divider_style" class="select-input" @change="saveStatus = 'unsaved';">
+                <option value="none">Ninguno (Línea en blanco)</option>
+                <option value="simple-line">Línea Minimalista</option>
+                <option value="geometric-diamonds">Diamantes Geométricos</option>
+                <option value="floral-twigs">Follaje & Ramas</option>
+                <option value="soft-wave">Onda Suave</option>
+              </select>
+              <span class="help-text text-slate-500 mt-1 block">Elige el estilo visual para los divisores entre secciones del lienzo.</span>
             </div>
           </div>
 
@@ -1530,6 +1657,7 @@ import EnvelopeWrapper from '@/modules/engine/components/EnvelopeWrapper.vue';
 import UpgradeModal from '@/modules/builder/components/UpgradeModal.vue';
 import GraphicsGalleryModal from '@/modules/builder/components/GraphicsGalleryModal.vue';
 import MusicGalleryModal from '@/modules/builder/components/MusicGalleryModal.vue';
+import { COLOR_PALETTES, CONTENT_TEXTURES } from '@/modules/builder/constants/palettes';
 
 // Variables de estado adicionales v0.8.4
 const productTier = ref('BASIC');
@@ -1738,7 +1866,11 @@ const localConfig = ref({
     hue: 38,
     saturation: '80%',
     lightness: '50%',
-    divider_style: 'none'
+    divider_style: 'none',
+    block_style: 'glassmorphic',
+    palette_id: 'classic_navy',
+    content_bg_type: 'color',
+    content_bg_texture: 'none'
   },
   og_title: '',
   og_description: '',
@@ -2288,6 +2420,35 @@ const validateThoughtsText = (id) => {
     toast.warning('Has alcanzado el límite máximo de palabras para esta sección.');
     localConfig.value[id].text = words.slice(0, 120).join(' ');
   }
+};
+
+const selectedPaletteCategory = ref('basic');
+const setPaletteCategory = (cat) => {
+  selectedPaletteCategory.value = cat;
+};
+
+const filteredPalettes = computed(() => {
+  return COLOR_PALETTES.filter(p => p.category === selectedPaletteCategory.value);
+});
+
+const selectColorPalette = (palette) => {
+  if (palette.premium && !allowedFeatures.value.custom_theme) {
+    showUpgradeModal.value = true;
+    toast.info('Esta paleta de colores premium requiere el pase de actualización.');
+    return;
+  }
+  localConfig.value.theme.palette_id = palette.id;
+  saveStatus.value = 'unsaved';
+};
+
+const selectContentTexture = (texture) => {
+  if (texture.premium && !allowedFeatures.value.custom_theme) {
+    showUpgradeModal.value = true;
+    toast.info('Esta textura premium de fondo requiere el pase de actualización.');
+    return;
+  }
+  localConfig.value.theme.content_bg_texture = texture.id;
+  saveStatus.value = 'unsaved';
 };
 
 const toggleBlockVisibility = (block) => {
