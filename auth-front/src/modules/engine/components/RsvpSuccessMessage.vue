@@ -1,5 +1,5 @@
 <template>
-  <div class="card w-full max-w-md bg-white rounded-[2.5rem] p-10 shadow-xl border border-slate-100 text-center space-y-6 animate-scale-in">
+  <div class="w-full max-w-md p-2 text-center space-y-6 animate-scale-in">
     <!-- Pulse Success Icon -->
     <div class="relative w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto shadow-inner">
       <div class="absolute inset-0 bg-emerald-100/40 rounded-full animate-ping"></div>

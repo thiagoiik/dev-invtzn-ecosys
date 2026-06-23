@@ -1,19 +1,21 @@
 <template>
-  <div class="py-24 bg-slate-50 flex flex-col items-center px-6">
-    <div class="max-w-xl w-full">
+  <div 
+    class="py-12 px-6 max-w-4xl mx-auto space-y-8 bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-slate-100/50 shadow-xl my-6"
+  >
+    <div class="max-w-xl mx-auto w-full">
       <!-- Section Header -->
-      <header class="text-center space-y-2 mb-16">
+      <header class="text-center space-y-2 mb-12">
         <span class="text-[10px] font-black text-amber-500 uppercase tracking-[0.4em]">Itinerario</span>
-        <h2 class="text-3xl md:text-4xl font-serif font-bold text-slate-900">
+        <h2 class="text-3xl md:text-4xl font-serif font-bold text-slate-800 tracking-tight">
           {{ config.title || 'Cronograma del Evento' }}
         </h2>
-        <div class="w-12 h-[1px] bg-slate-200 mx-auto mt-4"></div>
+        <div class="w-12 h-[1px] bg-slate-200/50 mx-auto mt-4"></div>
       </header>
 
       <!-- Vertical Interactive Timeline -->
-      <div class="relative pl-8 md:pl-10 space-y-12">
+      <div class="relative pl-8 md:pl-10 space-y-10 text-left">
         <!-- Center connecting Line -->
-        <div class="absolute left-4 top-2 bottom-2 w-0.5 bg-slate-200"></div>
+        <div class="absolute left-4 top-2 bottom-2 w-0.5 bg-slate-200/50"></div>
 
         <!-- Timeline Items -->
         <div 
@@ -29,7 +31,7 @@
           <!-- Time Frame & Event Header -->
           <div class="flex items-baseline gap-3">
             <span class="text-sm font-black text-primary font-mono tracking-tight">{{ item.time }}</span>
-            <h3 class="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors">
+            <h3 class="text-lg font-bold text-slate-800 group-hover:text-primary transition-colors">
               {{ item.title }}
             </h3>
           </div>

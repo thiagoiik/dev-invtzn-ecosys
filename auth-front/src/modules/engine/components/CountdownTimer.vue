@@ -1,28 +1,30 @@
 <template>
-  <div class="py-20 bg-white flex flex-col items-center justify-center px-6">
-    <div class="max-w-xl w-full text-center space-y-8">
+  <div 
+    class="py-12 px-6 max-w-4xl mx-auto space-y-8 bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-slate-100/50 shadow-xl my-6 text-center"
+  >
+    <div class="max-w-xl mx-auto space-y-8">
       <!-- Section Header -->
       <header class="space-y-2">
         <span class="text-[10px] font-black text-amber-500 uppercase tracking-[0.4em]">Falta muy poco</span>
-        <h2 class="text-3xl md:text-4xl font-serif font-bold text-slate-900">
+        <h2 class="text-3xl md:text-4xl font-serif font-bold text-slate-800 tracking-tight">
           {{ config.title || 'Cuenta Regresiva' }}
         </h2>
-        <div class="w-12 h-[1px] bg-slate-200 mx-auto mt-4"></div>
+        <div class="w-12 h-[1px] bg-slate-200/50 mx-auto mt-4"></div>
       </header>
 
       <!-- Timer Grid -->
-      <div class="grid grid-cols-4 gap-4 md:gap-6 pt-4">
+      <div class="grid grid-cols-4 gap-3 sm:gap-4 md:gap-6 pt-2">
         <div 
           v-for="(val, unit) in timeRemaining" 
           :key="unit"
-          class="bg-slate-50 border border-slate-100 rounded-3xl p-4 md:p-6 shadow-sm hover:shadow-md transition-shadow"
+          class="bg-white/80 border border-slate-100 rounded-3xl p-3 sm:p-4 md:p-6 shadow-sm hover:shadow-md transition-shadow"
         >
           <!-- Value Display -->
-          <div class="text-3xl md:text-5xl font-black text-slate-800 font-mono tracking-tighter">
+          <div class="text-2xl sm:text-3xl md:text-5xl font-black text-slate-800 font-mono tracking-tighter">
             {{ formatNumber(val) }}
           </div>
           <!-- Unit Label -->
-          <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-2">
+          <div class="text-[8px] sm:text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1 sm:mt-2">
             {{ unitLabels[unit] }}
           </div>
         </div>

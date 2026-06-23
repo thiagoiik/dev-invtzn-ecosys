@@ -1,7 +1,6 @@
 <template>
   <div 
-    class="py-24 px-6 min-h-[60vh] flex items-center justify-center transition-colors duration-500" 
-    :style="{ backgroundColor: config.bgColor || '#f8fafc' }"
+    class="py-12 px-6 max-w-4xl mx-auto bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-slate-100/50 shadow-xl my-6 flex items-center justify-center transition-all"
   >
     <!-- 1. Success Message Panel -->
     <RsvpSuccessMessage 
@@ -15,7 +14,7 @@
     <!-- 2. Interactive Input Form -->
     <div 
       v-else
-      class="card w-full max-w-md bg-white rounded-[2.5rem] p-10 shadow-xl border border-slate-100 space-y-8 animate-fade-in"
+      class="w-full max-w-md p-2 space-y-8 animate-fade-in"
     >
       <header class="text-center space-y-2">
         <span class="text-[9px] font-black text-amber-500 uppercase tracking-[0.4em]">Confirma tu presencia</span>
