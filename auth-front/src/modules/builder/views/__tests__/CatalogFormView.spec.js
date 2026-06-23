@@ -140,4 +140,31 @@ describe('CatalogFormView.vue', () => {
     expect(wrapper.vm.saveStatus).toBe('saved');
     expect(mockToastSuccess).toHaveBeenCalledWith('¡Cambios guardados con éxito!');
   });
+
+  it('debería cargar el slug y abrir la vista previa al llamar a openLiveDemo', async () => {
+    const windowOpenSpy = vi.spyOn(window, 'open').mockImplementation(() => {});
+
+    builderService.getDeployment.mockResolvedValueOnce({
+      data: {
+        status: 'DRAFT',
+        slug: 'mi-boda-espectacular',
+        custom_data: {}
+      }
+    });
+
+    const wrapper = mount(CatalogFormView, mountOptions);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.vm.deploymentSlug).toBe('mi-boda-espectacular');
+
+    const previewBtn = wrapper.find('button[type="button"]');
+    expect(previewBtn.exists()).toBe(true);
+    expect(previewBtn.text()).toContain('Vista Previa');
+
+    wrapper.vm.openLiveDemo();
+    expect(windowOpenSpy).toHaveBeenCalledWith('/i/mi-boda-espectacular', '_blank');
+    
+    windowOpenSpy.mockRestore();
+  });
 });

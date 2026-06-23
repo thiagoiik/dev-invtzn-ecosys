@@ -16,6 +16,15 @@
         </span>
 
         <button 
+          v-if="deploymentSlug"
+          @click="openLiveDemo" 
+          type="button"
+          class="btn btn-sm bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-xl border border-slate-700/60 shadow-md transition-all flex items-center gap-1.5"
+        >
+          👀 Vista Previa
+        </button>
+
+        <button 
           @click="saveAllData" 
           class="btn btn-sm bg-primary hover:bg-primary-hover text-white font-bold px-4 py-2 rounded-xl shadow-md transition-all"
           :disabled="saveStatus === 'saving'"
@@ -373,6 +382,7 @@ const saveStatus = ref('saved'); // 'saved', 'unsaved', 'saving', 'error'
 const showUpgradeModal = ref(false);
 
 const deploymentStatus = ref('DRAFT');
+const deploymentSlug = ref('');
 
 const localConfig = ref({
   cover: {
@@ -476,6 +486,7 @@ const loadData = async () => {
     const res = await builderService.getDeployment(deploymentId);
     if (res.data) {
       deploymentStatus.value = res.data.status || 'DRAFT';
+      deploymentSlug.value = res.data.slug || '';
       
       const custom = res.data.custom_data;
       if (custom && Object.keys(custom).length > 0) {
@@ -531,6 +542,12 @@ const saveAllData = async () => {
   } catch (error) {
     saveStatus.value = 'error';
     toast.error('No se pudieron guardar los cambios.');
+  }
+};
+
+const openLiveDemo = () => {
+  if (deploymentSlug.value) {
+    window.open(`/i/${deploymentSlug.value}`, '_blank');
   }
 };
 
