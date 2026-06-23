@@ -78,6 +78,7 @@ import PhotoCarouselBlock from './PhotoCarouselBlock.vue';
 import LocationBlock from './LocationBlock.vue';
 import SectionDivider from './SectionDivider.vue';
 import { useTelemetry } from '../composables/useTelemetry';
+import DressCodeBlock from './DressCodeBlock.vue';
 
 const props = defineProps({
   status: { type: String, required: true },
@@ -107,7 +108,10 @@ const isTeamMember = computed(() => {
 });
 
 const isOwner = computed(() => {
-  const isMatched = authStore?.user && (authStore.user.pk === props.ownerId || authStore.user.id === props.ownerId);
+  const isMatched = authStore?.user && (
+    String(authStore.user.pk) === String(props.ownerId) || 
+    String(authStore.user.id) === String(props.ownerId)
+  );
   const isLocalSandbox = !props.ownerId && localStorage.getItem('pending_sandbox_id') == props.deploymentId;
   return !!(isMatched || isLocalSandbox);
 });
@@ -142,13 +146,14 @@ const componentMap = {
   RsvpFormBlock: RsvpFormBlock,
   GiftTableBlock: GiftTableBlock,
   PhotoCarouselBlock: PhotoCarouselBlock,
-  LocationBlock: LocationBlock
+  LocationBlock: LocationBlock,
+  DressCodeBlock: DressCodeBlock
 };
 
 const orderedBlocks = computed(() => {
   // Caso 1: Estructura moderna con ordenamiento dinámico
   if (Array.isArray(props.customData.blocks)) {
-    return props.customData.blocks
+    const list = props.customData.blocks
       .map(b => {
         // Resolver la configuración desde las llaves de nivel superior para garantizar reactividad en tiempo real
         let resolvedConfig = b.config || {};
@@ -165,7 +170,10 @@ const orderedBlocks = computed(() => {
         } else if (b.id === 'photo_carousel') {
           resolvedConfig = props.customData.photo_carousel || {};
         } else if (b.id === 'location') {
-          resolvedConfig = props.customData.location || {};
+          resolvedConfig = {
+            ...(props.customData.location || {}),
+            locations: props.customData.locations || null
+          };
         }
 
         return {
@@ -176,6 +184,23 @@ const orderedBlocks = computed(() => {
         };
       })
       .filter(b => b.component && b.visible);
+
+    const hasDressCode = list.some(b => b.id === 'dress_code');
+    if (!hasDressCode && props.customData.dressCode && props.customData.dressCode.type) {
+      const rsvpIdx = list.findIndex(b => b.id === 'rsvp');
+      const dressCodeBlock = {
+        id: 'dress_code',
+        component: DressCodeBlock,
+        config: props.customData.dressCode,
+        visible: true
+      };
+      if (rsvpIdx !== -1) {
+        list.splice(rsvpIdx, 0, dressCodeBlock);
+      } else {
+        list.push(dressCodeBlock);
+      }
+    }
+    return list;
   }
 
   // Caso 2: Fallback retrocompatible para registros antiguos
@@ -221,11 +246,22 @@ const orderedBlocks = computed(() => {
     });
   }
 
-  if (props.customData.has_location || props.customData.location) {
+  if (props.customData.has_location || props.customData.location || props.customData.locations) {
     fallback.push({
       id: 'location',
       component: LocationBlock,
-      config: props.customData.location || {}
+      config: {
+        ...(props.customData.location || {}),
+        locations: props.customData.locations || null
+      }
+    });
+  }
+
+  if (props.customData.dressCode && props.customData.dressCode.type) {
+    fallback.push({
+      id: 'dress_code',
+      component: DressCodeBlock,
+      config: props.customData.dressCode
     });
   }
 
