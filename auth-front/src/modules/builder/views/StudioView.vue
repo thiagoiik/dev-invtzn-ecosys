@@ -119,6 +119,12 @@
             <option value="sections">⚙️ Estructura / Orden</option>
             <option value="gift">🎁 Mesa de Regalos</option>
             <option value="gallery">📸 Galería de Fotos</option>
+            <option v-for="b in protocolBlocks" :key="b.id" :value="b.id">
+              {{ b.name }}
+            </option>
+            <option v-for="b in thoughtsBlocks" :key="b.id" :value="b.id">
+              {{ b.name }}
+            </option>
           </select>
         </div>
         
@@ -752,9 +758,23 @@
             </div>
             <p class="text-xs text-slate-400">Detalla la etiqueta o vestimenta sugerida para tus invitados.</p>
 
+            <!-- Activar código de vestimenta -->
+            <div class="flex items-center justify-between bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+              <div>
+                <h4 class="font-bold text-sm text-slate-200">Mostrar Código de Vestimenta</h4>
+                <p class="text-[10px] text-slate-400">Activa esta sección en la invitación</p>
+              </div>
+              <input 
+                type="checkbox" 
+                v-model="localConfig.has_dress_code" 
+                @change="syncDressCodeVisibility"
+                class="toggle toggle-primary toggle-sm"
+              />
+            </div>
+
             <div class="form-group flex flex-col gap-2">
               <label>Tipo de Código de Vestimenta</label>
-              <select v-model="localConfig.dressCode.type" class="select-input">
+              <select v-model="localConfig.dressCode.type" class="select-input" :disabled="!localConfig.has_dress_code">
                 <option value="FORMAL">Formal</option>
                 <option value="ETIQUETA">Etiqueta (Gala)</option>
                 <option value="COCKTAIL">Cóctel</option>
@@ -771,6 +791,7 @@
                 placeholder="Ej: Traje oscuro caballeros y vestido largo damas..." 
                 class="compact-textarea"
                 rows="4"
+                :disabled="!localConfig.has_dress_code"
               ></textarea>
             </div>
           </div>
@@ -825,6 +846,17 @@
                 </div>
                 <div class="flex items-center gap-2">
                   <span v-if="block.configKey && !allowedFeatures[block.id === 'timer' ? 'countdown_timer' : block.id]" class="text-[8px] font-black uppercase tracking-wider bg-warning/20 text-warning px-1.5 py-0.5 rounded">PRO</span>
+                  <!-- Botón de eliminar para bloques dinámicos -->
+                  <button 
+                    v-if="!block.locked && (block.id.startsWith('protocol_words_') || block.id.startsWith('invitation_text_'))" 
+                    type="button" 
+                    @click.stop="block.id.startsWith('protocol_words_') ? deleteProtocolBlock(block.id) : deleteThoughtsBlock(block.id)"
+                    class="text-rose-500 hover:text-rose-450 font-bold text-xs p-1 mr-1"
+                    title="Eliminar Sección"
+                  >
+                    🗑️
+                  </button>
+
                   <input 
                     v-if="block.configKey"
                     type="checkbox" 
@@ -832,10 +864,31 @@
                     @change="toggleBlockVisibility(block)"
                     class="toggle toggle-primary toggle-xs"
                   />
+                  <input 
+                    v-else-if="block.id.startsWith('protocol_words_') || block.id.startsWith('invitation_text_')"
+                    type="checkbox" 
+                    v-model="block.visible"
+                    class="toggle toggle-primary toggle-xs"
+                  />
                   <span v-else class="text-[9px] font-black text-primary uppercase tracking-widest">FIJO</span>
                 </div>
               </div>
             </div>
+
+            <button 
+              type="button" 
+              @click="addProtocolBlock" 
+              class="w-full mt-2 py-2.5 border border-dashed border-slate-700 hover:border-slate-500 hover:bg-slate-900/60 text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all mb-2"
+            >
+              ➕ Agregar Sección Protocolar
+            </button>
+            <button 
+              type="button" 
+              @click="addThoughtsBlock" 
+              class="w-full py-2.5 border border-dashed border-slate-700 hover:border-slate-500 hover:bg-slate-900/60 text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all"
+            >
+              ➕ Agregar Pensamiento / Texto
+            </button>
           </div>
 
           <!-- TAB REGALOS (MESA DE REGALOS) -->
@@ -1018,6 +1071,160 @@
                     </button>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB DINÁMICA: PALABRAS PROTOCOLARES -->
+          <div v-if="activeTab.startsWith('protocol_words_')" class="tab-content fade-in space-y-6">
+            <div class="flex items-center justify-between">
+              <h3 class="font-extrabold text-white text-lg">Palabras Protocolares</h3>
+              <button 
+                type="button" 
+                @click="deleteProtocolBlock(activeTab)"
+                class="btn btn-error btn-xs rounded-xl font-bold px-3 py-1"
+              >
+                🗑️ Eliminar Sección
+              </button>
+            </div>
+
+            <div class="space-y-4">
+              <div class="form-group">
+                <label>Título del Bloque</label>
+                <input 
+                  v-model="localConfig[activeTab].title" 
+                  type="text" 
+                  placeholder="Ej: Nuestros Padres" 
+                  @input="updateBlockName(activeTab, localConfig[activeTab].title)"
+                />
+              </div>
+
+              <div class="form-group">
+                <label>Descripción / Dedicatoria</label>
+                <textarea 
+                  v-model="localConfig[activeTab].description" 
+                  placeholder="Ej: Con la bendición de Dios y de nuestros padres..." 
+                  class="compact-textarea"
+                ></textarea>
+              </div>
+
+              <!-- Filas de Personas -->
+              <div class="space-y-4 pt-2">
+                <div class="flex justify-between items-center">
+                  <h4 class="font-extrabold text-sm text-slate-350">Filas de Personas / Roles</h4>
+                  <button 
+                    type="button" 
+                    @click="addProtocolRow(activeTab)" 
+                    class="text-xs font-bold text-primary hover:underline"
+                  >
+                    ➕ Añadir Fila
+                  </button>
+                </div>
+
+                <div 
+                  v-for="(col, idx) in localConfig[activeTab].columns" 
+                  :key="idx" 
+                  class="p-4 bg-slate-900/60 rounded-2xl border border-slate-700/50 space-y-3 relative"
+                >
+                  <button 
+                    type="button" 
+                    @click="removeProtocolRow(activeTab, idx)" 
+                    class="absolute top-3 right-3 text-rose-500 hover:text-rose-450 text-xs font-bold"
+                    title="Eliminar Fila"
+                  >
+                    🗑️
+                  </button>
+
+                  <div class="form-group">
+                    <label>Rol / Título (ej: Padres, Padrinos)</label>
+                    <input 
+                      v-model="col.role" 
+                      type="text" 
+                      placeholder="Ej: Padres de la Novia" 
+                      class="compact-input"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>Nombres (pueden ser varios)</label>
+                    <textarea 
+                      v-model="col.names" 
+                      placeholder="Ej: Juan Pérez y María Gómez" 
+                      class="compact-textarea"
+                    ></textarea>
+                  </div>
+                </div>
+
+                <div v-if="!localConfig[activeTab].columns || localConfig[activeTab].columns.length === 0" class="text-center py-6 text-xs text-slate-500 font-medium bg-slate-950/40 rounded-2xl border border-dashed border-slate-800">
+                  No hay filas configuradas. Añade una para mostrar nombres.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB DINÁMICA: PENSAMIENTOS / TEXTO DE INVITACIÓN -->
+          <div v-if="activeTab.startsWith('invitation_text_') || activeTab === 'invitation_text'" class="tab-content fade-in space-y-6">
+            <div class="flex items-center justify-between">
+              <h3 class="font-extrabold text-white text-lg">Texto de Invitación</h3>
+              <button 
+                type="button" 
+                @click="deleteThoughtsBlock(activeTab)"
+                class="btn btn-error btn-xs rounded-xl font-bold px-3 py-1"
+              >
+                🗑️ Eliminar Sección
+              </button>
+            </div>
+
+            <div class="space-y-4">
+              <div class="form-group">
+                <label>Título del Bloque</label>
+                <input 
+                  v-model="localConfig[activeTab].title" 
+                  type="text" 
+                  placeholder="Ej: Pensamiento / Verso" 
+                  @input="updateThoughtsBlockName(activeTab, localConfig[activeTab].title)"
+                />
+              </div>
+
+              <div class="form-group">
+                <div class="flex justify-between items-center">
+                  <label>Frase / Texto de Invitación</label>
+                  <span 
+                    class="text-[10px] font-bold" 
+                    :class="getWordCount(localConfig[activeTab]?.text || '') > 100 ? 'text-rose-500 font-extrabold' : 'text-slate-400'"
+                  >
+                    Palabras: {{ getWordCount(localConfig[activeTab]?.text || '') }} / 100
+                  </span>
+                </div>
+                <textarea 
+                  v-model="localConfig[activeTab].text" 
+                  placeholder="Ej: Familia tal y tal se enorgullece en invitarlo a usted y su apreciable familia..." 
+                  class="compact-textarea"
+                  rows="6"
+                  @input="validateThoughtsText(activeTab)"
+                ></textarea>
+                <p v-if="getWordCount(localConfig[activeTab]?.text || '') > 100" class="text-rose-500 text-[10px] font-extrabold">
+                  ⚠️ Has excedido el límite de 100 palabras. Por favor reduce el texto para evitar problemas de diseño.
+                </p>
+              </div>
+
+              <!-- Align Options -->
+              <div class="form-group">
+                <label>Alineación del Texto</label>
+                <select v-model="localConfig[activeTab].align" class="select select-bordered w-full rounded-2xl bg-slate-900 border-slate-700 text-white h-12 text-sm font-semibold">
+                  <option value="center">Centrado</option>
+                  <option value="left">Alineado a la izquierda</option>
+                  <option value="right">Alineado a la derecha</option>
+                </select>
+              </div>
+
+              <!-- Font Style Options -->
+              <div class="form-group">
+                <label>Estilo de Fuente</label>
+                <select v-model="localConfig[activeTab].fontStyle" class="select select-bordered w-full rounded-2xl bg-slate-900 border-slate-700 text-white h-12 text-sm font-semibold">
+                  <option value="serif">Serif (Elegante y Clásico)</option>
+                  <option value="sans">Sans-serif (Moderno y Limpio)</option>
+                </select>
               </div>
             </div>
           </div>
@@ -1440,6 +1647,7 @@ const defaultBlocks = [
   { id: 'timer', type: 'CountdownTimer', name: '🕰️ Cuenta Regresiva', visible: false, configKey: 'has_timer' },
   { id: 'location', type: 'LocationBlock', name: '📍 Ubicación del Evento', visible: false, configKey: 'has_location' },
   { id: 'rsvp', type: 'RsvpFormBlock', name: '✉️ Confirmación RSVP', visible: true, locked: true },
+  { id: 'dress_code', type: 'DressCodeBlock', name: '👗 Código de Vestimenta', visible: false, configKey: 'has_dress_code' },
   { id: 'timeline', type: 'TimelineBlock', name: '📅 Cronograma / Itinerario', visible: false, configKey: 'has_timeline' },
   { id: 'gift_table', type: 'GiftTableBlock', name: '🎁 Mesa de Regalos', visible: false, configKey: 'has_gift_table' },
   { id: 'photo_carousel', type: 'PhotoCarouselBlock', name: '📸 Galería de Fotos', visible: false, configKey: 'has_photo_carousel' }
@@ -1455,9 +1663,18 @@ const allowedFeatures = ref({
   gift_table: false,
   photo_carousel: false,
   location: true,
+  dress_code: true,
 });
 const deploymentSlug = ref('');
 const deploymentStatus = ref('DRAFT');
+
+const protocolBlocks = computed(() => {
+  return localConfig.value.blocks ? localConfig.value.blocks.filter(b => b.id && b.id.startsWith('protocol_words_')) : [];
+});
+
+const thoughtsBlocks = computed(() => {
+  return localConfig.value.blocks ? localConfig.value.blocks.filter(b => b.id && b.id.startsWith('invitation_text_')) : [];
+});
 
 // Estructura por defecto en caso de que esté vacío
 const localConfig = ref({
@@ -1541,6 +1758,7 @@ const localConfig = ref({
     description: '',
     images: []
   },
+  has_dress_code: false,
   dressCode: {
     type: 'FORMAL',
     details: ''
@@ -1586,9 +1804,14 @@ onMounted(async () => {
           custom_og: true,
           gift_table: true,
           photo_carousel: true,
+          location: true,
+          dress_code: true,
         };
       } else if (res.data.allowed_features) {
-        allowedFeatures.value = res.data.allowed_features;
+        allowedFeatures.value = {
+          ...allowedFeatures.value,
+          ...res.data.allowed_features
+        };
       }
 
       
@@ -1628,6 +1851,13 @@ onMounted(async () => {
         if (custom.dressCode) {
           localConfig.value.dressCode = { ...localConfig.value.dressCode, ...custom.dressCode };
         }
+
+        // Copiar dinámicamente claves de palabras protocolares y pensamientos
+        Object.keys(custom).forEach(key => {
+          if (key.startsWith('protocol_words_') || key.startsWith('invitation_text_')) {
+            localConfig.value[key] = custom[key];
+          }
+        });
         
         // Copiar otros campos planos
         localConfig.value.has_timer = custom.has_timer ?? false;
@@ -1636,6 +1866,7 @@ onMounted(async () => {
         localConfig.value.has_gift_table = custom.has_gift_table ?? false;
         localConfig.value.has_photo_carousel = custom.has_photo_carousel ?? false;
         localConfig.value.has_location = custom.has_location ?? false;
+        localConfig.value.has_dress_code = custom.has_dress_code ?? !!(custom.dressCode?.type);
         localConfig.value.audioUrl = custom.audioUrl ?? '';
         localConfig.value.og_title = custom.og_title ?? '';
         localConfig.value.og_description = custom.og_description ?? '';
@@ -1661,6 +1892,7 @@ onMounted(async () => {
             if (db.id === 'gift_table') visible = custom.has_gift_table ?? false;
             if (db.id === 'photo_carousel') visible = custom.has_photo_carousel ?? false;
             if (db.id === 'location') visible = custom.has_location ?? false;
+            if (db.id === 'dress_code') visible = custom.has_dress_code ?? !!(custom.dressCode?.type);
             return { ...db, visible };
           });
         }
@@ -1913,6 +2145,151 @@ const onDrop = (event, index) => {
   dragIndex.value = null;
 };
 
+const addProtocolBlock = () => {
+  const timestamp = Date.now();
+  const id = `protocol_words_${timestamp}`;
+  
+  // 1. Agregar a localConfig.blocks
+  localConfig.value.blocks.push({
+    id,
+    type: 'ProtocolWordsBlock',
+    name: '📜 P. Protocolares',
+    visible: true,
+    locked: false
+  });
+  
+  // 2. Inicializar configuración por defecto
+  localConfig.value[id] = {
+    title: 'Palabras Protocolares',
+    description: 'Mensaje de agradecimiento o bendición.',
+    columns: [
+      { role: 'Padres de la Novia', names: 'Nombre del Padre & Madre' },
+      { role: 'Padres del Novio', names: 'Nombre del Padre & Madre' }
+    ]
+  };
+  
+  // 3. Abrir la pestaña de edición de esta nueva sección de inmediato
+  activeTab.value = id;
+  toast.success('Nueva sección protocolar agregada');
+};
+
+const deleteProtocolBlock = (id) => {
+  openConfirmModal({
+    title: 'Eliminar Sección',
+    message: '¿Estás seguro de que deseas eliminar esta sección protocolar? Esta acción no se puede deshacer.',
+    emoji: '🗑️',
+    confirmText: 'Sí, eliminar',
+    cancelText: 'Cancelar',
+    onConfirm: () => {
+      // 1. Remover de blocks list
+      localConfig.value.blocks = localConfig.value.blocks.filter(b => b.id !== id);
+      // 2. Eliminar su clave de configuración
+      delete localConfig.value[id];
+      
+      // 3. Si la pestaña activa era esta, regresar a 'sections'
+      if (activeTab.value === id) {
+        activeTab.value = 'sections';
+      }
+      toast.success('Sección protocolar eliminada');
+    }
+  });
+};
+
+const updateBlockName = (id, title) => {
+  const block = localConfig.value.blocks.find(b => b.id === id);
+  if (block) {
+    block.name = `📜 P. Protocolares: ${title || 'Sin título'}`;
+  }
+};
+
+const addProtocolRow = (id) => {
+  if (!localConfig.value[id].columns) {
+    localConfig.value[id].columns = [];
+  }
+  localConfig.value[id].columns.push({
+    role: 'Nuevo Rol',
+    names: 'Nombre'
+  });
+  saveStatus.value = 'unsaved';
+};
+
+const removeProtocolRow = (id, idx) => {
+  localConfig.value[id].columns.splice(idx, 1);
+  saveStatus.value = 'unsaved';
+};
+
+const addThoughtsBlock = () => {
+  const timestamp = Date.now();
+  const id = `invitation_text_${timestamp}`;
+  
+  // 1. Agregar a localConfig.blocks
+  localConfig.value.blocks.push({
+    id,
+    type: 'InvitationTextBlock',
+    name: '✍️ Pensamiento',
+    visible: true,
+    locked: false
+  });
+  
+  // 2. Inicializar configuración por defecto
+  localConfig.value[id] = {
+    title: 'Pensamiento',
+    text: 'Familia tal y tal se enorgullece en invitarlo a usted y su apreciable familia...',
+    align: 'center',
+    fontStyle: 'serif'
+  };
+  
+  // 3. Abrir la pestaña de edición de esta nueva sección de inmediato
+  activeTab.value = id;
+  toast.success('Nueva sección de pensamientos agregada');
+};
+
+const deleteThoughtsBlock = (id) => {
+  openConfirmModal({
+    title: 'Eliminar Sección',
+    message: '¿Estás seguro de que deseas eliminar esta sección de pensamiento? Esta acción no se puede deshacer.',
+    emoji: '🗑️',
+    confirmText: 'Sí, eliminar',
+    cancelText: 'Cancelar',
+    onConfirm: () => {
+      // 1. Remover de blocks list
+      localConfig.value.blocks = localConfig.value.blocks.filter(b => b.id !== id);
+      // 2. Eliminar su clave de configuración
+      delete localConfig.value[id];
+      
+      // 3. Si la pestaña activa era esta, regresar a 'sections'
+      if (activeTab.value === id) {
+        activeTab.value = 'sections';
+      }
+      toast.success('Sección de pensamiento eliminada');
+    }
+  });
+};
+
+const updateThoughtsBlockName = (id, title) => {
+  const block = localConfig.value.blocks.find(b => b.id === id);
+  if (block) {
+    block.name = `✍️ Pensamiento: ${title || 'Sin título'}`;
+  }
+};
+
+const getWordCount = (str) => {
+  if (!str) return 0;
+  const cleanStr = str.trim();
+  if (cleanStr === '') return 0;
+  return cleanStr.split(/\s+/).length;
+};
+
+const validateThoughtsText = (id) => {
+  saveStatus.value = 'unsaved';
+  const text = localConfig.value[id].text || '';
+  const words = text.trim().split(/\s+/);
+  if (words.length > 120) {
+    toast.warning('Has alcanzado el límite máximo de palabras para esta sección.');
+    localConfig.value[id].text = words.slice(0, 120).join(' ');
+  }
+};
+
 const toggleBlockVisibility = (block) => {
   if (block.locked) return;
 
@@ -1955,6 +2332,11 @@ const syncPhotoCarouselVisibility = () => {
   }
   const b = localConfig.value.blocks?.find(x => x.id === 'photo_carousel');
   if (b) b.visible = localConfig.value.has_photo_carousel;
+};
+
+const syncDressCodeVisibility = () => {
+  const b = localConfig.value.blocks?.find(x => x.id === 'dress_code');
+  if (b) b.visible = localConfig.value.has_dress_code;
 };
 
 // Cuentas Bancarias

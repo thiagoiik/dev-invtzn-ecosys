@@ -79,6 +79,8 @@ import LocationBlock from './LocationBlock.vue';
 import SectionDivider from './SectionDivider.vue';
 import { useTelemetry } from '../composables/useTelemetry';
 import DressCodeBlock from './DressCodeBlock.vue';
+import ProtocolWordsBlock from './ProtocolWordsBlock.vue';
+import InvitationTextBlock from './InvitationTextBlock.vue';
 
 const props = defineProps({
   status: { type: String, required: true },
@@ -147,7 +149,9 @@ const componentMap = {
   GiftTableBlock: GiftTableBlock,
   PhotoCarouselBlock: PhotoCarouselBlock,
   LocationBlock: LocationBlock,
-  DressCodeBlock: DressCodeBlock
+  DressCodeBlock: DressCodeBlock,
+  ProtocolWordsBlock: ProtocolWordsBlock,
+  InvitationTextBlock: InvitationTextBlock
 };
 
 const orderedBlocks = computed(() => {
@@ -174,6 +178,12 @@ const orderedBlocks = computed(() => {
             ...(props.customData.location || {}),
             locations: props.customData.locations || null
           };
+        } else if (b.id === 'dress_code') {
+          resolvedConfig = props.customData.dressCode || {};
+        } else if (b.id.startsWith('protocol_words_')) {
+          resolvedConfig = props.customData[b.id] || {};
+        } else if (b.id.startsWith('invitation_text_') || b.id === 'invitation_text') {
+          resolvedConfig = props.customData[b.id] || {};
         }
 
         return {
