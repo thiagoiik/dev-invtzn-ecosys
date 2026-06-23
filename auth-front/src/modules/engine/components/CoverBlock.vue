@@ -10,7 +10,10 @@
     ></div>
     
     <!-- Sophisticated Overlay Layer -->
-    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-slate-950/60"></div>
+    <div 
+      class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/40 to-slate-950/60"
+      :style="{ opacity: (config.overlayOpacity !== undefined ? config.overlayOpacity : 70) / 100 }"
+    ></div>
 
     <!-- Decorative Frame Overlay -->
     <div 
@@ -22,13 +25,18 @@
     <!-- Content Card -->
     <div class="relative z-10 text-center max-w-2xl px-6 space-y-8 animate-fade-in-up">
       <!-- Header Label -->
-      <span class="text-xs font-black uppercase tracking-[0.4em] text-amber-400/90 drop-shadow-md">
+      <span 
+        class="text-xs font-black uppercase tracking-[0.4em] drop-shadow-md"
+        :class="[!config.headerLabelColor && 'text-amber-400/90']"
+        :style="{ color: config.headerLabelColor }"
+      >
         {{ config.headerLabel || 'Nuestra Invitación' }}
       </span>
 
       <!-- Main Custom Typography Title -->
       <h1 
-        class="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-light leading-none drop-shadow-2xl font-serif text-white tracking-wide break-words"
+        class="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-light leading-none drop-shadow-2xl font-serif tracking-wide break-words"
+        :class="[!config.titleColor && 'text-white']"
         :style="titleStyles"
       >
         {{ config.title || 'Ana & Luis' }}
@@ -38,15 +46,23 @@
 
       <!-- Subtitle Description -->
       <p 
-        class="text-lg md:text-xl font-light tracking-wide text-slate-200/90 drop-shadow-md font-sans"
+        class="text-lg md:text-xl font-light tracking-wide drop-shadow-md font-sans"
+        :class="[!config.subtitleColor && 'text-slate-200/90']"
         :style="{ color: config.subtitleColor }"
       >
         {{ config.subtitle || '¡Nos casamos y queremos celebrar contigo!' }}
       </p>
 
       <!-- Date Display Box -->
-      <div class="inline-block px-8 py-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-xl">
-        <p class="text-xl md:text-2xl font-black uppercase tracking-[0.2em] text-white">
+      <div 
+        class="inline-block px-8 py-4 rounded-2xl bg-white/5 border backdrop-blur-md shadow-xl"
+        :style="dateBoxStyle"
+      >
+        <p 
+          class="text-xl md:text-2xl font-black uppercase tracking-[0.2em]"
+          :class="[!(config.subtitleColor || config.headerLabelColor) && 'text-white']"
+          :style="{ color: config.subtitleColor || config.headerLabelColor }"
+        >
           {{ config.date || '25 DICIEMBRE 2026' }}
         </p>
       </div>
@@ -83,7 +99,15 @@ const titleStyles = computed(() => {
   const styles = {};
   if (props.config.titleColor) styles.color = props.config.titleColor;
   if (props.config.fontFamily) styles.fontFamily = props.config.fontFamily;
+  if (props.config.titleSize) styles.fontSize = `${props.config.titleSize}rem`;
   return styles;
+});
+
+const dateBoxStyle = computed(() => {
+  const color = props.config.subtitleColor || props.config.headerLabelColor;
+  return {
+    borderColor: color ? `${color}30` : 'rgba(255, 255, 255, 0.1)'
+  };
 });
 </script>
 
