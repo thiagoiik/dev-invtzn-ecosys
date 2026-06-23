@@ -1,6 +1,10 @@
 <template>
   <div class="py-12 px-6 max-w-4xl mx-auto space-y-8 bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-slate-100/50 shadow-xl my-6">
     <div class="text-center space-y-2">
+      <div class="flex justify-center mb-2">
+        <img v-if="config.icon && isUrl(config.icon)" :src="config.icon" class="w-12 h-12 object-contain" alt="icon" />
+        <span v-else class="text-4xl block select-none">{{ config.icon || '🎁' }}</span>
+      </div>
       <h2 class="text-3xl font-black text-slate-800 tracking-tight">{{ config.title || 'Mesa de Regalos' }}</h2>
       <p class="text-sm text-slate-500 max-w-md mx-auto leading-relaxed">{{ config.description || 'Tu presencia es nuestro mejor regalo, pero si deseas tener un detalle con nosotros...' }}</p>
     </div>
@@ -75,10 +79,16 @@ const props = defineProps({
       title: 'Mesa de Regalos',
       description: 'Tu presencia es nuestro mejor regalo, pero si deseas tener un detalle con nosotros...',
       bank_accounts: [],
-      gift_registries: []
+      gift_registries: [],
+      icon: ''
     })
   }
 });
+
+const isUrl = (val) => {
+  if (!val) return false;
+  return val.startsWith('http') || val.startsWith('/') || val.startsWith('.') || val.includes('/');
+};
 
 const toast = useToast();
 

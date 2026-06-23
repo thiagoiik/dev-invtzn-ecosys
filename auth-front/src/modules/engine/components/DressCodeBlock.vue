@@ -4,7 +4,10 @@
     class="py-12 px-6 max-w-4xl mx-auto space-y-6 bg-white/40 backdrop-blur-md rounded-[2.5rem] border border-slate-100/50 shadow-xl my-6 text-center"
   >
     <div class="space-y-4">
-      <span class="text-4xl block">👗👔</span>
+      <div class="flex justify-center">
+        <img v-if="config.icon && isUrl(config.icon)" :src="config.icon" class="w-12 h-12 object-contain" alt="icon" />
+        <span v-else class="text-4xl block select-none">{{ config.icon || '👗👔' }}</span>
+      </div>
       <h2 class="text-3xl font-black text-slate-800 tracking-tight">
         Código de Vestimenta
       </h2>
@@ -26,10 +29,16 @@ const props = defineProps({
     type: Object,
     default: () => ({
       type: 'FORMAL',
-      details: ''
+      details: '',
+      icon: ''
     })
   }
 });
+
+const isUrl = (val) => {
+  if (!val) return false;
+  return val.startsWith('http') || val.startsWith('/') || val.startsWith('.') || val.includes('/');
+};
 
 const dressCodeLabel = computed(() => {
   const types = {

@@ -17,6 +17,10 @@
       class="w-full max-w-md p-2 space-y-8 animate-fade-in"
     >
       <header class="text-center space-y-2">
+        <div class="flex justify-center mb-2">
+          <img v-if="config.icon && isUrl(config.icon)" :src="config.icon" class="w-12 h-12 object-contain" alt="icon" />
+          <span v-else class="text-4xl block select-none">{{ config.icon || '✉️' }}</span>
+        </div>
         <span class="text-[9px] font-black text-amber-500 uppercase tracking-[0.4em]">Confirma tu presencia</span>
         <h2 class="text-3xl font-serif font-bold text-slate-900">
           {{ config.title || 'Confirma tu Asistencia' }}
@@ -136,6 +140,11 @@ const props = defineProps({
   config: { type: Object, default: () => ({}) },
   tierLevel: { type: String, default: 'BASIC' }
 });
+
+const isUrl = (val) => {
+  if (!val) return false;
+  return val.startsWith('http') || val.startsWith('/') || val.startsWith('.') || val.includes('/');
+};
 
 const toast = useToast();
 const telemetry = useTelemetry();
