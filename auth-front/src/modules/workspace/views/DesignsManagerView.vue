@@ -140,7 +140,7 @@
                   </button>
                   
                   <!-- Entrar al Studio / Formulario -->
-                  <router-link :to="'/builder/' + dep.id" class="btn btn-xs btn-primary font-black px-3.5" title="Abrir Studio">
+                  <router-link :to="dep.creation_mode === 'CATALOG' ? '/builder/' + dep.id + '/form' : '/builder/' + dep.id" class="btn btn-xs btn-primary font-black px-3.5" :title="dep.creation_mode === 'CATALOG' ? 'Abrir Formulario' : 'Abrir Studio'">
                     Editar
                   </router-link>
                   

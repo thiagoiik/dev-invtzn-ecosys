@@ -114,6 +114,7 @@
             <option value="music">🎵 Música de Fondo</option>
             <option value="theme">🎨 Paleta y Estilos</option>
             <option value="og">⚙️ SEO / Metadatos OG</option>
+            <option value="dress_code">👗 Código de Vestimenta</option>
             <option value="envelope">✉️ Sobre 3D / Apertura</option>
             <option value="sections">⚙️ Estructura / Orden</option>
             <option value="gift">🎁 Mesa de Regalos</option>
@@ -340,6 +341,31 @@
                   :disabled="!localConfig.has_location"
                 />
                 <p class="text-[10px] text-slate-400 mt-1">Este enlace se usará para el botón "Cómo llegar". Abre directamente en las apps de navegación de los invitados.</p>
+              </div>
+
+              <!-- Múltiples Ubicaciones (Ceremonia y Recepción) -->
+              <div class="p-4 bg-slate-900/40 rounded-2xl border border-slate-700/40 space-y-3 mt-4">
+                <span class="text-xs font-bold text-amber-400">⛪ Ceremonia Religiosa / Civil</span>
+                <div class="form-group flex flex-col gap-2">
+                  <label class="text-[10px] uppercase font-bold text-slate-400">Nombre del Lugar</label>
+                  <input v-model="localConfig.locations.ceremonyName" type="text" placeholder="Ej: Parroquia de Santa María" :disabled="!localConfig.has_location" />
+                </div>
+                <div class="form-group flex flex-col gap-2">
+                  <label class="text-[10px] uppercase font-bold text-slate-400">Enlace de Google Maps</label>
+                  <input v-model="localConfig.locations.ceremonyMapsUrl" type="url" placeholder="https://maps.google.com/..." :disabled="!localConfig.has_location" />
+                </div>
+              </div>
+
+              <div class="p-4 bg-slate-900/40 rounded-2xl border border-slate-700/40 space-y-3 mt-4">
+                <span class="text-xs font-bold text-amber-400">🥂 Recepción / Fiesta</span>
+                <div class="form-group flex flex-col gap-2">
+                  <label class="text-[10px] uppercase font-bold text-slate-400">Nombre del Salón / Jardín</label>
+                  <input v-model="localConfig.locations.receptionName" type="text" placeholder="Ej: Jardín de Eventos Los Pinos" :disabled="!localConfig.has_location" />
+                </div>
+                <div class="form-group flex flex-col gap-2">
+                  <label class="text-[10px] uppercase font-bold text-slate-400">Enlace de Google Maps</label>
+                  <input v-model="localConfig.locations.receptionMapsUrl" type="url" placeholder="https://maps.google.com/..." :disabled="!localConfig.has_location" />
+                </div>
               </div>
 
               <!-- Nivel de Zoom (Bloqueado a partir de Standard) -->
@@ -716,6 +742,36 @@
                 />
                 <span class="help-text">URL de la imagen que se mostrará al compartir. Debe ser cuadrada u horizontal.</span>
               </div>
+            </div>
+          </div>
+
+          <!-- TAB DRESS CODE -->
+          <div v-if="activeTab === 'dress_code'" class="tab-content fade-in space-y-6">
+            <div class="flex items-center justify-between">
+              <h3 class="font-extrabold text-white text-lg">Código de Vestimenta</h3>
+            </div>
+            <p class="text-xs text-slate-400">Detalla la etiqueta o vestimenta sugerida para tus invitados.</p>
+
+            <div class="form-group flex flex-col gap-2">
+              <label>Tipo de Código de Vestimenta</label>
+              <select v-model="localConfig.dressCode.type" class="select-input">
+                <option value="FORMAL">Formal</option>
+                <option value="ETIQUETA">Etiqueta (Gala)</option>
+                <option value="COCKTAIL">Cóctel</option>
+                <option value="GUAYABERA">Guayabera / Clima Cálido</option>
+                <option value="CASUAL">Casual</option>
+                <option value="PLAYA">Playa</option>
+              </select>
+            </div>
+
+            <div class="form-group flex flex-col gap-2">
+              <label>Especificaciones / Detalles Adicionales</label>
+              <textarea 
+                v-model="localConfig.dressCode.details" 
+                placeholder="Ej: Traje oscuro caballeros y vestido largo damas..." 
+                class="compact-textarea"
+                rows="4"
+              ></textarea>
             </div>
           </div>
 
@@ -1433,6 +1489,12 @@ const localConfig = ref({
     googleMapsUrl: '',
     zoom: 14
   },
+  locations: {
+    ceremonyName: '',
+    ceremonyMapsUrl: '',
+    receptionName: '',
+    receptionMapsUrl: ''
+  },
   has_timer: false,
   timer: {
     title: 'Cuenta Regresiva',
@@ -1479,6 +1541,10 @@ const localConfig = ref({
     description: '',
     images: []
   },
+  dressCode: {
+    type: 'FORMAL',
+    details: ''
+  },
   blocks: []
 });
 
@@ -1495,6 +1561,11 @@ onMounted(async () => {
       deploymentIsPaid.value = res.data.is_paid || false;
       productTier.value = res.data.product_tier || 'BASIC';
       editableSlug.value = res.data.slug || '';
+
+      if (res.data.creation_mode === 'CATALOG' && !isAdminOrDesigner.value) {
+        router.replace(`/builder/${deploymentId}/form`);
+        return;
+      }
       
       if (authStore?.role === 'ADMIN') {
         try {
@@ -1550,6 +1621,12 @@ onMounted(async () => {
         }
         if (custom.location) {
           localConfig.value.location = { ...localConfig.value.location, ...custom.location };
+        }
+        if (custom.locations) {
+          localConfig.value.locations = { ...localConfig.value.locations, ...custom.locations };
+        }
+        if (custom.dressCode) {
+          localConfig.value.dressCode = { ...localConfig.value.dressCode, ...custom.dressCode };
         }
         
         // Copiar otros campos planos
