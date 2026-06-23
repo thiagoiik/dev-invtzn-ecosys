@@ -137,6 +137,8 @@ const openEnvelope = () => {
   transform-style: preserve-3d;
   opacity: 0.95;
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .flap-top {
@@ -144,6 +146,7 @@ const openEnvelope = () => {
   clip-path: polygon(0 0, 100% 0, 50% 100%);
   transform-origin: top;
   z-index: 5;
+  transform: scale(1.015);
 }
 
 .flap-right {
@@ -151,6 +154,7 @@ const openEnvelope = () => {
   clip-path: polygon(100% 0, 100% 100%, 0 50%);
   transform-origin: right;
   z-index: 4;
+  transform: scale(1.015);
 }
 
 .flap-bottom {
@@ -158,6 +162,7 @@ const openEnvelope = () => {
   clip-path: polygon(0 100%, 100% 100%, 50% 0);
   transform-origin: bottom;
   z-index: 3;
+  transform: scale(1.015);
 }
 
 .flap-left {
@@ -165,13 +170,14 @@ const openEnvelope = () => {
   clip-path: polygon(0 0, 0 100%, 100% 50%);
   transform-origin: left;
   z-index: 2;
+  transform: scale(1.015);
 }
 
 /* Sequential opening */
-.is-open .flap-top { transform: rotateX(180deg); transition-delay: 0.6s; }
-.is-open .flap-right { transform: rotateY(180deg); transition-delay: 0.4s; }
-.is-open .flap-bottom { transform: rotateX(-180deg); transition-delay: 0.2s; }
-.is-open .flap-left { transform: rotateY(-180deg); transition-delay: 0s; }
+.is-open .flap-top { transform: rotateX(180deg) scale(1.015); transition-delay: 0.6s; }
+.is-open .flap-right { transform: rotateY(180deg) scale(1.015); transition-delay: 0.4s; }
+.is-open .flap-bottom { transform: rotateX(-180deg) scale(1.015); transition-delay: 0.2s; }
+.is-open .flap-left { transform: rotateY(-180deg) scale(1.015); transition-delay: 0s; }
 
 .origami-seal {
   position: absolute;
@@ -219,6 +225,8 @@ const openEnvelope = () => {
   pointer-events: none;
   transform: scale(0.9) translateY(4vh);
   transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease, visibility 0.8s ease;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 .invitation-card-slot.is-visible {
@@ -256,5 +264,21 @@ const openEnvelope = () => {
 .is-released .scrollable-content-wrapper {
   height: auto;
   overflow: visible;
+}
+
+@media (max-width: 640px) {
+  .origami-wrapper {
+    width: 85vw;
+    max-width: 320px;
+  }
+  .invitation-card-slot {
+    width: 90vw;
+    max-width: 360px;
+    height: 80vh;
+    top: 8vh;
+  }
+  .invitation-card-slot.is-visible {
+    transform: scale(1.0) translateY(0);
+  }
 }
 </style>

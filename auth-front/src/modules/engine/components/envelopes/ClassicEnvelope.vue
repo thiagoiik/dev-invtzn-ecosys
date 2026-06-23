@@ -111,12 +111,15 @@ const openEnvelope = () => {
   perspective: 1500px;
   z-index: 5;
   transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.8s ease;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 /* El sobre completo cae y se desvanece al abrirse */
 .is-open .envelope-classic-wrapper {
   transform: translateY(100vh) rotateX(15deg);
   opacity: 0;
+  transition-delay: 0.8s;
 }
 
 .envelope-classic-shadow {
@@ -168,6 +171,8 @@ const openEnvelope = () => {
   z-index: 4;
   transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .flap-open .envelope-flap-top {
@@ -230,6 +235,8 @@ const openEnvelope = () => {
   transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.6s ease, visibility 0.6s ease;
   box-shadow: 0 10px 30px rgba(0,0,0,0.25);
   overflow: hidden;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 /* La carta sale hacia arriba y toma la pantalla */
@@ -269,5 +276,21 @@ const openEnvelope = () => {
 .is-released .scrollable-content-wrapper {
   height: auto;
   overflow: visible;
+}
+
+@media (max-width: 640px) {
+  .envelope-classic-wrapper {
+    width: 85vw;
+    max-width: 320px;
+  }
+  .invitation-card-slot {
+    width: 90vw;
+    max-width: 360px;
+    height: 75vh;
+    top: 12vh;
+  }
+  .invitation-card-slot.is-visible {
+    transform: translateY(-16vh) scale(1.0);
+  }
 }
 </style>
