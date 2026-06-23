@@ -218,6 +218,52 @@
             </div>
 
             <div class="form-group">
+              <label>Color del Subtítulo</label>
+              <div class="color-picker-wrapper">
+                <input v-model="localConfig.cover.subtitleColor" type="color" class="color-input" />
+                <span class="color-value">{{ localConfig.cover.subtitleColor }}</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Color de Etiqueta Superior</label>
+              <div class="color-picker-wrapper">
+                <input v-model="localConfig.cover.headerLabelColor" type="color" class="color-input" />
+                <span class="color-value">{{ localConfig.cover.headerLabelColor }}</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="flex justify-between">
+                <span>Tamaño del Título</span>
+                <span class="font-bold font-mono">{{ localConfig.cover.titleSize || 4.5 }}rem</span>
+              </label>
+              <input 
+                type="range" 
+                min="2" 
+                max="7" 
+                step="0.1"
+                v-model.number="localConfig.cover.titleSize" 
+                class="hue-range"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="flex justify-between">
+                <span>Opacidad de la Capa Oscura</span>
+                <span class="font-bold font-mono">{{ localConfig.cover.overlayOpacity }}%</span>
+              </label>
+              <input 
+                type="range" 
+                min="10" 
+                max="95" 
+                step="5"
+                v-model.number="localConfig.cover.overlayOpacity" 
+                class="hue-range"
+              />
+            </div>
+
+            <div class="form-group">
               <label>Tipo de Letra (Título)</label>
               <select v-model="localConfig.cover.fontFamily" class="select-input">
                 <option value="serif">Elegante Serif (Por defecto)</option>
@@ -244,6 +290,47 @@
             <div class="form-group">
               <label>Título Sección RSVP</label>
               <input v-model="localConfig.rsvp.title" type="text" placeholder="Ej: Confirma tu Asistencia" />
+            </div>
+
+            <div class="form-group">
+              <label class="flex justify-between items-center mb-1.5">
+                <span>Icono de Sección</span>
+                <span class="text-[10px] text-slate-400">Emoji o URL SVG</span>
+              </label>
+              <div class="dropdown dropdown-top dropdown-end w-full">
+                <div tabindex="0" role="button" class="btn btn-outline border-white/10 w-full flex items-center justify-between px-3 h-[42px] bg-white/5 hover:bg-white/10 text-white rounded-xl">
+                  <span class="flex items-center gap-2">
+                    <img v-if="localConfig.rsvp.icon && isUrl(localConfig.rsvp.icon)" :src="localConfig.rsvp.icon" class="w-6 h-6 object-contain" />
+                    <span v-else class="text-lg">{{ localConfig.rsvp.icon || '✉️' }}</span>
+                    <span class="text-xs text-slate-400">Seleccionar...</span>
+                  </span>
+                  <span class="text-xs">▼</span>
+                </div>
+                <div tabindex="0" class="dropdown-content menu p-4 shadow-2xl bg-slate-950 border border-white/10 rounded-2xl w-[280px] z-[100] gap-3">
+                  <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Emojis sugeridos</span>
+                  <div class="grid grid-cols-5 gap-2 text-center text-xl">
+                    <button 
+                      v-for="emoji in ['✉️', '💍', '🥂', '👗', '📍', '🎁', '🕰️', '📅', '📸', '🎵', '⛪', '🕊️', '📜', '✨', '🍽️']" 
+                      :key="emoji"
+                      type="button"
+                      class="p-1.5 hover:bg-white/10 rounded-lg active:scale-95 transition-all text-slate-200"
+                      @click="localConfig.rsvp.icon = emoji"
+                    >
+                      {{ emoji }}
+                    </button>
+                  </div>
+                  <div class="border-t border-white/5 my-1"></div>
+                  <div class="space-y-1.5">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Personalizado</span>
+                    <input 
+                      v-model="localConfig.rsvp.icon" 
+                      type="text" 
+                      placeholder="Pegar Emoji o URL SVG/PNG" 
+                      class="input input-sm border-white/15 bg-white/5 h-8 rounded-lg text-xs w-full focus:border-primary text-slate-200"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div class="form-group">
@@ -316,6 +403,48 @@
                   placeholder="Ej: Ubicación del Evento o Ceremonia" 
                   :disabled="!localConfig.has_location"
                 />
+              </div>
+
+              <div class="form-group flex flex-col gap-2">
+                <label class="flex justify-between items-center">
+                  <span>Icono de Sección</span>
+                  <span class="text-[10px] text-slate-400">Emoji o URL SVG</span>
+                </label>
+                <div class="dropdown dropdown-top dropdown-end w-full" :class="{ 'pointer-events-none opacity-40': !localConfig.has_location }">
+                  <div tabindex="0" role="button" class="btn btn-outline border-white/10 w-full flex items-center justify-between px-3 h-[42px] bg-white/5 hover:bg-white/10 text-white rounded-xl">
+                    <span class="flex items-center gap-2">
+                      <img v-if="localConfig.location.icon && isUrl(localConfig.location.icon)" :src="localConfig.location.icon" class="w-6 h-6 object-contain" />
+                      <span v-else class="text-lg">{{ localConfig.location.icon || '📍' }}</span>
+                      <span class="text-xs text-slate-400">Seleccionar...</span>
+                    </span>
+                    <span class="text-xs">▼</span>
+                  </div>
+                  <div tabindex="0" class="dropdown-content menu p-4 shadow-2xl bg-slate-950 border border-white/10 rounded-2xl w-[280px] z-[100] gap-3">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Emojis sugeridos</span>
+                    <div class="grid grid-cols-5 gap-2 text-center text-xl">
+                      <button 
+                        v-for="emoji in ['📍', '⛪', '🏛️', '💍', '🥂', '✉️', '👗', '🎁', '🕰️', '📅', '📸', '🎵', '🕊️', '📜', '✨']" 
+                        :key="emoji"
+                        type="button"
+                        class="p-1.5 hover:bg-white/10 rounded-lg active:scale-95 transition-all text-slate-200"
+                        @click="localConfig.location.icon = emoji"
+                      >
+                        {{ emoji }}
+                      </button>
+                    </div>
+                    <div class="border-t border-white/5 my-1"></div>
+                    <div class="space-y-1.5">
+                      <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Personalizado</span>
+                      <input 
+                        v-model="localConfig.location.icon" 
+                        type="text" 
+                        placeholder="Pegar Emoji o URL SVG/PNG" 
+                        class="input input-sm border-white/15 bg-white/5 h-8 rounded-lg text-xs w-full focus:border-primary text-slate-200"
+                        :disabled="!localConfig.has_location"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="form-group flex flex-col gap-2">
@@ -912,6 +1041,48 @@
             </div>
 
             <div class="form-group flex flex-col gap-2">
+              <label class="flex justify-between items-center">
+                <span>Icono de Sección</span>
+                <span class="text-[10px] text-slate-400">Emoji o URL SVG</span>
+              </label>
+              <div class="dropdown dropdown-top dropdown-end w-full" :class="{ 'pointer-events-none opacity-40': !localConfig.has_dress_code }">
+                <div tabindex="0" role="button" class="btn btn-outline border-white/10 w-full flex items-center justify-between px-3 h-[42px] bg-white/5 hover:bg-white/10 text-white rounded-xl">
+                  <span class="flex items-center gap-2">
+                    <img v-if="localConfig.dressCode.icon && isUrl(localConfig.dressCode.icon)" :src="localConfig.dressCode.icon" class="w-6 h-6 object-contain" />
+                    <span v-else class="text-lg">{{ localConfig.dressCode.icon || '👗👔' }}</span>
+                    <span class="text-xs text-slate-400">Seleccionar...</span>
+                  </span>
+                  <span class="text-xs">▼</span>
+                </div>
+                <div tabindex="0" class="dropdown-content menu p-4 shadow-2xl bg-slate-950 border border-white/10 rounded-2xl w-[280px] z-[100] gap-3">
+                  <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Emojis sugeridos</span>
+                  <div class="grid grid-cols-5 gap-2 text-center text-xl">
+                    <button 
+                      v-for="emoji in ['👗👔', '👗', '👔', '👠', '👞', '👒', '🕶️', '💍', '🥂', '✉️', '🎁', '🕰️', '📅', '🕊️', '✨']" 
+                      :key="emoji"
+                      type="button"
+                      class="p-1.5 hover:bg-white/10 rounded-lg active:scale-95 transition-all text-slate-200"
+                      @click="localConfig.dressCode.icon = emoji"
+                    >
+                      {{ emoji }}
+                    </button>
+                  </div>
+                  <div class="border-t border-white/5 my-1"></div>
+                  <div class="space-y-1.5">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Personalizado</span>
+                    <input 
+                      v-model="localConfig.dressCode.icon" 
+                      type="text" 
+                      placeholder="Pegar Emoji o URL SVG/PNG" 
+                      class="input input-sm border-white/15 bg-white/5 h-8 rounded-lg text-xs w-full focus:border-primary text-slate-200"
+                      :disabled="!localConfig.has_dress_code"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group flex flex-col gap-2">
               <label>Especificaciones / Detalles Adicionales</label>
               <textarea 
                 v-model="localConfig.dressCode.details" 
@@ -1050,6 +1221,48 @@
               <div class="form-group">
                 <label>Título de la Sección</label>
                 <input v-model="localConfig.gift_table.title" type="text" placeholder="Ej: Mesa de Regalos" :disabled="!allowedFeatures.gift_table || !localConfig.has_gift_table" />
+              </div>
+
+              <div class="form-group flex flex-col gap-2">
+                <label class="flex justify-between items-center">
+                  <span>Icono de Sección</span>
+                  <span class="text-[10px] text-slate-400">Emoji o URL SVG</span>
+                </label>
+                <div class="dropdown dropdown-top dropdown-end w-full" :class="{ 'pointer-events-none opacity-40': !allowedFeatures.gift_table || !localConfig.has_gift_table }">
+                  <div tabindex="0" role="button" class="btn btn-outline border-white/10 w-full flex items-center justify-between px-3 h-[42px] bg-white/5 hover:bg-white/10 text-white rounded-xl">
+                    <span class="flex items-center gap-2">
+                      <img v-if="localConfig.gift_table.icon && isUrl(localConfig.gift_table.icon)" :src="localConfig.gift_table.icon" class="w-6 h-6 object-contain" />
+                      <span v-else class="text-lg">{{ localConfig.gift_table.icon || '🎁' }}</span>
+                      <span class="text-xs text-slate-400">Seleccionar...</span>
+                    </span>
+                    <span class="text-xs">▼</span>
+                  </div>
+                  <div tabindex="0" class="dropdown-content menu p-4 shadow-2xl bg-slate-950 border border-white/10 rounded-2xl w-[280px] z-[100] gap-3">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Emojis sugeridos</span>
+                    <div class="grid grid-cols-5 gap-2 text-center text-xl">
+                      <button 
+                        v-for="emoji in ['🎁', '🏦', '🛍️', '💵', '💳', '💍', '🥂', '✉️', '👗', '📍', '🕰️', '📅', '🕊️', '✨', '🍽️']" 
+                        :key="emoji"
+                        type="button"
+                        class="p-1.5 hover:bg-white/10 rounded-lg active:scale-95 transition-all text-slate-200"
+                        @click="localConfig.gift_table.icon = emoji"
+                      >
+                        {{ emoji }}
+                      </button>
+                    </div>
+                    <div class="border-t border-white/5 my-1"></div>
+                    <div class="space-y-1.5">
+                      <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Personalizado</span>
+                      <input 
+                        v-model="localConfig.gift_table.icon" 
+                        type="text" 
+                        placeholder="Pegar Emoji o URL SVG/PNG" 
+                        class="input input-sm border-white/15 bg-white/5 h-8 rounded-lg text-xs w-full focus:border-primary text-slate-200"
+                        :disabled="!allowedFeatures.gift_table || !localConfig.has_gift_table"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="form-group">
                 <label>Descripción / Mensaje</label>
@@ -1226,6 +1439,47 @@
                 />
               </div>
 
+              <div class="form-group flex flex-col gap-2">
+                <label class="flex justify-between items-center">
+                  <span>Icono de Sección</span>
+                  <span class="text-[10px] text-slate-400">Emoji o URL SVG</span>
+                </label>
+                <div class="dropdown dropdown-top dropdown-end w-full">
+                  <div tabindex="0" role="button" class="btn btn-outline border-white/10 w-full flex items-center justify-between px-3 h-[42px] bg-white/5 hover:bg-white/10 text-white rounded-xl">
+                    <span class="flex items-center gap-2">
+                      <img v-if="localConfig[activeTab].icon && isUrl(localConfig[activeTab].icon)" :src="localConfig[activeTab].icon" class="w-6 h-6 object-contain" />
+                      <span v-else class="text-lg">{{ localConfig[activeTab].icon || '📜' }}</span>
+                      <span class="text-xs text-slate-400">Seleccionar...</span>
+                    </span>
+                    <span class="text-xs">▼</span>
+                  </div>
+                  <div tabindex="0" class="dropdown-content menu p-4 shadow-2xl bg-slate-950 border border-white/10 rounded-2xl w-[280px] z-[100] gap-3">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Emojis sugeridos</span>
+                    <div class="grid grid-cols-5 gap-2 text-center text-xl">
+                      <button 
+                        v-for="emoji in ['📜', '👑', '🕊️', '✨', '💍', '🥂', '✉️', '👗', '📍', '🎁', '🕰️', '📅', '📸', '🎵', '⛪']" 
+                        :key="emoji"
+                        type="button"
+                        class="p-1.5 hover:bg-white/10 rounded-lg active:scale-95 transition-all text-slate-200"
+                        @click="localConfig[activeTab].icon = emoji"
+                      >
+                        {{ emoji }}
+                      </button>
+                    </div>
+                    <div class="border-t border-white/5 my-1"></div>
+                    <div class="space-y-1.5">
+                      <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Personalizado</span>
+                      <input 
+                        v-model="localConfig[activeTab].icon" 
+                        type="text" 
+                        placeholder="Pegar Emoji o URL SVG/PNG" 
+                        class="input input-sm border-white/15 bg-white/5 h-8 rounded-lg text-xs w-full focus:border-primary text-slate-200"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div class="form-group">
                 <label>Descripción / Dedicatoria</label>
                 <textarea 
@@ -1311,6 +1565,47 @@
                   placeholder="Ej: Pensamiento / Verso" 
                   @input="updateThoughtsBlockName(activeTab, localConfig[activeTab].title)"
                 />
+              </div>
+
+              <div class="form-group flex flex-col gap-2">
+                <label class="flex justify-between items-center">
+                  <span>Icono de Sección</span>
+                  <span class="text-[10px] text-slate-400">Emoji o URL SVG</span>
+                </label>
+                <div class="dropdown dropdown-top dropdown-end w-full">
+                  <div tabindex="0" role="button" class="btn btn-outline border-white/10 w-full flex items-center justify-between px-3 h-[42px] bg-white/5 hover:bg-white/10 text-white rounded-xl">
+                    <span class="flex items-center gap-2">
+                      <img v-if="localConfig[activeTab].icon && isUrl(localConfig[activeTab].icon)" :src="localConfig[activeTab].icon" class="w-6 h-6 object-contain" />
+                      <span v-else class="text-lg">{{ localConfig[activeTab].icon || '✨' }}</span>
+                      <span class="text-xs text-slate-400">Seleccionar...</span>
+                    </span>
+                    <span class="text-xs">▼</span>
+                  </div>
+                  <div tabindex="0" class="dropdown-content menu p-4 shadow-2xl bg-slate-950 border border-white/10 rounded-2xl w-[280px] z-[100] gap-3">
+                    <span class="text-[10px] font-black uppercase tracking-wider text-slate-400">Emojis sugeridos</span>
+                    <div class="grid grid-cols-5 gap-2 text-center text-xl">
+                      <button 
+                        v-for="emoji in ['✨', '🕊️', '💍', '🥂', '✉️', '👗', '📍', '🎁', '🕰️', '📅', '📸', '🎵', '⛪', '📜', '🍽️']" 
+                        :key="emoji"
+                        type="button"
+                        class="p-1.5 hover:bg-white/10 rounded-lg active:scale-95 transition-all text-slate-200"
+                        @click="localConfig[activeTab].icon = emoji"
+                      >
+                        {{ emoji }}
+                      </button>
+                    </div>
+                    <div class="border-t border-white/5 my-1"></div>
+                    <div class="space-y-1.5">
+                      <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Personalizado</span>
+                      <input 
+                        v-model="localConfig[activeTab].icon" 
+                        type="text" 
+                        placeholder="Pegar Emoji o URL SVG/PNG" 
+                        class="input input-sm border-white/15 bg-white/5 h-8 rounded-lg text-xs w-full focus:border-primary text-slate-200"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               <div class="form-group">
@@ -1661,6 +1956,10 @@ import { COLOR_PALETTES, CONTENT_TEXTURES } from '@/modules/builder/constants/pa
 
 // Variables de estado adicionales v0.8.4
 const productTier = ref('BASIC');
+const isUrl = (val) => {
+  if (!val) return false;
+  return val.startsWith('http') || val.startsWith('/') || val.startsWith('.') || val.includes('/');
+};
 const deploymentIsPaid = ref(false);
 const isEditingSlug = ref(false);
 const editableSlug = ref('');
@@ -1812,6 +2111,11 @@ const localConfig = ref({
     date: '',
     coverPhoto: '',
     titleColor: '#ffffff',
+    subtitleColor: '#e2e8f0',
+    headerLabelColor: '#fbbf24',
+    dateColor: '#ffffff',
+    overlayOpacity: 70,
+    titleSize: 4.5,
     headerLabel: 'Nuestra Invitación',
     fontFamily: 'serif',
     frame_overlay: null,
@@ -3207,7 +3511,7 @@ onBeforeUnmount(() => {
 }
 
 .preview-canvas :deep(h1) {
-  font-size: 2.5rem !important;
+  font-size: 2.5rem; /* Sin !important para permitir la sobrescritura del slider de tamaño del título */
   line-height: 1.1 !important;
   word-break: break-word !important;
   overflow-wrap: break-word !important;

@@ -60,6 +60,7 @@
           />
           <component
             :is="block.component"
+            :id="block.id"
             :config="block.config"
             v-bind="block.id === 'rsvp' ? { slug: slug, tierLevel: tierLevel } : {}"
           />
@@ -387,18 +388,18 @@ const themeVariables = computed(() => {
 }
 
 /* Inyección de variables cromáticas en textos y elementos */
-:deep(h2),
-:deep(h3:not(.text-primary)) {
+:deep(h2:not(#cover h2)),
+:deep(h3:not(#cover h3):not(.text-primary)) {
   color: var(--color-primary) !important;
 }
 
-:deep(p) {
+:deep(p:not(#cover p)) {
   color: var(--color-secondary) !important;
 }
 
-:deep(.text-primary),
-:deep(.text-indigo-500),
-:deep(.text-amber-500) {
+:deep(.text-primary:not(#cover *)),
+:deep(.text-indigo-500:not(#cover *)),
+:deep(.text-amber-500:not(#cover *)) {
   color: var(--color-accent) !important;
 }
 
