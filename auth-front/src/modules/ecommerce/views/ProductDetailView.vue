@@ -148,13 +148,17 @@ import CoverBlock from '@/modules/engine/components/CoverBlock.vue';
 
 const getCoverConfig = (templateConfig) => {
   if (!templateConfig) return {};
-  if (Array.isArray(templateConfig.blocks)) {
+  // La configuración real de la portada siempre se guarda en la raíz (templateConfig.cover)
+  // por la arquitectura reactiva del Studio, sin importar si existe en el array de blocks.
+  let config = templateConfig.cover || {};
+  
+  if (Array.isArray(templateConfig.blocks) && Object.keys(config).length === 0) {
     const coverBlock = templateConfig.blocks.find(b => b.type === 'CoverBlock');
-    if (coverBlock) {
-      return coverBlock.config || {};
+    if (coverBlock && coverBlock.config) {
+      config = coverBlock.config;
     }
   }
-  return templateConfig.cover || {};
+  return config;
 };
 
 const getThemeVariables = (templateConfig) => {
@@ -191,6 +195,44 @@ const totalPrice = computed(() => {
 
 const dynamicFeatures = computed(() => {
   if (!product.value) return [];
+  
+  // Extraer características reales de los bloques del diseño seleccionado
+  const blocks = product.value.template_config?.blocks;
+  if (Array.isArray(blocks) && blocks.length > 0) {
+    const blockMap = {
+      'CoverBlock': { name: 'Portada Impactante', icon: '🎨', desc: 'Diseño visual de inicio' },
+      'CountdownBlock': { name: 'Cuenta Regresiva', icon: '🕰️', desc: 'Para el gran día' },
+      'LocationBlock': { name: 'Ubicación y Mapas', icon: '📍', desc: 'Rutas e indicaciones' },
+      'RSVPBlock': { name: 'Confirmación', icon: '✉️', desc: 'Control de asistencia' },
+      'DressCodeBlock': { name: 'Código Vestimenta', icon: '👔', desc: 'Sugerencias de estilo' },
+      'GalleryBlock': { name: 'Galería de Fotos', icon: '📸', desc: 'Tus mejores momentos' },
+      'AudioBlock': { name: 'Música de Fondo', icon: '🎵', desc: 'Banda sonora' },
+      'ScheduleBlock': { name: 'Cronograma', icon: '📅', desc: 'Itinerario del evento' },
+      'GiftRegistryBlock': { name: 'Mesa de Regalos', icon: '🎁', desc: 'Sugerencias y detalles' },
+      'EnvelopeBlock': { name: 'Sobre Interactivo', icon: '✉️', desc: 'Apertura en 3D' }
+    };
+
+    const features = [];
+    const seen = new Set();
+    blocks.forEach(block => {
+      const type = block.type;
+      if (blockMap[type] && !seen.has(type)) {
+        features.push(blockMap[type]);
+        seen.add(type);
+      }
+    });
+    
+    // Si es premium, podemos agregar la característica de compartición si hay espacio
+    if (product.value.tier_level === 'PREMIUM' && features.length < 6) {
+       features.push({ name: 'Compartido Premium', icon: '🔗', desc: 'Vista optimizada en redes' });
+    }
+    
+    if (features.length > 0) {
+      return features.slice(0, 6); // Max 6 para encajar bien en el grid (2x3)
+    }
+  }
+
+  // Fallback si no hay config de bloques
   const tier = product.value.tier_level;
   if (tier === 'PREMIUM') {
     return [
