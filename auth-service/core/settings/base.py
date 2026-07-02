@@ -110,6 +110,11 @@ REST_FRAMEWORK = {
     ],
 }
 
+# Configuracion de dj-rest-auth Custom serializers
+REST_AUTH = {
+    'REGISTER_SERIALIZER': 'core.serializers.CustomRegisterSerializer',
+}
+
 # para allauth
 SITE_ID = 1
 
