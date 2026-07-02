@@ -1385,6 +1385,23 @@
                 <p class="text-[10px] text-slate-400 leading-normal">Pega la URL de una foto guardada en la web (ej: Unsplash, Pinterest, tu drive público, etc.).</p>
               </div>
 
+              <!-- Input para subir imágenes locales -->
+              <div class="space-y-2 pt-2">
+                <label class="font-bold text-xs text-slate-300 block">Subir Fotos desde tu dispositivo</label>
+                <div class="flex gap-2 items-center">
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*"
+                    @change="uploadImages"
+                    class="file-input file-input-bordered file-input-xs w-full bg-slate-950 border-slate-800 text-white"
+                    :disabled="!allowedFeatures.photo_carousel || !localConfig.has_photo_carousel || isUploading"
+                  />
+                  <span v-if="isUploading" class="loading loading-spinner loading-xs text-primary"></span>
+                </div>
+                <p class="text-[10px] text-slate-400 leading-normal">Selecciona una o más fotos para subirlas y agregarlas a tu galería.</p>
+              </div>
+
               <!-- Listado de imágenes agregadas -->
               <div class="space-y-3 pt-4">
                 <h4 class="font-extrabold text-sm text-slate-300">Imágenes Agregadas ({{ localConfig.photo_carousel.images ? localConfig.photo_carousel.images.length : 0 }})</h4>
@@ -2558,6 +2575,7 @@ watch(localConfig, () => {
 // --- Lógica del Gestor de Secciones y Bloques Premium ---
 const dragIndex = ref(null);
 const newImageUrl = ref('');
+const isUploading = ref(false);
 
 const onDragStart = (event, index) => {
   if (localConfig.value.blocks[index].locked) {
@@ -2845,6 +2863,37 @@ const addImageUrl = () => {
     localConfig.value.photo_carousel.images.push(newImageUrl.value.trim());
     newImageUrl.value = '';
     toast.success('¡Enlace de imagen agregado!');
+  }
+};
+
+const uploadImages = async (event) => {
+  const files = event.target.files;
+  if (!files || files.length === 0) return;
+
+  isUploading.value = true;
+  
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const formData = new FormData();
+      formData.append('file', files[i]);
+      
+      const response = await builderService.uploadMedia(deploymentId, formData);
+      if (response.data && response.data.url) {
+        if (!localConfig.value.photo_carousel.images) {
+          localConfig.value.photo_carousel.images = [];
+        }
+        localConfig.value.photo_carousel.images.push(response.data.url);
+      }
+    }
+    toast.success('¡Imágenes subidas exitosamente!');
+    // Limpiar input
+    event.target.value = '';
+    saveStatus.value = 'unsaved';
+  } catch (error) {
+    console.error(error);
+    toast.error('Ocurrió un error al subir algunas imágenes.');
+  } finally {
+    isUploading.value = false;
   }
 };
 

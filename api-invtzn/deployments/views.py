@@ -617,6 +617,53 @@ class DeploymentViewSet(viewsets.ModelViewSet):
             'success': 'Solicitud de revisión enviada al administrador exitosamente.'
         })
 
+    @action(detail=True, methods=['post'], url_path='upload-media')
+    def upload_media(self, request, pk=None):
+        from rest_framework.parsers import MultiPartParser, FormParser
+        from django.core.files.storage import default_storage
+        import os
+        import uuid
+        
+        # Override parsers specifically for this method inside the method doesn't work easily in DRF,
+        # but DRF usually handles multipart if configured globally or we can just access request.FILES
+        
+        deployment = self.get_object()
+        
+        # Check permissions
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            has_role = profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]
+        except Exception:
+            has_role = False
+            
+        if not has_role and str(deployment.user) != str(request.user.id):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("No tienes permisos para subir archivos a este diseño.")
+            
+        if 'file' not in request.FILES:
+            return Response({'error': 'No se encontró ningún archivo (campo "file").'}, status=400)
+            
+        file_obj = request.FILES['file']
+        
+        # Crear un nombre único
+        ext = file_obj.name.split('.')[-1] if '.' in file_obj.name else 'bin'
+        filename = f"{uuid.uuid4().hex}.{ext}"
+        
+        # Ruta donde se guardará (ej. /media/deployments/mi-slug/1234abcd.jpg)
+        save_path = os.path.join('deployments', deployment.slug, filename)
+        
+        # Guardar archivo
+        file_path = default_storage.save(save_path, file_obj)
+        
+        # Obtener URL
+        file_url = request.build_absolute_uri(default_storage.url(file_path))
+        
+        return Response({
+            'success': 'Archivo subido exitosamente.',
+            'url': file_url
+        })
+
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='unsplash-search')
     def unsplash_search(self, request):
         query = request.query_params.get('query', '')

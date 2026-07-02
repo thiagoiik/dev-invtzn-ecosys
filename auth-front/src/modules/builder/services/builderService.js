@@ -26,6 +26,14 @@ export const builderService = {
   
   requestReview(id) {
     return invtznClient.post(`deployments/${id}/request-review/`);
+  },
+  
+  uploadMedia(id, formData) {
+    return invtznClient.post(`deployments/${id}/upload-media/`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
   }
 
 };
