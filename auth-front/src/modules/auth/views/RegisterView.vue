@@ -22,8 +22,18 @@
         <input v-model="form.password2" type="password" class="input input-bordered w-full" required />
       </div>
       
+      <div class="form-control w-full mt-2">
+          <input type="checkbox" v-model="form.acceptedTerms" class="checkbox checkbox-primary" />
+          <span class="label-text">
+            He leído y acepto los 
+            <router-link :to="{ name: 'terms' }" target="_blank" class="link link-primary">Términos y Condiciones</router-link> 
+            y la Política de Privacidad.
+          </span>
+        </label>
+      </div>
+
       <div class="mt-6">
-        <button type="submit" class="btn btn-primary w-full" :disabled="loading">
+        <button type="submit" class="btn btn-primary w-full" :disabled="loading || !form.acceptedTerms">
           <span v-if="loading" class="loading loading-spinner"></span>
           {{ loading ? 'Registrando...' : 'Registrarse' }}
         </button>
@@ -53,7 +63,9 @@ const form = reactive({
   username: '', // Se validó maxlength="150" para el username
   email: '',    // Se eliminó el atributo required del email (la API lo marcaba como opcional)
   password1: '',
-  password2: ''
+  password2: '',
+  acceptedTerms: false,
+  terms_version: 'V1_2026'
 });
 
 const handleRegister = async () => {

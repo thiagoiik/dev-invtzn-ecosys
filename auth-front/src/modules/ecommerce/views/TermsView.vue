@@ -12,7 +12,7 @@
         <section class="space-y-3">
           <h2 class="text-2xl font-bold text-slate-800">1. Aceptación de los Términos</h2>
           <p>
-            Al acceder y utilizar el sitio web y los servicios de <strong>Invitazyon</strong>, usted acepta estar sujeto a estos Términos y Condiciones de Uso, a todas las leyes y regulaciones aplicables, y acepta que es responsable del cumplimiento de las leyes locales vigentes.
+            Al acceder y utilizar el sitio web y los servicios de Invitazyon.online, usted acepta expresamente estar sujeto a estos Términos y Condiciones de Uso, a nuestra Política de Privacidad y a todas las leyes y regulaciones aplicables. La aceptación de este contrato ocurre en el momento de crear su cuenta mediante el proceso de registro, reconociendo que este acuerdo constituye un contrato vinculante entre usted y Invitazyon.
           </p>
         </section>
 
@@ -26,6 +26,9 @@
             <li>Utilizar los diseños para fines comerciales sin adquirir la respectiva licencia comercial (Pase Standard o Premium).</li>
             <li>Intentar descompilar o realizar ingeniería inversa de cualquier componente del Render Engine.</li>
           </ul>
+          <p class="text-sm italic text-slate-500 mt-2">
+            Aviso legal: La violación de estas restricciones resultará en la terminación inmediata de su acceso y podrá dar lugar a acciones legales por violación a los derechos de propiedad intelectual.
+          </p>
         </section>
 
         <section class="space-y-3">
@@ -36,9 +39,23 @@
         </section>
 
         <section class="space-y-3">
-          <h2 class="text-2xl font-bold text-slate-800">4. Limitaciones de Responsabilidad</h2>
+          <h2 class="text-2xl font-bold text-slate-800">4. Protección de Datos y Privacidad</h2>
+          <p>
+            El tratamiento de sus datos personales se regirá por nuestra Política de Privacidad, la cual forma parte integrante de estos Términos. Al aceptar este contrato, usted otorga su consentimiento para el tratamiento de sus datos conforme a dicha política.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-2xl font-bold text-slate-800">5. Limitaciones de Responsabilidad</h2>
           <p>
             En ningún caso Invitazyon o sus proveedores serán responsables de ningún daño (incluyendo, sin limitación, daños por pérdida de datos o beneficios, o debido a la interrupción del negocio) que surja del uso o de la imposibilidad de usar los diseños y servicios provistos.
+          </p>
+        </section>
+
+        <section class="space-y-3">
+          <h2 class="text-2xl font-bold text-slate-800">6. Jurisdicción y Ley Aplicable</h2>
+          <p>
+            Cualquier controversia derivada de la interpretación o ejecución de estos Términos se someterá a la jurisdicción exclusiva de los tribunales competentes de la Ciudad de México, renunciando las partes a cualquier otro fuero que pudiera corresponderles por razón de sus domicilios presentes o futuros.
           </p>
         </section>
       </div>
