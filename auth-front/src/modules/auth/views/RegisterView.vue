@@ -23,6 +23,7 @@
       </div>
       
       <div class="form-control w-full mt-2">
+        <label class="cursor-pointer justify-start gap-4">
           <input type="checkbox" v-model="form.acceptedTerms" class="checkbox checkbox-primary" />
           <span class="label-text">
             He leído y acepto los 
