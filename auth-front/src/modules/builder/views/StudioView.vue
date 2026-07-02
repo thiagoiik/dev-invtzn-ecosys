@@ -85,26 +85,34 @@
 
 
     <div class="studio-container relative">
-      <!-- Botón Flotante para Móviles -->
-      <button 
-        class="mobile-preview-toggle md:hidden fixed bottom-6 right-6 z-[100] btn btn-primary shadow-2xl shadow-primary/30 rounded-full px-6 font-bold"
-        @click="showMobilePreview = !showMobilePreview"
-      >
-        {{ showMobilePreview ? '✏️ Seguir Editando' : '👁️ Ver Vista Previa' }}
-      </button>
+      <!-- Bottom Navigation Bar para Móviles -->
+      <div class="mobile-bottom-bar md:hidden fixed bottom-0 left-0 right-0 z-[100] bg-slate-900 border-t border-slate-800 flex shadow-[0_-10px_40px_rgba(0,0,0,0.5)] pb-safe">
+        <button 
+          class="flex-1 py-3 text-xs font-bold flex flex-col items-center gap-1 transition-colors"
+          :class="!showMobilePreview ? 'text-primary bg-slate-800/50' : 'text-slate-400 hover:text-slate-200'"
+          @click="showMobilePreview = false"
+        >
+          <span class="text-lg">🛠️</span>
+          <span>Herramientas</span>
+        </button>
+        <button 
+          class="flex-1 py-3 text-xs font-bold flex flex-col items-center gap-1 transition-colors"
+          :class="showMobilePreview ? 'text-primary bg-slate-800/50' : 'text-slate-400 hover:text-slate-200'"
+          @click="showMobilePreview = true"
+        >
+          <span class="text-lg">📱</span>
+          <span>Vista Previa</span>
+        </button>
+      </div>
 
       <!-- PANEL IZQUIERDO: CONTROLES -->
       <aside class="control-panel" :class="{ 'is-hidden-mobile': showMobilePreview }">
-        <div class="panel-header">
-          <h3>Ajustes de Diseño</h3>
-        </div>
-
-        <!-- SELECTOR DE SECCIONES (DROPDOWN PREMIUM) -->
-        <div class="px-6 pb-6">
-          <label class="text-[10px] uppercase font-bold text-slate-400 block mb-2 tracking-wider">Sección a editar</label>
+        <!-- HEADER Y SELECTOR DE SECCIONES -->
+        <div class="p-4 md:p-6 border-b border-slate-800/50 bg-slate-900/50">
+          <label class="text-[10px] uppercase font-extrabold text-slate-500 block mb-1.5 tracking-wider">Editando Sección:</label>
           <select 
             v-model="activeTab" 
-            class="select-input cursor-pointer"
+            class="w-full bg-slate-950 border border-slate-800 text-white font-bold py-2.5 px-3 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-inner cursor-pointer transition-all"
           >
             <option value="cover">🌅 Portada del Evento</option>
             <option value="rsvp">✉️ Confirmación RSVP</option>
@@ -3519,12 +3527,15 @@ onBeforeUnmount(() => {
 
 @media (max-width: 767px) {
   .studio-container {
-    height: 100vh; /* Ocupar toda la pantalla en móvil */
+    height: 100%; /* Respetar el layout padre con 100dvh */
     overflow: hidden;
   }
   .control-panel {
     width: 100%;
     height: 100%;
+  }
+  .config-form {
+    padding-bottom: 7rem; /* Espacio para la bottom bar */
   }
   .preview-panel {
     padding: 0;
