@@ -77,10 +77,11 @@
   max-width: 50%;
 }
 .workspace {
-
   flex: 1;
   display: flex;
   position: relative;
+  min-height: 0;
+  overflow: hidden;
 }
 
 @media (max-width: 640px) {

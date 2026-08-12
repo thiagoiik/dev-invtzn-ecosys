@@ -108,32 +108,60 @@
       <!-- PANEL IZQUIERDO: CONTROLES -->
       <aside class="control-panel" :class="{ 'is-hidden-mobile': showMobilePreview }">
         <!-- HEADER Y SELECTOR DE SECCIONES -->
-        <div class="p-4 md:p-6 border-b border-slate-800/50 bg-slate-900/50">
-          <label class="text-[10px] uppercase font-extrabold text-slate-500 block mb-1.5 tracking-wider">Editando Sección:</label>
-          <select 
-            v-model="activeTab" 
-            class="w-full bg-slate-950 border border-slate-800 text-white font-bold py-2.5 px-3 rounded-xl focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary shadow-inner cursor-pointer transition-all"
-          >
-            <option value="cover">🌅 Portada del Evento</option>
-            <option value="rsvp">✉️ Confirmación RSVP</option>
-            <option value="location">📍 Ubicación / Mapa</option>
-            <option value="timer">🕰️ Cuenta Regresiva</option>
-            <option value="timeline">📅 Cronograma / Itinerario</option>
-            <option value="music">🎵 Música de Fondo</option>
-            <option value="theme">🎨 Paleta y Estilos</option>
-            <option value="og">⚙️ SEO / Metadatos OG</option>
-            <option value="dress_code">👗 Código de Vestimenta</option>
-            <option value="envelope">✉️ Sobre 3D / Apertura</option>
-            <option value="sections">⚙️ Estructura / Orden</option>
-            <option value="gift">🎁 Mesa de Regalos</option>
-            <option value="gallery">📸 Galería de Fotos</option>
-            <option v-for="b in protocolBlocks" :key="b.id" :value="b.id">
-              {{ b.name }}
-            </option>
-            <option v-for="b in thoughtsBlocks" :key="b.id" :value="b.id">
-              {{ b.name }}
-            </option>
-          </select>
+        <div class="border-b border-slate-800/50 bg-slate-900/50 flex flex-col">
+          <div class="px-4 md:px-6 pt-4 md:pt-6 pb-2">
+            <label class="text-[10px] uppercase font-extrabold text-slate-500 block tracking-wider">Editando Sección:</label>
+          </div>
+          <!-- Horizontal Scrollable Tabs -->
+          <div class="horizontal-tabs-container w-full overflow-x-auto whitespace-nowrap px-4 md:px-6 pb-4">
+            <div class="flex gap-2 w-max">
+              <button type="button" class="h-tab-btn" :class="{ 'active': activeTab === 'cover' }" @click="activeTab = 'cover'">
+                <span class="text-lg">🌅</span><span class="text-xs font-bold">Portada</span>
+              </button>
+              <button type="button" class="h-tab-btn" :class="{ 'active': activeTab === 'rsvp' }" @click="activeTab = 'rsvp'">
+                <span class="text-lg">✉️</span><span class="text-xs font-bold">RSVP</span>
+              </button>
+              <button type="button" class="h-tab-btn" :class="{ 'active': activeTab === 'location' }" @click="activeTab = 'location'">
+                <span class="text-lg">📍</span><span class="text-xs font-bold">Ubicación</span>
+              </button>
+              <button type="button" class="h-tab-btn" :class="{ 'active': activeTab === 'timer' }" @click="activeTab = 'timer'">
+                <span class="text-lg">🕰️</span><span class="text-xs font-bold">Contador</span>
+              </button>
+              <button type="button" class="h-tab-btn" :class="{ 'active': activeTab === 'timeline' }" @click="activeTab = 'timeline'">
+                <span class="text-lg">📅</span><span class="text-xs font-bold">Itinerario</span>
+              </button>
+              <button type="button" class="h-tab-btn" :class="{ 'active': activeTab === 'music' }" @click="activeTab = 'music'">
+                <span class="text-lg">🎵</span><span class="text-xs font-bold">Música</span>
+              </button>
+              <button type="button" class="h-tab-btn" :class="{ 'active': activeTab === 'theme' }" @click="activeTab = 'theme'">
+                <span class="text-lg">🎨</span><span class="text-xs font-bold">Estilos</span>
+              </button>
+              <button type="button" class="h-tab-btn" :class="{ 'active': activeTab === 'og' }" @click="activeTab = 'og'">
+                <span class="text-lg">⚙️</span><span class="text-xs font-bold">SEO/OG</span>
+              </button>
+              <button type="button" class="h-tab-btn" :class="{ 'active': activeTab === 'dress_code' }" @click="activeTab = 'dress_code'">
+                <span class="text-lg">👗</span><span class="text-xs font-bold">Dress Code</span>
+              </button>
+              <button type="button" class="h-tab-btn" :class="{ 'active': activeTab === 'envelope' }" @click="activeTab = 'envelope'">
+                <span class="text-lg">✉️</span><span class="text-xs font-bold">Sobre</span>
+              </button>
+              <button type="button" class="h-tab-btn" :class="{ 'active': activeTab === 'sections' }" @click="activeTab = 'sections'">
+                <span class="text-lg">⚙️</span><span class="text-xs font-bold">Estructura</span>
+              </button>
+              <button type="button" class="h-tab-btn" :class="{ 'active': activeTab === 'gift' }" @click="activeTab = 'gift'">
+                <span class="text-lg">🎁</span><span class="text-xs font-bold">Regalos</span>
+              </button>
+              <button type="button" class="h-tab-btn" :class="{ 'active': activeTab === 'gallery' }" @click="activeTab = 'gallery'">
+                <span class="text-lg">📸</span><span class="text-xs font-bold">Galería</span>
+              </button>
+              <button v-for="b in protocolBlocks" :key="'p_'+b.id" type="button" class="h-tab-btn" :class="{ 'active': activeTab === b.id }" @click="activeTab = b.id">
+                <span class="text-lg">🧩</span><span class="text-xs font-bold truncate max-w-[80px]">{{ b.name }}</span>
+              </button>
+              <button v-for="b in thoughtsBlocks" :key="'t_'+b.id" type="button" class="h-tab-btn" :class="{ 'active': activeTab === b.id }" @click="activeTab = b.id">
+                <span class="text-lg">💭</span><span class="text-xs font-bold truncate max-w-[80px]">{{ b.name }}</span>
+              </button>
+            </div>
+          </div>
         </div>
         
         <div v-if="loading" class="loading-state">
@@ -3004,6 +3032,8 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   background: #020617;
+  overflow: hidden;
+  min-height: 0;
 }
 
 /* Panel de Controles */
@@ -3013,9 +3043,11 @@ onBeforeUnmount(() => {
   color: white;
   display: flex;
   flex-direction: column;
+  height: 100%;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
   z-index: 10;
+  min-height: 0;
 }
 .panel-header {
   padding: 1.5rem 2rem 0.75rem 2rem;
@@ -3028,36 +3060,33 @@ onBeforeUnmount(() => {
   color: #ffffff;
 }
 
-/* Tabs Grid */
-.tabs-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.35rem;
-  background: #020617;
-  padding: 0.35rem;
-  border-radius: 12px;
-  margin: 0.5rem 1.5rem 1.5rem 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+/* Horizontal Scrollable Tabs */
+.horizontal-tabs-container {
+  scrollbar-width: none; /* Firefox */
 }
-.tab-btn {
-  padding: 0.6rem 0.75rem;
-  border: none;
-  background: transparent;
+.horizontal-tabs-container::-webkit-scrollbar {
+  display: none; /* Safari and Chrome */
+}
+.h-tab-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  background: #020617;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   color: #94a3b8;
-  font-size: 0.8rem;
-  font-weight: 800;
-  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 12px;
+  min-width: 72px;
   cursor: pointer;
   transition: all 0.2s ease;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5rem;
 }
-.tab-btn:hover {
-  color: #38bdf8;
+.h-tab-btn:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
 }
-.tab-btn.active {
+.h-tab-btn.active {
   background: rgba(56, 189, 248, 0.15);
   border: 1px solid rgba(56, 189, 248, 0.3);
   color: #38bdf8;
@@ -3066,8 +3095,9 @@ onBeforeUnmount(() => {
 
 .config-form {
   flex: 1;
-  padding: 0 2rem 2rem 2rem;
+  padding: 0 1.5rem 2rem 1.5rem;
   overflow-y: auto;
+  min-height: 0;
 }
 
 .tab-content {
@@ -3188,9 +3218,9 @@ onBeforeUnmount(() => {
 .switch-input {
   appearance: none;
   background-color: #334155;
-  width: 36px;
-  height: 20px;
-  border-radius: 10px;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
   position: relative;
   outline: none;
   cursor: pointer;
@@ -3202,8 +3232,8 @@ onBeforeUnmount(() => {
 .switch-input::before {
   content: '';
   position: absolute;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background-color: white;
   top: 2px;
@@ -3211,7 +3241,7 @@ onBeforeUnmount(() => {
   transition: transform 0.2s ease;
 }
 .switch-input:checked::before {
-  transform: translateX(16px);
+  transform: translateX(20px);
 }
 .switch-input:disabled {
   opacity: 0.5;
@@ -3357,12 +3387,32 @@ onBeforeUnmount(() => {
 
 /* Hue Range and Preview bar */
 .hue-range {
+  -webkit-appearance: none;
   width: 100%;
   cursor: pointer;
-  height: 6px;
+  height: 8px;
   background: #334155;
-  border-radius: 3px;
+  border-radius: 4px;
   outline: none;
+}
+.hue-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #38bdf8;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+}
+.hue-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #38bdf8;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
 }
 .color-hue-preview-bar {
   height: 10px;
@@ -3535,11 +3585,16 @@ onBeforeUnmount(() => {
     height: 100%;
   }
   .config-form {
-    padding-bottom: 7rem; /* Espacio para la bottom bar */
+    padding: 0 1rem 7rem 1rem; /* Espacio para la bottom bar y reducción de padding horizontal */
   }
   .preview-panel {
     padding: 0;
     height: 100%;
+  }
+  .simulator-scale-wrapper {
+    width: 100%;
+    height: 100%;
+    transform: none !important; /* Disable any scale transform on mobile */
   }
   .device-frame {
     width: 100%;
@@ -3556,6 +3611,9 @@ onBeforeUnmount(() => {
   }
   .is-hidden-mobile {
     display: none !important;
+  }
+  .preview-canvas {
+    padding-bottom: 7rem; /* Espacio para la bottom bar */
   }
 }
 
