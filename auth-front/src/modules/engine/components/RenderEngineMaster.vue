@@ -204,12 +204,12 @@ const orderedBlocks = computed(() => {
       .filter(b => b.component && b.visible);
 
     const hasDressCode = list.some(b => b.id === 'dress_code');
-    if (!hasDressCode && props.customData.dressCode && props.customData.dressCode.type) {
+    if (!hasDressCode && props.customData.has_dress_code) {
       const rsvpIdx = list.findIndex(b => b.id === 'rsvp');
       const dressCodeBlock = {
         id: 'dress_code',
         component: DressCodeBlock,
-        config: props.customData.dressCode,
+        config: props.customData.dressCode || {},
         visible: true
       };
       if (rsvpIdx !== -1) {
@@ -275,11 +275,11 @@ const orderedBlocks = computed(() => {
     });
   }
 
-  if (props.customData.dressCode && props.customData.dressCode.type) {
+  if (props.customData.has_dress_code) {
     fallback.push({
       id: 'dress_code',
       component: DressCodeBlock,
-      config: props.customData.dressCode
+      config: props.customData.dressCode || {}
     });
   }
 

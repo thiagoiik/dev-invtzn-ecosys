@@ -276,7 +276,20 @@
           <!-- SECCIÓN NUEVA: CÓDIGO DE VESTIMENTA -->
           <div class="space-y-4">
             <h3 class="text-sm font-black text-sky-400 uppercase tracking-widest border-b border-slate-700/50 pb-2">👗 Código de Vestimenta (Dress Code)</h3>
-            <div class="space-y-4">
+            <div class="flex items-start justify-between bg-slate-900/40 p-4 rounded-2xl border border-slate-700/40 gap-4 mb-4">
+              <div class="space-y-1">
+                <span class="text-xs font-bold text-slate-200 block">Mostrar Código de Vestimenta</span>
+                <p class="text-[10px] text-slate-400 leading-normal">
+                  Activa esta sección en la invitación para sugerir la vestimenta.
+                </p>
+              </div>
+              <input 
+                type="checkbox" 
+                v-model="localConfig.has_dress_code" 
+                class="switch-input flex-shrink-0"
+              />
+            </div>
+            <div :class="{ 'opacity-40 pointer-events-none': !localConfig.has_dress_code }" class="space-y-4">
               <div class="form-group">
                 <label>Tipo de Código de Vestimenta</label>
                 <select v-model="localConfig.dressCode.type" class="select-input">
@@ -446,6 +459,7 @@ const localConfig = ref({
     registryUrl1: '',
     registryUrl2: ''
   },
+  has_dress_code: false,
   dressCode: {
     type: 'FORMAL',
     details: ''
@@ -518,6 +532,7 @@ const loadData = async () => {
         localConfig.value.has_timer = custom.has_timer ?? false;
         localConfig.value.has_timeline = custom.has_timeline ?? false;
         localConfig.value.has_music = custom.has_music ?? false;
+        localConfig.value.has_dress_code = custom.has_dress_code ?? false;
         localConfig.value.audioUrl = custom.audioUrl ?? '';
         localConfig.value.og_title = custom.og_title ?? '';
         localConfig.value.og_description = custom.og_description ?? '';
