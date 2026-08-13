@@ -483,88 +483,78 @@
                 </div>
               </div>
 
-              <div class="form-group flex flex-col gap-2">
-                <label>Nombre del Lugar / Salón</label>
-                <input 
-                  v-model="localConfig.location.venueName" 
-                  type="text" 
-                  placeholder="Ej: Salón de Eventos Las Nubes" 
-                  :disabled="!localConfig.has_location"
-                />
-              </div>
-
-              <div class="form-group flex flex-col gap-2">
-                <label>Dirección</label>
-                <input 
-                  v-model="localConfig.location.address" 
-                  type="text" 
-                  placeholder="Ej: Av. Paseo de la Reforma #123, Col. Centro" 
-                  :disabled="!localConfig.has_location"
-                />
-              </div>
-
-              <div class="form-group flex flex-col gap-2">
-                <label>Enlace de Mapas (Google Maps, Waze, etc.)</label>
-                <input 
-                  v-model="localConfig.location.googleMapsUrl" 
-                  type="text" 
-                  placeholder="Ej: https://maps.app.goo.gl/..." 
-                  :disabled="!localConfig.has_location"
-                />
-                <p class="text-[10px] text-slate-400 mt-1">Este enlace se usará para el botón "Cómo llegar". Abre directamente en las apps de navegación de los invitados.</p>
-              </div>
-
-              <!-- Múltiples Ubicaciones (Ceremonia y Recepción) -->
-              <div class="p-4 bg-slate-900/40 rounded-2xl border border-slate-700/40 space-y-3 mt-4">
-                <span class="text-xs font-bold text-amber-400">⛪ Ceremonia Religiosa / Civil</span>
-                <div class="form-group flex flex-col gap-2">
-                  <label class="text-[10px] uppercase font-bold text-slate-400">Nombre del Lugar</label>
-                  <input v-model="localConfig.locations.ceremonyName" type="text" placeholder="Ej: Parroquia de Santa María" :disabled="!localConfig.has_location" />
+              <!-- Lista Dinámica de Ubicaciones -->
+              <div class="space-y-4">
+                <div v-for="(loc, idx) in localConfig.locationsList" :key="loc.id || idx" class="schedule-item-card">
+                  <div class="flex justify-between items-center mb-3 border-b border-slate-700/50 pb-2">
+                    <div class="flex items-center gap-2">
+                      <label class="switch-label scale-90 origin-left !mb-0" title="Mostrar u ocultar esta ubicación">
+                        <input type="checkbox" v-model="loc.isActive" class="switch-input" :disabled="!localConfig.has_location" />
+                      </label>
+                      <span class="item-number">Ubicación #{{ idx + 1 }}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <button type="button" @click="moveLocationUp(idx)" :disabled="idx === 0 || !localConfig.has_location" class="p-1 hover:bg-white/10 rounded disabled:opacity-30" title="Mover Arriba">⬆️</button>
+                      <button type="button" @click="moveLocationDown(idx)" :disabled="idx === (localConfig.locationsList?.length || 0) - 1 || !localConfig.has_location" class="p-1 hover:bg-white/10 rounded disabled:opacity-30" title="Mover Abajo">⬇️</button>
+                      <button type="button" @click="removeLocationItem(idx)" :disabled="!localConfig.has_location" class="remove-item-btn ml-2" title="Eliminar Ubicación">🗑️</button>
+                    </div>
+                  </div>
+                  
+                  <div class="form-group mt-2">
+                    <label>Título de la Ubicación</label>
+                    <input v-model="loc.title" type="text" placeholder="Ej: ⛪ Ceremonia o 🥂 Recepción" :disabled="!localConfig.has_location" class="compact-input" />
+                  </div>
+                  <div class="form-group mt-2">
+                    <label>Nombre del Lugar / Salón</label>
+                    <input v-model="loc.venueName" type="text" placeholder="Ej: Parroquia de Santa María" :disabled="!localConfig.has_location" class="compact-input" />
+                  </div>
+                  <div class="form-group mt-2">
+                    <label>Dirección (Para el mapa interactivo)</label>
+                    <input v-model="loc.address" type="text" placeholder="Ej: Av. Principal 123" :disabled="!localConfig.has_location" class="compact-input" />
+                  </div>
+                  <div class="form-group mt-2">
+                    <label>Enlace de Mapas (Botón Cómo llegar)</label>
+                    <input v-model="loc.googleMapsUrl" type="text" placeholder="Ej: https://maps.app.goo.gl/..." :disabled="!localConfig.has_location" class="compact-input" />
+                  </div>
+                  
+                  <div class="form-group mt-3 border-t border-slate-700/50 pt-3">
+                    <div class="flex justify-between items-center">
+                      <label>Zoom del Mapa</label>
+                      <span v-if="productTier === 'BASIC' && !isAdminOrDesigner" class="badge-lock">STANDARD 👑</span>
+                      <span v-else class="text-[10px] font-black text-indigo-400 font-mono">{{ loc.zoom || 14 }}x</span>
+                    </div>
+                    
+                    <input 
+                      :value="loc.zoom || 14"
+                      @input="(productTier !== 'BASIC' || isAdminOrDesigner) ? (loc.zoom = Number($event.target.value)) : null"
+                      :disabled="(productTier === 'BASIC' && !isAdminOrDesigner) || !localConfig.has_location"
+                      type="range" 
+                      min="10" 
+                      max="20" 
+                      step="1"
+                      class="w-full accent-indigo-500 cursor-pointer mt-2"
+                      :class="{ 'opacity-50 cursor-not-allowed': (productTier === 'BASIC' && !isAdminOrDesigner) || !localConfig.has_location }"
+                    />
+                    
+                    <p v-if="productTier === 'BASIC' && !isAdminOrDesigner" class="text-[10px] text-amber-500 font-semibold mt-1 leading-tight">
+                      Requiere <strong>Standard</strong>. El zoom del plan básico es 14x.
+                    </p>
+                  </div>
                 </div>
-                <div class="form-group flex flex-col gap-2">
-                  <label class="text-[10px] uppercase font-bold text-slate-400">Enlace de Google Maps</label>
-                  <input v-model="localConfig.locations.ceremonyMapsUrl" type="url" placeholder="https://maps.google.com/..." :disabled="!localConfig.has_location" />
-                </div>
-              </div>
 
-              <div class="p-4 bg-slate-900/40 rounded-2xl border border-slate-700/40 space-y-3 mt-4">
-                <span class="text-xs font-bold text-amber-400">🥂 Recepción / Fiesta</span>
-                <div class="form-group flex flex-col gap-2">
-                  <label class="text-[10px] uppercase font-bold text-slate-400">Nombre del Salón / Jardín</label>
-                  <input v-model="localConfig.locations.receptionName" type="text" placeholder="Ej: Jardín de Eventos Los Pinos" :disabled="!localConfig.has_location" />
+                <button 
+                  type="button" 
+                  @click="addLocationItem" 
+                  class="add-item-btn mt-4"
+                  :disabled="!localConfig.has_location || !canAddLocation"
+                  :class="{ 'opacity-50 cursor-not-allowed': !localConfig.has_location || !canAddLocation }"
+                >
+                  ➕ Añadir Nueva Ubicación
+                </button>
+                <div v-if="!canAddLocation" class="text-[10px] text-amber-500 font-semibold mt-2 text-center p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                  Límite de ubicaciones alcanzado para tu plan ({{ productTier }}). <br/>
+                  <button type="button" @click="showUpgradeModal = true" class="underline hover:text-amber-400 mt-1">Mejora tu plan para agregar más.</button>
                 </div>
-                <div class="form-group flex flex-col gap-2">
-                  <label class="text-[10px] uppercase font-bold text-slate-400">Enlace de Google Maps</label>
-                  <input v-model="localConfig.locations.receptionMapsUrl" type="url" placeholder="https://maps.google.com/..." :disabled="!localConfig.has_location" />
-                </div>
-              </div>
-
-              <!-- Nivel de Zoom (Bloqueado a partir de Standard) -->
-              <div class="form-group flex flex-col gap-2">
-                <div class="flex justify-between items-center">
-                  <label>Zoom del Mapa Integrado</label>
-                  <span v-if="!allowedFeatures.countdown_timer" class="badge-lock">STANDARD 👑</span>
-                  <span v-else class="text-xs font-black text-indigo-400 font-mono">{{ localConfig.location.zoom || 14 }}x</span>
-                </div>
-                <p class="text-[10px] text-slate-500">
-                  Aumenta el zoom para enfocar la calle o redúcelo para ver la zona general.
-                </p>
-                
-                <input 
-                  :value="allowedFeatures.countdown_timer ? localConfig.location.zoom : 14"
-                  @input="allowedFeatures.countdown_timer ? (localConfig.location.zoom = Number($event.target.value)) : null"
-                  :disabled="!allowedFeatures.countdown_timer || !localConfig.has_location"
-                  type="range" 
-                  min="10" 
-                  max="20" 
-                  step="1"
-                  class="w-full accent-indigo-500 cursor-pointer"
-                  :class="{ 'opacity-50 cursor-not-allowed': !allowedFeatures.countdown_timer || !localConfig.has_location }"
-                />
-                
-                <p v-if="!allowedFeatures.countdown_timer" class="text-[10px] text-amber-500 font-semibold mt-1">
-                  El ajuste de zoom requiere un plan <strong>Standard</strong> o superior. El zoom para el plan básico está fijo en 14x.
-                </p>
               </div>
             </div>
           </div>
@@ -2341,6 +2331,13 @@ onMounted(async () => {
           localConfig.value.dressCode = { ...localConfig.value.dressCode, ...custom.dressCode };
         }
 
+        if (custom.locationsList) {
+          localConfig.value.locationsList = custom.locationsList;
+        }
+        
+        // Migrar ubicaciones antiguas al array dinámico si es necesario
+        initializeLocationsListIfNeeded();
+
         // Copiar dinámicamente claves de palabras protocolares y pensamientos
         Object.keys(custom).forEach(key => {
           if (key.startsWith('protocol_words_') || key.startsWith('invitation_text_')) {
@@ -2566,6 +2563,97 @@ const addScheduleItem = () => {
 const removeScheduleItem = (idx) => {
   localConfig.value.timeline.schedule.splice(idx, 1);
 };
+
+// --- Manejo de Ubicaciones Dinámicas ---
+const canAddLocation = computed(() => {
+  if (isAdminOrDesigner.value) return true;
+  const currentCount = localConfig.value.locationsList?.length || 0;
+  if (productTier.value === 'PREMIUM') return true;
+  if (productTier.value === 'STANDARD') return currentCount < 2;
+  return currentCount < 1; // BASIC
+});
+
+const initializeLocationsListIfNeeded = () => {
+  if (!localConfig.value.locationsList) {
+    localConfig.value.locationsList = [];
+    
+    // Intentar migrar desde la estructura vieja
+    const oldLoc = localConfig.value.location;
+    const oldLocs = localConfig.value.locations;
+    
+    if (oldLocs && (oldLocs.ceremonyName || oldLocs.ceremonyMapsUrl)) {
+      localConfig.value.locationsList.push({
+        id: 'migrated_1',
+        isActive: true,
+        title: '⛪ Ceremonia',
+        venueName: oldLocs.ceremonyName || '',
+        address: '',
+        googleMapsUrl: oldLocs.ceremonyMapsUrl || ''
+      });
+    }
+    if (oldLocs && (oldLocs.receptionName || oldLocs.receptionMapsUrl)) {
+      localConfig.value.locationsList.push({
+        id: 'migrated_2',
+        isActive: true,
+        title: '🥂 Recepción / Fiesta',
+        venueName: oldLocs.receptionName || '',
+        address: '',
+        googleMapsUrl: oldLocs.receptionMapsUrl || ''
+      });
+    }
+    
+    if (localConfig.value.locationsList.length === 0 && oldLoc && (oldLoc.venueName || oldLoc.address || oldLoc.googleMapsUrl)) {
+      localConfig.value.locationsList.push({
+        id: 'migrated_gen',
+        isActive: true,
+        title: '📍 Evento',
+        venueName: oldLoc.venueName || '',
+        address: oldLoc.address || '',
+        googleMapsUrl: oldLoc.googleMapsUrl || ''
+      });
+    }
+  }
+};
+
+const addLocationItem = () => {
+  initializeLocationsListIfNeeded();
+  if (!canAddLocation.value) return;
+  localConfig.value.locationsList.push({
+    id: Date.now().toString(),
+    isActive: true,
+    title: 'Nueva Ubicación',
+    venueName: '',
+    address: '',
+    googleMapsUrl: ''
+  });
+};
+
+const removeLocationItem = (idx) => {
+  localConfig.value.locationsList.splice(idx, 1);
+};
+
+const moveLocationUp = (idx) => {
+  if (idx > 0) {
+    const temp = localConfig.value.locationsList[idx];
+    localConfig.value.locationsList[idx] = localConfig.value.locationsList[idx - 1];
+    localConfig.value.locationsList[idx - 1] = temp;
+  }
+};
+
+const moveLocationDown = (idx) => {
+  if (idx < localConfig.value.locationsList.length - 1) {
+    const temp = localConfig.value.locationsList[idx];
+    localConfig.value.locationsList[idx] = localConfig.value.locationsList[idx + 1];
+    localConfig.value.locationsList[idx + 1] = temp;
+  }
+};
+
+watch(() => localConfig.value.has_location, (newVal) => {
+  if (newVal) {
+    initializeLocationsListIfNeeded();
+  }
+});
+
 
 const syncMusicFlag = () => {
   if (!localConfig.value.music) {

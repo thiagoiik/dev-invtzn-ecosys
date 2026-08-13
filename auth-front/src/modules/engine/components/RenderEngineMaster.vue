@@ -184,7 +184,8 @@ const orderedBlocks = computed(() => {
         } else if (b.id === 'location') {
           resolvedConfig = {
             ...(props.customData.location || {}),
-            locations: props.customData.locations || null
+            locations: props.customData.locations || null,
+            locationsList: props.customData.locationsList || []
           };
         } else if (b.id === 'dress_code') {
           resolvedConfig = props.customData.dressCode || {};
@@ -270,7 +271,8 @@ const orderedBlocks = computed(() => {
       component: LocationBlock,
       config: {
         ...(props.customData.location || {}),
-        locations: props.customData.locations || null
+        locations: props.customData.locations || null,
+        locationsList: props.customData.locationsList || []
       }
     });
   }
