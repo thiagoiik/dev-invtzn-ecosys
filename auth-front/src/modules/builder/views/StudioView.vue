@@ -1021,14 +1021,48 @@
               </div>
 
               <div class="form-group">
-                <label>URL de Imagen para Redes (og_image)</label>
-                <input 
-                  v-model="localConfig.og_image" 
-                  type="url" 
-                  placeholder="https://..." 
-                  :disabled="!allowedFeatures.custom_og"
-                />
-                <span class="help-text">URL de la imagen que se mostrará al compartir. Debe ser cuadrada u horizontal.</span>
+                <label>Imagen para Redes (og_image)</label>
+                <div class="flex flex-col gap-2">
+                  <input 
+                    v-model="localConfig.og_image" 
+                    type="url" 
+                    placeholder="https://..." 
+                    :disabled="!allowedFeatures.custom_og"
+                  />
+                  <div class="flex items-center gap-2">
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      @change="uploadOgImage" 
+                      class="file-input file-input-bordered file-input-sm w-full max-w-xs"
+                      :disabled="!allowedFeatures.custom_og || isUploadingOg"
+                    />
+                    <span v-if="isUploadingOg" class="loading loading-spinner loading-sm text-primary"></span>
+                  </div>
+                </div>
+                <span class="help-text">Puedes pegar una URL o subir tu propia imagen (recomendado: 1200x630px).</span>
+              </div>
+            </div>
+
+            <!-- Live Preview WhatsApp Style -->
+            <div class="mt-6 border border-slate-700/50 rounded-xl overflow-hidden bg-slate-900/40 max-w-sm mx-auto shadow-xl" :class="{ 'opacity-40 pointer-events-none': !allowedFeatures.custom_og }">
+              <div class="bg-slate-800/80 p-3 text-slate-300 text-sm font-semibold border-b border-slate-700/50 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-green-500"></span> Vista Previa (WhatsApp)
+              </div>
+              <div class="p-4 bg-[url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')] bg-cover bg-center">
+                <div class="bg-[#005c4b] rounded-xl rounded-tr-none p-1 max-w-[320px] ml-auto shadow-md">
+                  <div class="bg-[#0b141a] rounded-lg overflow-hidden border border-white/5">
+                    <div class="h-40 bg-slate-800 flex items-center justify-center overflow-hidden">
+                      <img v-if="localConfig.og_image" :src="localConfig.og_image" class="w-full h-full object-cover" />
+                      <span v-else class="text-slate-500 text-xs">Sin imagen</span>
+                    </div>
+                    <div class="p-3 bg-[#111b21]">
+                      <h4 class="text-[#e9edef] font-semibold text-[15px] truncate">{{ localConfig.og_title || 'Título de tu invitación' }}</h4>
+                      <p class="text-[#8696a0] text-[13px] line-clamp-2 mt-1 leading-snug">{{ localConfig.og_description || 'Descripción de tu evento aparecerá aquí...' }}</p>
+                      <p class="text-[#8696a0] text-[11px] mt-2">invitazyon.online</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2700,6 +2734,31 @@ watch(localConfig, () => {
 const dragIndex = ref(null);
 const newImageUrl = ref('');
 const isUploading = ref(false);
+const isUploadingOg = ref(false);
+
+const uploadOgImage = async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  isUploadingOg.value = true;
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await builderService.uploadMedia(deploymentId, formData);
+    if (response.data && response.data.url) {
+      localConfig.value.og_image = response.data.url;
+      toast.success('¡Imagen OG subida exitosamente!');
+    }
+  } catch (error) {
+    console.error(error);
+    toast.error('Error al subir la imagen para redes.');
+  } finally {
+    isUploadingOg.value = false;
+    event.target.value = '';
+    saveStatus.value = 'unsaved';
+  }
+};
 
 const onDragStart = (event, index) => {
   if (localConfig.value.blocks[index].locked) {
