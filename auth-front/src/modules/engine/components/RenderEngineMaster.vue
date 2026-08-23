@@ -71,7 +71,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import DraftWatermarkOverlay from './DraftWatermarkOverlay.vue';
 import UnderConstructionScreen from './UnderConstructionScreen.vue';
 import { useAuthStore } from '@/modules/auth/store/auth';
@@ -142,7 +142,40 @@ const barLabel = computed(() => {
 onMounted(() => {
   // Silent tracking of page visits upon master load
   telemetry.trackVisit(props.slug);
+  updateMetaTags();
 });
+
+const updateMetaTags = () => {
+  if (props.isStudioMode || !props.customData) return;
+
+  const title = props.customData.og_title || props.customData.cover?.title || props.customData.event_title || 'Invitación Especial';
+  const description = props.customData.og_description || props.customData.cover?.subtitle || props.customData.event_description || '¡Te invitamos a celebrar con nosotros!';
+  const image = props.customData.og_image || props.customData.cover?.coverPhoto || 'https://app.sandbox.invitazyon.online/img/og-home.jpg';
+
+  document.title = title;
+
+  const setMeta = (property, content) => {
+    let el = document.querySelector(`meta[property="${property}"]`) || document.querySelector(`meta[name="${property}"]`);
+    if (!el) {
+      el = document.createElement('meta');
+      if (property.startsWith('og:')) el.setAttribute('property', property);
+      else el.setAttribute('name', property);
+      document.head.appendChild(el);
+    }
+    el.setAttribute('content', content);
+  };
+
+  setMeta('og:title', title);
+  setMeta('og:description', description);
+  setMeta('og:image', image);
+  setMeta('twitter:title', title);
+  setMeta('twitter:description', description);
+  setMeta('twitter:image', image);
+};
+
+watch(() => props.customData, () => {
+  updateMetaTags();
+}, { deep: true });
 
 const handlePurchaseRedirect = () => {
   emit('purchase');
