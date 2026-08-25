@@ -664,6 +664,50 @@ class DeploymentViewSet(viewsets.ModelViewSet):
             'url': file_url
         })
 
+    @action(detail=True, methods=['delete'], url_path='delete-media')
+    def delete_media(self, request, pk=None):
+        from django.core.files.storage import default_storage
+        from django.conf import settings
+        import urllib.parse
+        
+        deployment = self.get_object()
+        
+        # Check permissions
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            has_role = profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]
+        except Exception:
+            has_role = False
+            
+        if not has_role and str(deployment.user) != str(request.user.id):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("No tienes permisos para borrar archivos de este diseño.")
+            
+        file_url = request.data.get('url')
+        if not file_url:
+            return Response({'error': 'La URL del archivo es obligatoria.'}, status=400)
+            
+        # Parsear la URL para extraer el path relativo (ej. quitar el dominio y el /media/)
+        parsed_url = urllib.parse.urlparse(file_url)
+        path = parsed_url.path
+        media_url = getattr(settings, 'MEDIA_URL', '/media/')
+        
+        if path.startswith(media_url):
+            file_path = path[len(media_url):]
+        else:
+            file_path = path
+            
+        # Asegurarse de que el archivo pertenece a este deployment (seguridad path traversal)
+        if not file_path.startswith(f"deployments/{deployment.slug}/"):
+            return Response({'error': 'Operación no permitida en este archivo.'}, status=403)
+            
+        if default_storage.exists(file_path):
+            default_storage.delete(file_path)
+            return Response({'success': 'Archivo borrado exitosamente.'})
+        else:
+            return Response({'error': 'El archivo no existe.'}, status=404)
+
     @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='unsplash-search')
     def unsplash_search(self, request):
         query = request.query_params.get('query', '')

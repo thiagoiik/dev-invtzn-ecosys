@@ -26,6 +26,7 @@ services:
       - redis
     volumes:
       - /home/deploy/geoip:/app/geoip:ro
+      - invtzn_media:/app/media
 
   redis:
     image: redis:7-alpine
@@ -59,6 +60,7 @@ services:
       - redis
     volumes:
       - /home/deploy/geoip:/app/geoip:ro
+      - invtzn_media:/app/media
     logging:
       driver: "json-file"
       options:
@@ -77,3 +79,6 @@ networks:
     external: true
   red_datos:
     external: true
+
+volumes:
+  invtzn_media:
