@@ -306,3 +306,44 @@ La versión **v0.9.5** refina la experiencia de previsualización en vivo (`/i/:
 *   **Soporte Técnico de Diseñadores:**
     *   Cuando un Diseñador o Administrador asiste a un cliente en una invitación ya pagada (`LIVE`), el diseñador conserva acceso total de edición pero **la propiedad sigue perteneciendo al cliente**, evitando la pérdida de control del recurso.
 
+---
+
+## 💎 Versión v0.9.6 — Flujos de Revisión, Modals Premium y Sección de Ubicación
+
+La versión **v0.9.6** añade el flujo de revisión para diseñadores, campana de alertas para administradores, autolimpieza de notificaciones, interceptor de demos, modals de confirmación customizados premium, y la nueva sección de Ubicación con zoom dinámico por plan:
+
+*   **Flujo de Revisión para Diseñadores:** Los diseñadores envían maquetas a revisión mediante un nuevo endpoint de auditoría. Se registra un log `SystemLog` y se notifica a los administradores.
+*   **Bandeja de Notificaciones Autolimpiable:** Icono de campana `🔔` con bandeja flotante en el Workspace para administradores con polling asíncrono. El backend autolimpia las notificaciones cuyo lienzo cambie de estado, eliminando alertas de diseños aprobados/publicados.
+*   **Interceptor de Plantillas para Demos:** Los invitados que entran a URLs de plantillas maestras (`ACTIVE`) son redirigidos a una tarjeta de bienvenida interactiva para clonar y crear su demo gratuita en la misma pestaña.
+*   **Modals de Confirmación Customizados (Premium):** Los `confirm()` nativos del navegador se reemplazan por un modal reutilizable con estilo premium (`confirmModal`) de fondo borroso (`backdrop-blur-md`), tarjeta redondeada y línea superior de gradiente.
+*   **Sección de Ubicación con Mapa Interactivo:** Nueva sección básica (`LocationBlock.vue`) que renderiza nombre de lugar, dirección física, botón a apps de mapas externas (Google Maps, Waze, etc.) y un mapa interactivo (iframe).
+    *   *Extracción Automática de Iframe:* Permite pegar el código embebido `<iframe>` de Google Maps extrayendo automáticamente su atributo `src`.
+    *   *Ajuste de Zoom Condicionado:* El slider de zoom del mapa embebido está bloqueado para usuarios básicos (zoom fijo en `14`x para motivar el upgrade comercial), y libre (de `10`x a `20`x) para usuarios estándar y premium.
+
+---
+
+## ⚖️ Versión v0.9.7 — Trazabilidad Legal y Onboarding Clickwrap
+
+La versión **v0.9.7** implementa los requerimientos jurídicos obligatorios para la aceptación de contratos digitales y el registro inalterable de auditoría:
+
+*   **Onboarding Clickwrap (Frontend):** Se añadió un checkbox obligatorio en el proceso de registro (`RegisterView.vue`) para la aceptación activa de los Términos y Condiciones (INV-DIG-05) y la Política de Privacidad. El botón de registro permanece inactivo hasta confirmar la lectura. El frontend inyecta la versión vigente de los términos (ej. `V1_2026`) en el payload de creación de cuenta.
+*   **Actualización de Textos Legales:** Se actualizó `TermsView.vue` para incluir la jurisdicción exclusiva en la Ciudad de México y los consentimientos de tratamiento de datos personales.
+*   **Trazabilidad y Log de Auditoría Legal (Backend):** Se creó el modelo `LegalAuditLog` en `auth-service` que se vincula 1-a-1 con los usuarios.
+    *   Mediante *signals* de `allauth` (`user_signed_up`), el sistema captura en segundo plano la IP real del usuario (usando `HTTP_X_FORWARDED_FOR` para atravesar proxies/balanceadores), la fecha exacta UTC y la versión del contrato aceptada.
+    *   La señal `email_confirmed` actualiza este log de forma asíncrona insertando el correo del usuario una vez verificado exitosamente.
+
+---
+
+## 📱 Versión v0.9.8 — Subida de Fotos Locales y Rediseño Mobile-First del Builder
+
+La versión **v0.9.8** empodera a los diseñadores y clientes permitiendo la carga directa de archivos fotográficos y refactorizando drásticamente la interfaz del diseñador (Builder) para ofrecer una experiencia premium e impecable en dispositivos móviles:
+
+*   **Subida de Archivos Multimedía (Local Storage):**
+    *   Integración de almacenamiento local nativo de Django (`MEDIA_ROOT` y `MEDIA_URL`) en el ecosistema para gestionar medios de usuarios.
+    *   Nuevo endpoint `/api/v1/deployments/{id}/upload-media/` en `api-invtzn` que acepta archivos `multipart/form-data`, asigna identificadores únicos (UUID), guarda los archivos físicamente en el servidor y responde con la URL absoluta lista para consumirse.
+    *   En el Builder (sección Carrusel), el `<input type="file" multiple>` permite subir múltiples fotos directamente desde la galería del dispositivo, mostrando indicadores visuales y actualizando el carrusel en vivo.
+*   **Rediseño Mobile-First del Studio (Builder):**
+    *   **Bottom Navigation Bar:** Eliminación de botones flotantes obstructivos en la esquina inferior. Ahora en vista móvil, el builder presenta una moderna Bottom Bar con acceso a "🛠️ Herramientas" y "📱 Vista Previa", garantizando una navegación impecable.
+    *   **Control de Desbordamiento (Viewport Height):** Reestructuración de la base estructural a `100dvh` y `height: 100%`. Esto asegura que el área de edición conviva perfectamente con las barras dinámicas de los navegadores móviles (Safari/Chrome) sin esconder herramientas vitales al final de la pantalla (añadiendo también `padding-bottom` de seguridad).
+    *   **Optimizador de Cabecera (Select Redesign):** El selector de componentes se rediseñó bajo un formato minimalista y dark (`bg-slate-950`) que se integra nativamente en el header del panel de diseño, permitiendo recuperar espacio vertical valioso.
+
