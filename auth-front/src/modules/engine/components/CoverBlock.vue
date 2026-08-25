@@ -5,7 +5,8 @@
       class="absolute inset-0 bg-cover transition-transform duration-[20000ms] ease-out scale-110 hover:scale-100"
       :style="{ 
         backgroundImage: `url(${config.coverPhoto || 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80'})`,
-        backgroundPosition: `${(config.backgroundPositionX !== undefined && config.backgroundPositionX !== null) ? config.backgroundPositionX : 50}% ${(config.backgroundPositionY !== undefined && config.backgroundPositionY !== null) ? config.backgroundPositionY : 50}%`
+        backgroundPosition: `${(config.backgroundPositionX !== undefined && config.backgroundPositionX !== null) ? config.backgroundPositionX : 50}% ${(config.backgroundPositionY !== undefined && config.backgroundPositionY !== null) ? config.backgroundPositionY : 50}%`,
+        backgroundSize: (config.backgroundScale !== undefined && config.backgroundScale !== null) ? `${config.backgroundScale}%` : 'cover'
       }"
     ></div>
     

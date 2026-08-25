@@ -34,6 +34,12 @@ export const builderService = {
         'Content-Type': 'multipart/form-data'
       }
     });
+  },
+  
+  deleteMedia(id, url) {
+    return invtznClient.delete(`deployments/${id}/delete-media/`, {
+      data: { url }
+    });
   }
 
 };

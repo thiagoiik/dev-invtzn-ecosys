@@ -193,12 +193,25 @@
             </div>
 
             <div class="form-group">
-              <label>URL de Imagen de Fondo</label>
-              <div class="flex gap-2">
-                <input v-model="localConfig.cover.coverPhoto" type="url" placeholder="https://..." class="flex-grow" />
-                <button type="button" @click="isGalleryOpen = true" class="btn btn-sm btn-outline text-xs h-[42px] px-3 bg-white/5 border-white/10 text-amber-400 hover:bg-white/10 shrink-0">
-                  ✨ Galería
-                </button>
+              <label>Imagen de Fondo</label>
+              <div class="flex flex-col gap-2">
+                <div class="flex gap-2">
+                  <input v-model="localConfig.cover.coverPhoto" type="url" placeholder="https://..." class="flex-grow" />
+                  <button type="button" @click="isGalleryOpen = true" class="btn btn-sm btn-outline text-xs h-[42px] px-3 bg-white/5 border-white/10 text-amber-400 hover:bg-white/10 shrink-0">
+                    ✨ Galería
+                  </button>
+                </div>
+                <div class="flex gap-2 items-center mt-1">
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    @change="uploadCoverImage"
+                    class="file-input file-input-bordered file-input-sm w-full bg-slate-950 border-slate-800 text-white"
+                    :disabled="isUploadingCover"
+                  />
+                  <span v-if="isUploadingCover" class="loading loading-spinner loading-sm text-primary"></span>
+                </div>
+                <span class="help-text text-[10px] text-slate-400">Pega un enlace externo o sube una foto desde tu dispositivo.</span>
               </div>
             </div>
 
@@ -234,6 +247,22 @@
                   class="hue-range"
                 />
                 <span class="help-text text-xs text-slate-400 mt-1 block">Desplaza la foto hacia arriba (0%) o abajo (100%). Útil para fotos verticales en monitores.</span>
+              </div>
+
+              <!-- Tamaño / Zoom -->
+              <div class="form-group">
+                <label class="flex justify-between">
+                  <span>Tamaño / Zoom (Escala)</span>
+                  <span class="font-bold font-mono">{{ (localConfig.cover.backgroundScale !== undefined && localConfig.cover.backgroundScale !== null) ? localConfig.cover.backgroundScale : 100 }}%</span>
+                </label>
+                <input 
+                  type="range" 
+                  min="50" 
+                  max="250" 
+                  v-model.number="localConfig.cover.backgroundScale" 
+                  class="hue-range"
+                />
+                <span class="help-text text-xs text-slate-400 mt-1 block">Ajusta el zoom de la imagen (por defecto 100% cubrirá toda la pantalla).</span>
               </div>
             </div>
 
@@ -2197,7 +2226,8 @@ const localConfig = ref({
     fontFamily: 'serif',
     frame_overlay: null,
     backgroundPositionX: 50,
-    backgroundPositionY: 50
+    backgroundPositionY: 50,
+    backgroundScale: null
   },
   rsvp: {
     bgColor: '#f8fafc',
@@ -3080,9 +3110,53 @@ const uploadImages = async (event) => {
   }
 };
 
-const removeImageUrl = (index) => {
+const removeImageUrl = async (index) => {
+  const imageUrl = localConfig.value.photo_carousel.images[index];
+  
+  if (imageUrl && imageUrl.includes('/media/deployments/')) {
+    try {
+      await builderService.deleteMedia(deploymentId, imageUrl);
+    } catch (e) {
+      console.error('No se pudo borrar el archivo del servidor:', e);
+    }
+  }
+
   localConfig.value.photo_carousel.images.splice(index, 1);
   toast.info('Imagen eliminada de la lista.');
+};
+
+const isUploadingCover = ref(false);
+const uploadCoverImage = async (event) => {
+  const files = event.target.files;
+  if (!files || files.length === 0) return;
+
+  isUploadingCover.value = true;
+  
+  try {
+    const formData = new FormData();
+    formData.append('file', files[0]);
+    
+    // Si ya existía una imagen local, borrarla para ahorrar espacio
+    if (localConfig.value.cover.coverPhoto && localConfig.value.cover.coverPhoto.includes('/media/deployments/')) {
+      try {
+        await builderService.deleteMedia(deploymentId, localConfig.value.cover.coverPhoto);
+      } catch (e) {}
+    }
+
+    const response = await builderService.uploadMedia(deploymentId, formData);
+    if (response.data && response.data.url) {
+      localConfig.value.cover.coverPhoto = response.data.url;
+    }
+    
+    toast.success('¡Foto de portada subida exitosamente!');
+    event.target.value = '';
+    saveStatus.value = 'unsaved';
+  } catch (error) {
+    console.error(error);
+    toast.error('Ocurrió un error al subir la foto.');
+  } finally {
+    isUploadingCover.value = false;
+  }
 };
 
 // Watchers de sincronización bidireccional reactiva para previsualización instantánea
