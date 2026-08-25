@@ -41,7 +41,8 @@ RUN pip install --no-cache /wheels/*
 COPY . .
 
 # Seguridad: Crear un usuario sin privilegios de root para ejecutar la aplicación
-RUN adduser --disabled-password --no-create-home --gecos "" django-user && \
+RUN mkdir -p /app/media /app/staticfiles && \
+    adduser --disabled-password --no-create-home --gecos "" django-user && \
     chown -R django-user:django-user /app
 
 USER django-user
