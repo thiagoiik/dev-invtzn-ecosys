@@ -94,6 +94,7 @@ jobs:
         with:
           context: ./auth-service
           push: true
+          provenance: false
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/auth-service-api:${{ env.IMAGE_TAG }}
             ghcr.io/${{ env.OWNER_LC }}/auth-service-api:latest
@@ -104,6 +105,7 @@ jobs:
         with:
           context: ./api-invtzn
           push: true
+          provenance: false
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/invtzn-service-api:${{ env.IMAGE_TAG }}
             ghcr.io/${{ env.OWNER_LC }}/invtzn-service-api:latest
@@ -115,6 +117,7 @@ jobs:
         with:
           context: ./auth-front
           push: true
+          provenance: false
           build-args: |
             VITE_API_AUTH_URL=${{ github.ref == 'refs/heads/main' && 'https://api.auth.invitazyon.online/' || 'https://api.auth.sandbox.invitazyon.online/' }}
             VITE_API_INVTZN_URL=${{ github.ref == 'refs/heads/main' && 'https://api.invtzn.invitazyon.online/api/v1/' || 'https://api.invtzn.sandbox.invitazyon.online/api/v1/' }}
