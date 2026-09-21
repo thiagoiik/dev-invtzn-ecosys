@@ -6,6 +6,7 @@ services:
       args:
         - VITE_API_AUTH_URL=http://api.auth.local/
         - VITE_API_INVTZN_URL=http://api.invtzn.local/api/v1/
+        - VITE_APP_ENV=sandbox
     volumes:
     #- vue_data:/app # Esto es un volumen gestionado por Docker, no por Windows
     - .:/app # Esto es solo para desarrollo

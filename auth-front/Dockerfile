@@ -5,10 +5,12 @@ WORKDIR /app
 # Definir argumentos de construcción para las APIs
 ARG VITE_API_AUTH_URL
 ARG VITE_API_INVTZN_URL
+ARG VITE_APP_ENV
 
 # Configurar variables de entorno de construcción para Vite
 ENV VITE_API_AUTH_URL=$VITE_API_AUTH_URL
 ENV VITE_API_INVTZN_URL=$VITE_API_INVTZN_URL
+ENV VITE_APP_ENV=$VITE_APP_ENV
 
 COPY package.json package-lock.json* ./
 RUN npm install 
