@@ -36,7 +36,7 @@ def save_rrweb_session_task(user_id, role, environment, user_agent, window_width
         # Notificar de vuelta al usuario que lo envió
         if user_id:
             try:
-                sender = UserProfile.objects.get(pk=user_id)
+                sender = UserProfile.objects.get(remote_auth_id=user_id)
                 CommunicationLog.objects.create(
                     user=sender,
                     channel=CommunicationLog.Channel.SYSTEM,
