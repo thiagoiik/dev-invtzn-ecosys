@@ -3,7 +3,8 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
-from .models import Deployment, SystemLog
+from .models import Deployment
+from telemetry.models import SystemLog
 from .serializers import DeploymentSerializer, SystemLogSerializer
 
 class DeploymentViewSet(viewsets.ModelViewSet):

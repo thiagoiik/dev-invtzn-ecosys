@@ -3,7 +3,8 @@ from django.dispatch import receiver
 from django.db import transaction
 import logging
 from .models import Order
-from deployments.models import Deployment, SystemLog
+from deployments.models import Deployment
+from telemetry.models import SystemLog
 from inventory.models import StoreStock
 
 logger = logging.getLogger(__name__)

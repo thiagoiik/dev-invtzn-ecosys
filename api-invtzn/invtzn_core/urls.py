@@ -53,6 +53,7 @@ urlpatterns = [
     path('api/v1/', include('inventory.urls')),
     path('api/v1/', include('deployments.urls')),
     path('api/v1/', include('sales.urls')),
+    path('api/v1/telemetry/', include('telemetry.urls')),
 ]
 
 from django.conf import settings

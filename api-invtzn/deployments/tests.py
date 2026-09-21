@@ -127,7 +127,7 @@ class TestDeployments:
         assert response.data['success'] == 'Métrica registrada'
         
         # Verify db record
-        from deployments.models import DeploymentMetric
+        from telemetry.models import DeploymentMetric
         metric = DeploymentMetric.objects.filter(deployment=deployment).first()
         assert metric is not None
         assert metric.metric_type == 'VISIT'
@@ -139,7 +139,7 @@ class TestDeployments:
 
     def test_record_metric_task_internal_logic(self):
         from deployments.tasks import record_metric_task
-        from deployments.models import DeploymentMetric
+        from telemetry.models import DeploymentMetric
         import unittest.mock as mock
 
         deployment = Deployment.objects.create(
@@ -229,7 +229,7 @@ class TestDeployments:
             product=self.product,
             slug='agg-metrics-slug'
         )
-        from deployments.models import DeploymentMetric
+        from telemetry.models import DeploymentMetric
         
         # Seed metrics (1 Mobile Safari, 1 Desktop Chrome)
         DeploymentMetric.objects.create(
@@ -359,7 +359,7 @@ class TestDeployments:
 
     def test_order_completion_triggers_signal_and_logs(self):
         from sales.models import Order, OrderItem
-        from deployments.models import SystemLog
+        from telemetry.models import SystemLog
 
         # Create another product to change to
         new_product = Product.objects.create(name='Premium Product', base_price=50.00, product_type='DIGITAL', tier_level='PREMIUM')
@@ -630,7 +630,7 @@ class TestDeployments:
         assert response.data['success'] == 'Solicitud de revisión enviada al administrador exitosamente.'
         
         # 4. Check that system logs and communication logs are created
-        from deployments.models import SystemLog
+        from telemetry.models import SystemLog
         assert SystemLog.objects.filter(log_type=SystemLog.LogType.USER_ACTION, user_id=designer_user.id).exists()
         
         from profiles.models import CommunicationLog

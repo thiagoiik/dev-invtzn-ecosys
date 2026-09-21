@@ -168,35 +168,4 @@ class Guest(models.Model):
     def __str__(self):
         return f"{self.full_name} ({self.status})"
 
-class DeploymentMetric(models.Model):
-    class MetricType(models.TextChoices):
-        VISIT = 'VISIT', 'Visita'
-        RSVP_SUBMIT = 'RSVP_SUBMIT', 'Confirmación de Asistencia'
 
-    deployment = models.ForeignKey(Deployment, on_delete=models.CASCADE, related_name='metrics')
-    metric_type = models.CharField(max_length=20, choices=MetricType.choices, default=MetricType.VISIT)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    user_agent = models.TextField(null=True, blank=True)
-    city = models.CharField(max_length=100, null=True, blank=True, default='Desconocido')
-    country = models.CharField(max_length=100, null=True, blank=True, default='Desconocido')
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.metric_type} en {self.deployment.slug} ({self.city}, {self.country})"
-
-
-class SystemLog(models.Model):
-    class LogType(models.TextChoices):
-        USER_ACTION = 'USER_ACTION', 'User Action'
-        DEPLOYMENT_STATE = 'DEPLOYMENT_STATE', 'Deployment State'
-        PAYMENT_FLOW = 'PAYMENT_FLOW', 'Payment Flow'
-
-    log_type = models.CharField(max_length=50, choices=LogType.choices)
-    message = models.TextField()
-    user_id = models.IntegerField(null=True, blank=True)
-    username = models.CharField(max_length=150, null=True, blank=True)
-    metadata = models.JSONField(default=dict, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"{self.log_type} - {self.message[:50]}"

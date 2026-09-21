@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.core.validators import RegexValidator
-from .models import Deployment, SystemLog
+from .models import Deployment
+from telemetry.models import SystemLog
 
 class DeploymentSerializer(serializers.ModelSerializer):
     allowed_features = serializers.ReadOnlyField()

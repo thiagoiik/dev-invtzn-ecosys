@@ -2,7 +2,8 @@ import os
 import logging
 import requests
 from celery import shared_task
-from .models import Deployment, DeploymentMetric
+from .models import Deployment
+from telemetry.models import DeploymentMetric
 
 logger = logging.getLogger(__name__)
 
