@@ -29,6 +29,10 @@ DATABASES = {
     'default': dj_database_url.config(
         default=db_url,
         conn_max_age=600
+    ),
+    'telemetry_db': dj_database_url.config(
+        default=os.environ.get('TELEMETRY_DB_URL'),
+        conn_max_age=600
     )
 }
 if not DATABASES['default']:

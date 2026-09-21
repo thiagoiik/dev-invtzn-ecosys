@@ -20,6 +20,10 @@ DATABASES = {
     'default': dj_database_url.config(
         default=db_url,
         conn_max_age=600
+    ),
+    'telemetry_db': dj_database_url.config(
+        default=os.environ.get('TELEMETRY_DB_URL', 'postgres://admin_global:tu_password_seguro_global@db_central:5432/telemetry_sandbox'),
+        conn_max_age=600
     )
 }
 

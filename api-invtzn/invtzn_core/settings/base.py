@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'deployments',
     'sales',
     'integrations',
+    'telemetry',
 ]
 
 MIDDLEWARE = [
@@ -60,6 +61,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'invtzn_core.wsgi.application'
+
+DATABASE_ROUTERS = ['telemetry.routers.TelemetryRouter']
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

@@ -7,6 +7,7 @@ services:
       - ../.env
     environment:
       - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE_INVTZN:-invtzn_core.settings.production}
+      - DATABASE_URL=postgres://${API_INVTZN_DB_USER}:${API_INVTZN_DB_PASSWORD}@db_central:5432/${API_INVTZN_DB_NAME}
     networks:
       - red_publica
       - red_datos
@@ -54,6 +55,7 @@ services:
       - ../.env
     environment:
       - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE_INVTZN:-invtzn_core.settings.production}
+      - DATABASE_URL=postgres://${API_INVTZN_DB_USER}:${API_INVTZN_DB_PASSWORD}@db_central:5432/${API_INVTZN_DB_NAME}
     networks:
       - red_datos
     depends_on:

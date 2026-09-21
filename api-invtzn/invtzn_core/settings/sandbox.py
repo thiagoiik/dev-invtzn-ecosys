@@ -27,10 +27,15 @@ DATABASES = {
     'default': dj_database_url.config(
         default=db_url,
         conn_max_age=600
+    ),
+    'telemetry_db': dj_database_url.config(
+        default=os.environ.get('TELEMETRY_DB_URL'),
+        conn_max_age=600
     )
 }
 if not DATABASES['default']:
     raise ValueError("CRÍTICO: La base de datos centralizada debe estar configurada en el entorno Sandbox.")
+
 
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = os.environ.get('INVTZN_CORS_ALLOWED_ORIGINS', '').split(',')
