@@ -80,6 +80,12 @@ export default [
         name: 'workspace-reviews',
         component: () => import('@/modules/workspace/views/ReviewsManagerView.vue'),
         meta: { requiresRole: ['ADMIN', 'FRANCHISEE'] }
+      },
+      {
+        path: 'telemetry',
+        name: 'workspace-telemetry',
+        component: () => import('@/modules/dashboard/views/TelemetryListView.vue'),
+        meta: { requiresRole: ['ADMIN'] }
       }
     ]
   }

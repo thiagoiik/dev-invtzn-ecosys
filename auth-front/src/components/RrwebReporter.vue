@@ -1,7 +1,7 @@
 <template>
   <div v-if="isActive" class="fixed bottom-4 right-4 z-[9999]">
     <button 
-      @click="reportError" 
+      @click="() => reportError(false)"
       :disabled="isReporting"
       class="btn btn-error shadow-lg rounded-full flex items-center gap-2 animate-bounce hover:animate-none"
     >
@@ -15,7 +15,8 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useAuthStore } from '../modules/auth/store/auth';
-import axios from 'axios';
+import axiosModule from 'axios';
+const axios = axiosModule.default || axiosModule;
 import { useToast } from 'vue-toastification';
 
 const authStore = useAuthStore();
@@ -57,9 +58,9 @@ const startRecording = async () => {
   }
 };
 
-const reportError = async () => {
+const reportError = async (isAuto = false, errorMessage = '') => {
   if (events.length === 0) {
-    toast.warning("No hay suficientes datos grabados aún.");
+    if (!isAuto) toast.warning("No hay suficientes datos grabados aún.");
     return;
   }
 
@@ -70,6 +71,7 @@ const reportError = async () => {
       events: events,
       window_width: window.innerWidth,
       window_height: window.innerHeight,
+      error_message: errorMessage
     };
     
     // Asumiendo que el endpoint de telemetría está en la API de INVTZN
@@ -81,24 +83,49 @@ const reportError = async () => {
       }
     });
     
-    toast.success("¡Reporte enviado exitosamente! Los ingenieros revisarán tu sesión.");
+    if (!isAuto) {
+      toast.success("¡Reporte enviado exitosamente! Los ingenieros revisarán tu sesión.");
+    }
   } catch (error) {
     console.error("Error al enviar el reporte rrweb:", error);
-    toast.error("Ocurrió un error al enviar el reporte.");
+    if (!isAuto) toast.error("Ocurrió un error al enviar el reporte.");
   } finally {
     isReporting.value = false;
   }
 };
 
+let lastAutoReportTime = 0;
+const AUTO_REPORT_COOLDOWN = 60 * 1000; // 1 minuto de enfriamiento
+
+const handleGlobalError = (event) => {
+  if (!isActive.value) return;
+  const now = Date.now();
+  if (now - lastAutoReportTime < AUTO_REPORT_COOLDOWN) return; // Evitar spam
+
+  lastAutoReportTime = now;
+  let errorMessage = 'Error JS desconocido';
+
+  if (event instanceof ErrorEvent) {
+    errorMessage = event.message;
+  } else if (event instanceof PromiseRejectionEvent) {
+    errorMessage = event.reason?.message || event.reason?.toString() || 'Promesa rechazada';
+  }
+
+  console.warn("[Telemetry] Auto-reportando error detectado:", errorMessage);
+  reportError(true, errorMessage);
+};
+
 onMounted(() => {
   if (isActive.value) {
     startRecording();
+    window.addEventListener('error', handleGlobalError);
+    window.addEventListener('unhandledrejection', handleGlobalError);
   }
 });
 
 onBeforeUnmount(() => {
-  if (stopFn) {
-    stopFn();
-  }
+  if (stopFn) stopFn();
+  window.removeEventListener('error', handleGlobalError);
+  window.removeEventListener('unhandledrejection', handleGlobalError);
 });
 </script>

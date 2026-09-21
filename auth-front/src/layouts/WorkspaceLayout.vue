@@ -151,6 +151,16 @@
               <span>🛠️</span>
               <span v-if="!isTablet || isMobile" class="text-sm">Herramientas Dev</span>
             </router-link>
+            <router-link 
+              to="/workspace/telemetry" 
+              class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
+              :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
+              :title="isTablet && !isMobile ? 'Telemetría / Bugs' : ''"
+              @click="isMobile ? mobileMenuOpen = false : null"
+            >
+              <span>🐛</span>
+              <span v-if="!isTablet || isMobile" class="text-sm">Telemetría / Bugs</span>
+            </router-link>
           </div>
         </template>
         
@@ -353,6 +363,10 @@ const formatTime = (timeStr) => {
 };
 
 const handleNotificationClick = (notif) => {
+  if (notif.subject.includes('Grabación') || notif.subject.includes('Sandbox')) {
+    router.push('/workspace/telemetry');
+    return;
+  }
   const match = notif.subject.match(/ID:\s*(\d+)/);
   if (match) {
     const deploymentId = match[1];

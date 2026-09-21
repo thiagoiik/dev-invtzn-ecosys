@@ -32,14 +32,54 @@ class RecordSessionView(APIView):
         # role = request.data.get('role') o usar el role asociado al usuario autenticado
 
         # Enviar tarea a Celery para procesamiento asíncrono
+        error_message = request.data.get('error_message', '')
+        
+        role = 'ANONYMOUS'
+        if user and hasattr(user, 'id'):
+            try:
+                from profiles.models import UserProfile
+                user_profile = UserProfile.objects.get(remote_auth_id=user.id)
+                role = user_profile.custom_role
+            except Exception:
+                pass
+        
         save_rrweb_session_task.delay(
             user_id=user.id if user else None,
-            role='TESTER', # Aquí idealmente se inyectaría el rol del usuario si está disponible
+            role=role,
             environment=environment,
             user_agent=user_agent,
             window_width=window_width,
             window_height=window_height,
-            events_payload=events_payload
+            events_payload=events_payload,
+            error_message=error_message
         )
         
         return Response({"status": "Grabación de sesión encolada con éxito."}, status=status.HTTP_202_ACCEPTED)
+
+from rest_framework import viewsets
+from .models import SessionRecording
+from .serializers import SessionRecordingListSerializer, SessionRecordingDetailSerializer
+
+class SessionRecordingViewSet(viewsets.ModelViewSet):
+    """
+    Vista protegida para listar, detallar y eliminar las sesiones de telemetría guardadas.
+    """
+    queryset = SessionRecording.objects.all().order_by('-created_at')
+    permission_classes = [IsAuthenticated] # Opcional: Crear un custom permission IsAdmin
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return SessionRecordingListSerializer
+        return SessionRecordingDetailSerializer
+        
+    def perform_destroy(self, instance):
+        # Borrar también las notificaciones asociadas a esta grabación (Admin y Usuario)
+        try:
+            from profiles.models import CommunicationLog
+            # Busca tanto '(Grabación ID: X)' como '(ID: X)'
+            search_str = f"ID: {instance.id})"
+            CommunicationLog.objects.filter(subject__icontains=search_str).delete()
+        except Exception as e:
+            pass
+            
+        instance.delete()
