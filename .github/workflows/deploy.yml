@@ -119,6 +119,7 @@ jobs:
           push: true
           provenance: false
           build-args: |
+            VITE_APP_ENV=${{ github.ref == 'refs/heads/main' && 'production' || 'sandbox' }}
             VITE_API_AUTH_URL=${{ github.ref == 'refs/heads/main' && 'https://api.auth.invitazyon.online/' || 'https://api.auth.sandbox.invitazyon.online/' }}
             VITE_API_INVTZN_URL=${{ github.ref == 'refs/heads/main' && 'https://api.invtzn.invitazyon.online/api/v1/' || 'https://api.invtzn.sandbox.invitazyon.online/api/v1/' }}
           tags: |
