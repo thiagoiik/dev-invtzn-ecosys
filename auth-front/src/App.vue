@@ -3,10 +3,13 @@
   <router-view v-slot="{ Component }">
     <component :is="Component" />
   </router-view>
+  
+  <!-- Telemetría Dinámica para Testers (Solo se activa en Sandbox) -->
+  <RrwebReporter />
 </template>
 
 <script setup>
-// Componente raíz limpio
+import RrwebReporter from './components/RrwebReporter.vue';
 </script>
 
 <style>

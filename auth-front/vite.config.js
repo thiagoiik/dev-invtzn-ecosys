@@ -4,6 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'path' // Necesitas importar 'path'
 
 export default defineConfig({
+  envDir: '../',
   plugins: [vue(), tailwindcss()],
   resolve: {
     alias: {
