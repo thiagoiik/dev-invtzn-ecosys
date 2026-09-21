@@ -1,5 +1,6 @@
-import axios from 'axios';
-import { useAuthStore } from '@/modules/auth/store/auth';
+import axiosModule from 'axios';
+const axios = axiosModule.default || axiosModule;
+// authStore is imported dynamically below
 import { useToast } from "vue-toastification"; 
 
 const authUrl = import.meta.env.VITE_API_AUTH_URL || 'http://api.auth.local/';
@@ -15,8 +16,9 @@ const httpClient = axios.create({
 
 
 // Interceptor de Petición: Inyección de JWT
-httpClient.interceptors.request.use((config) => {
+httpClient.interceptors.request.use(async (config) => {
   // Solución clave: La importación de Pinia se hace por dentro de la función para evitar el error de "Dependencia Circular" al cargar Vue
+  const { useAuthStore } = await import('@/modules/auth/store/auth');
   const authStore = useAuthStore();
   if (authStore.token) {
     // Obtiene el access_token desde Pinia y lo inyecta en los headers para peticiones seguras (Authorization: Bearer)
@@ -35,7 +37,8 @@ httpClient.interceptors.response.use(
       toast.error('Error de red. Verifica tu conexión a internet.');
       return Promise.reject(error);
     }
-
+    
+    const { useAuthStore } = await import('@/modules/auth/store/auth');
     const originalRequest = error.config;
     const authStore = useAuthStore();
     const status = error.response.status;

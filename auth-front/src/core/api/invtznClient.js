@@ -1,4 +1,5 @@
-import axios from 'axios';
+import axiosModule from 'axios';
+const axios = axiosModule.default || axiosModule;
 
 const invtznUrl = import.meta.env.VITE_API_INVTZN_URL || 'http://api.invtzn.local/api/v1/';
 const normalizedInvtznUrl = invtznUrl.endsWith('/') ? invtznUrl : `${invtznUrl}/`;

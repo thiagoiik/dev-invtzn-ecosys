@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { useAuthStore } from '@/modules/auth/store/auth';
+// authStore is imported dynamically below
 import { jwtDecode } from 'jwt-decode';
 
 import authRoutes from '@/modules/auth/router/routes';
@@ -44,6 +44,7 @@ const isTokenValid = (token) => {
 };
 
 router.beforeEach(async (to, from, next) => {
+  const { useAuthStore } = await import('@/modules/auth/store/auth');
   const authStore = useAuthStore();
   const token = authStore.token;
   
