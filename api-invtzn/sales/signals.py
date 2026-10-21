@@ -5,6 +5,7 @@ import logging
 from .models import Order
 from deployments.models import Deployment
 from telemetry.models import SystemLog
+from telemetry.services import record_activity
 from inventory.models import StoreStock
 
 logger = logging.getLogger(__name__)
@@ -46,8 +47,8 @@ def activate_deployment_on_payment(sender, instance, created, **kwargs):
                 deployment.save()
                 print(f"DEBUG: Deployment {deployment.id} activado y actualizado por pago de Orden {instance.id}")
 
-            # Registrar log del cambio de estado del Deployment
-            SystemLog.objects.create(
+            # Registrar log del cambio de estado del Deployment (DB + Loki)
+            record_activity(
                 log_type=SystemLog.LogType.DEPLOYMENT_STATE,
                 message=f"Deployment {deployment.slug} (ID: {deployment.id}) product updated to {deployment.product.name if deployment.product else 'None'} and activated (LIVE, paid).",
                 user_id=instance.user,
@@ -78,7 +79,7 @@ def activate_deployment_on_payment(sender, instance, created, **kwargs):
         if is_stripe:
             log_msg = f"Stripe payment webhook completed for Order #{instance.id}."
 
-        SystemLog.objects.create(
+        record_activity(
             log_type=SystemLog.LogType.PAYMENT_FLOW,
             message=log_msg,
             user_id=instance.user,

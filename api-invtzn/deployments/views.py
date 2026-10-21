@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from .models import Deployment
 from telemetry.models import SystemLog
+from telemetry.services import record_activity
 from .serializers import DeploymentSerializer, SystemLogSerializer
 
 class DeploymentViewSet(viewsets.ModelViewSet):
@@ -586,9 +587,9 @@ class DeploymentViewSet(viewsets.ModelViewSet):
         if deployment.status != Deployment.StatusChoices.DRAFT:
             return Response({'error': 'Solo se pueden enviar a revisión invitaciones en estado Borrador.'}, status=400)
             
-        # Registrar entrada en SystemLog
+        # Registrar entrada en SystemLog (DB) y emitir JSON a Loki
         username_val = user_profile.full_name or user_profile.email or f"User {request.user.id}"
-        SystemLog.objects.create(
+        record_activity(
             log_type=SystemLog.LogType.USER_ACTION,
             message=f"El usuario {username_val} (ID: {request.user.id}) solicitó revisión para el diseño {deployment.slug} (ID: {deployment.id}).",
             user_id=request.user.id,
