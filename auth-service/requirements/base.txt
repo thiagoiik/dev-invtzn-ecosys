@@ -11,3 +11,4 @@ dj-rest-auth[with-social]
 django-allauth
 requests
 django-cors-headers
+python-json-logger>=2.0.7

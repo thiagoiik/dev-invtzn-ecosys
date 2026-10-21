@@ -347,3 +347,24 @@ La versiÃ³n **v0.9.8** empodera a los diseÃ±adores y clientes permitiendo la car
     *   **Control de Desbordamiento (Viewport Height):** ReestructuraciÃ³n de la base estructural a `100dvh` y `height: 100%`. Esto asegura que el Ã¡rea de ediciÃ³n conviva perfectamente con las barras dinÃ¡micas de los navegadores mÃ³viles (Safari/Chrome) sin esconder herramientas vitales al final de la pantalla (aÃ±adiendo tambiÃ©n `padding-bottom` de seguridad).
     *   **Optimizador de Cabecera (Select Redesign):** El selector de componentes se rediseÃ±Ã³ bajo un formato minimalista y dark (`bg-slate-950`) que se integra nativamente en el header del panel de diseÃ±o, permitiendo recuperar espacio vertical valioso.
 
+
+---
+
+## ?? Versión v0.9.9 — Telemetría de Grabación de Sesiones, CI/CD y Estabilización
+
+La versión **v0.9.9** implementa un robusto sistema de observabilidad para capturar errores silenciosos y grabar las sesiones de los usuarios, además de solucionar problemas críticos de despliegue y seguridad entre microservicios:
+
+*   **Sistema de Telemetría (rrweb) y Reportes:**
+    *   Integración de \rweb\ en el frontend (\RrwebReporter.vue\) para grabar en segundo plano todas las interacciones del DOM y capturar eventos de error globales (\ErrorEvent\).
+    *   Nuevo reproductor en el panel administrativo (\TelemetryPlayer.vue\) que utiliza \rweb-player\ cargado dinámicamente para visualizar el paso a paso exacto que llevó a un error sin bloquear el bundle principal.
+*   **Encolado Asíncrono con Celery:**
+    *   Para evitar bloquear el *event loop* del API, los pesados payloads JSON de telemetría son recibidos por \pi-invtzn\ y procesados en segundo plano mediante \save_rrweb_session_task\ en Celery.
+    *   Almacenamiento particionado usando la base de datos secundaria \	elemetry_db\ exclusiva para analíticas y grabaciones.
+*   **Gestión de Notificaciones Cruzadas (Cascada):**
+    *   Generación automática de alertas cruzadas (Notificación al Administrador y al Cliente) al recibir un reporte de fallo.
+    *   Override del \perform_destroy\ en el \SessionRecordingViewSet\ para asegurar la limpieza en cascada de los \CommunicationLog\ (Notificaciones de la UI) al borrar grabaciones.
+*   **Resolución Crítica de Errores de Producción (Fixes):**
+    *   **JWT Padding (403 Forbidden):** Se corrigió una corrupción nativa en \MicroserviceJWTAuthentication\ que inyectaba signos de igual (\=\) extra en los tokens, rompiendo la validación de PyJWT.
+    *   **Variables CI/CD (Renderizado Condicional):** Se expuso \VITE_APP_ENV\ en los \uild-args\ de GitHub Actions para permitir el renderizado condicional del botón de feedback solo en entornos \sandbox\.
+    *   **Pipeline GHCR:** Se mitigó el \ERROR: unknown blob\ en Docker Buildx inyectando \provenance: false\ durante el push de imágenes.
+

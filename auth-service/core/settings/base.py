@@ -34,6 +34,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', # Debe ir ANTES de CommonMiddleware
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'core.middleware.TraceCorrelationMiddleware', # Trazabilidad distribuida
     'django.contrib.sessions.middleware.SessionMiddleware',    
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -122,3 +123,45 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Allauth configuraciones extra 
 ACCOUNT_ADAPTER = 'core.adapters.CustomAccountAdapter'
+
+# ==============================================================================
+# LOGGING CENTRALIZADO Y ESTRUCTURADO (JSON PARA GRAFANA LOKI / PROMTAIL)
+# ==============================================================================
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'correlation_filter': {
+            '()': 'core.middleware.CorrelationLogFilter',
+        },
+    },
+    'formatters': {
+        'json_formatter': {
+            '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
+            'format': '%(asctime)s %(levelname)s %(name)s %(message)s %(trace_id)s %(user_id)s',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'json_formatter',
+            'filters': ['correlation_filter'],
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': os.environ.get('DJANGO_LOG_LEVEL', 'INFO'),
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+    },
+}
