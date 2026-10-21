@@ -23,6 +23,9 @@ class SystemLog(models.Model):
         USER_ACTION = 'USER_ACTION', 'User Action'
         DEPLOYMENT_STATE = 'DEPLOYMENT_STATE', 'Deployment State'
         PAYMENT_FLOW = 'PAYMENT_FLOW', 'Payment Flow'
+        INVENTORY_ACTION = 'INVENTORY_ACTION', 'Inventory Action'
+        PROFILE_UPDATE = 'PROFILE_UPDATE', 'Profile Update'
+        SECURITY_AUDIT = 'SECURITY_AUDIT', 'Security Audit'
 
     log_type = models.CharField(max_length=50, choices=LogType.choices)
     message = models.TextField()
