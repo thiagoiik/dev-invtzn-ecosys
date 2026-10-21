@@ -34,6 +34,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'invtzn_core.middleware.TraceCorrelationMiddleware', # Trazabilidad distribuida
     'corsheaders.middleware.CorsMiddleware', # CORS
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -141,3 +142,53 @@ UNSPLASH_ACCESS_KEY = os.environ.get('UNSPLASH_ACCESS_KEY', 'dummy_unsplash_key_
 
 # Jamendo integration settings
 JAMENDO_CLIENT_ID = os.environ.get('JAMENDO_CLIENT_ID', 'dummy_jamendo_key_for_testing')
+
+# ==============================================================================
+# LOGGING CENTRALIZADO Y ESTRUCTURADO (JSON PARA GRAFANA LOKI / PROMTAIL)
+# ==============================================================================
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+        'correlation_filter': {
+            '()': 'invtzn_core.middleware.CorrelationLogFilter',
+        },
+    },
+    'formatters': {
+        'json_formatter': {
+            '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
+            'format': '%(asctime)s %(levelname)s %(name)s %(message)s %(trace_id)s %(user_id)s',
+        },
+        'standard': {
+            'format': '[%(asctime)s] [%(levelname)s] [%(trace_id)s] %(name)s: %(message)s',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'json_formatter',
+            'filters': ['correlation_filter'],
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': os.environ.get('DJANGO_LOG_LEVEL', 'INFO'),
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
+        'audit': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
