@@ -1,2 +1,4 @@
 -r base.txt
 # Agrega aquí dependencias específicas de producción para api-invtzn
+django-storages[boto3]>=1.14.2
+boto3>=1.34.0

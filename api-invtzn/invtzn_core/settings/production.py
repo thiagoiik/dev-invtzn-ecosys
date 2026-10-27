@@ -59,3 +59,32 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 X_FRAME_OPTIONS = 'DENY'
 SECURE_SSL_REDIRECT = os.environ.get('INVTZN_SECURE_SSL_REDIRECT', 'True') == 'True'
+
+
+# ==============================================================================
+# ALMACENAMIENTO DE ASSETS Y MEDIA EN PRODUCCIÓN (CLOUDFLARE R2 - S3 COMPATIBLE)
+# ==============================================================================
+R2_ACCESS_KEY_ID = os.environ.get('R2_ACCESS_KEY_ID')
+R2_SECRET_ACCESS_KEY = os.environ.get('R2_SECRET_ACCESS_KEY')
+R2_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME', 'invtzn-media-prod')
+R2_ENDPOINT_URL = os.environ.get('R2_ENDPOINT_URL')
+R2_CUSTOM_DOMAIN = os.environ.get('R2_CUSTOM_DOMAIN') # ej. media.invitazyon.online
+
+if R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY and R2_ENDPOINT_URL:
+    AWS_ACCESS_KEY_ID = R2_ACCESS_KEY_ID
+    AWS_SECRET_ACCESS_KEY = R2_SECRET_ACCESS_KEY
+    AWS_STORAGE_BUCKET_NAME = R2_BUCKET_NAME
+    AWS_S3_ENDPOINT_URL = R2_ENDPOINT_URL
+    AWS_S3_CUSTOM_DOMAIN = R2_CUSTOM_DOMAIN
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = False
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
