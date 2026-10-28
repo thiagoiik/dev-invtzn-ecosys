@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UserProfile, WalletLog, CommunicationLog
+from .models import UserProfile, WalletLog, CommunicationLog, SiteReview
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
@@ -19,3 +19,10 @@ class CommunicationLogAdmin(admin.ModelAdmin):
     list_display = ('user', 'channel', 'subject', 'sent_at')
     list_filter = ('channel',)
     search_fields = ('user__remote_auth_id', 'subject')
+
+@admin.register(SiteReview)
+class SiteReviewAdmin(admin.ModelAdmin):
+    list_display = ('reviewer_name', 'rating', 'is_approved', 'created_at')
+    list_filter = ('is_approved', 'rating')
+    list_editable = ('is_approved',)
+    search_fields = ('reviewer_name', 'comment')

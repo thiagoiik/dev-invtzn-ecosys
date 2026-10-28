@@ -1,0 +1,20 @@
+services:
+  auth-front:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/auth-front:${IMAGE_TAG}
+    restart: unless-stopped
+    networks:
+      - red_publica
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
+networks:
+  red_publica:
+    external: true

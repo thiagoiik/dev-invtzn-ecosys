@@ -1,0 +1,11 @@
+Hola {{ user.username }},
+
+Por favor, confirma tu dirección de correo electrónico haciendo clic en el enlace a continuación:
+
+{{ activate_url }}
+
+Si no solicitaste este correo, puedes ignorarlo de forma segura.
+
+Saludos,
+El equipo de Invitazyon
+invitazyon.online

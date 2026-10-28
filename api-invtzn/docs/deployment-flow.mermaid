@@ -1,0 +1,43 @@
+graph TD
+    %% Styling and colors
+    classDef cloud fill:#232F3E,stroke:#FF9900,stroke-width:2px,color:#fff;
+    classDef os fill:#E95420,stroke:#fff,stroke-width:1px,color:#fff;
+    classDef security fill:#D80027,stroke:#fff,stroke-width:1px,color:#fff;
+    classDef docker fill:#2496ED,stroke:#fff,stroke-width:2px,color:#fff;
+    classDef prod fill:#2D3748,stroke:#4A5568,stroke-width:1px,color:#fff;
+    classDef decision fill:#805AD5,stroke:#fff,stroke-width:1px,color:#fff;
+
+    Start([Inicio del Despliegue]) --> ChooseCloud{¿Qué Cloud Usar?}:::decision
+    
+    %% AWS Branch
+    ChooseCloud -- AWS --> AWS_EC2[1.1. Proveer Instancia EC2<br>- Ubuntu 22.04 / 24.04 LTS<br>- Tipo: t3.micro/small]:::cloud
+    AWS_EC2 --> AWS_SG[1.2. Configurar Security Group<br>- Inbound: 22 SSH, 80 HTTP, 443 HTTPS<br>- Outbound: Todo permitido]:::cloud
+    AWS_SG --> AWS_Key[1.3. Generar y Descargar Key Pair .pem]:::cloud
+    
+    %% GCP Branch
+    ChooseCloud -- Google Cloud --> GCP_GCE[2.1. Proveer Instancia VM<br>- Compute Engine<br>- Ubuntu 22.04 / 24.04 LTS]:::cloud
+    GCP_GCE --> GCP_FW[2.2. Configurar Reglas de Red VPC<br>- Habilitar checks: HTTP / HTTPS<br>- Permitir puerto 22 SSH]:::cloud
+    GCP_FW --> GCP_SSH[2.3. Agregar Claves SSH en Metadata del Proyecto]:::cloud
+
+    %% Common OS Initialization
+    AWS_Key --> Conn[3. Conexión SSH al Servidor<br>ssh -i clave.pem usuario@ip]:::os
+    GCP_SSH --> Conn
+    
+    Conn --> OS_Init[4. Inicialización del OS<br>sudo apt update && sudo apt upgrade -y]:::os
+    OS_Init --> OS_Hardening[5. Hardening de Seguridad<br>- Crear usuario no-root 'deployer'<br>- Asignar permisos sudo<br>- Configurar UFW Firewall<br>- Deshabilitar login root por SSH<br>- Instalar fail2ban]:::security
+
+    %% Docker Setup
+    OS_Hardening --> Dock_Clean[6. Remover versiones antiguas de Docker<br>sudo apt-get remove docker docker.io...]:::docker
+    Dock_Clean --> Dock_GPG[7. Instalar Llaves GPG y Repositorio Oficial]:::docker
+    Dock_GPG --> Dock_Install[8. Instalar Docker Engine, CLI y Compose<br>docker-ce docker-compose-plugin]:::docker
+    Dock_Install --> Dock_Group[9. Configurar Grupo Docker para el Usuario<br>sudo usermod -aG docker deployer]:::docker
+    Dock_Group --> Dock_Verify[10. Verificar Instalación<br>docker run hello-world]:::docker
+
+    %% Production Ready Configurations
+    Dock_Verify --> Prod_Dir[11. Estructura de Directorios<br>Crear /var/www/ecosys-api<br>Asignar dueño a deployer]:::prod
+    Prod_Dir --> Prod_Logs[12. Rotación de Logs de Docker<br>Configurar /etc/docker/daemon.json<br>max-size: 10m, max-file: 3]:::prod
+    Prod_Logs --> Prod_Env[13. Variables de Entorno<br>Crear archivo .env en producción]:::prod
+    Prod_Env --> Prod_Git[14. Git Deploy Keys<br>Generar clave SSH e importar en GitHub]:::prod
+    Prod_Git --> Prod_Compose[15. Configurar Docker Compose<br>- restart: unless-stopped<br>- docker compose up -d]:::prod
+    Prod_Compose --> Prod_Proxy[16. Servidor Web y Certificados SSL<br>- Instalar Nginx / Caddy<br>- Certbot para HTTPS automático]:::prod
+    Prod_Proxy --> End([Servidor en Producción Listo y Seguro])

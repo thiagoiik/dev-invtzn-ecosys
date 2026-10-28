@@ -6,5 +6,13 @@ export const engineService = {
   // pero nuestro backend ya permite peticiones públicas a este endpoint específico.
   fetchDeploymentBySlug(slug) {
     return invtznClient.get(`deployments/slug/${slug}/`);
+  },
+  
+  submitRSVP(slug, data) {
+    return invtznClient.post(`deployments/slug/${slug}/rsvp/`, data);
+  },
+
+  submitMetric(slug, metricType = 'VISIT') {
+    return invtznClient.post(`deployments/slug/${slug}/metric/`, { metric_type: metricType });
   }
 };

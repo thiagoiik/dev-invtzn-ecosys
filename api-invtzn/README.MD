@@ -84,3 +84,17 @@ Todo endpoint protegido validará la existencia del header de autorización:
 Authorization: Bearer <TU_JWT_TOKEN>
 ```
 La lógica de validación se encuentra en `invtzn_core/authentication.py`, la cual decodifica el JWT, verifica la firma utilizando el `SECRET_KEY` compartido, e inyecta dinámicamente un usuario autenticado a la petición.
+
+---
+
+## 🛠️ Buenas Prácticas de Producción y Seguridad
+
+Este servicio implementa directivas recomendadas de endurecimiento (hardening) para producción:
+
+### 1. Inmutabilidad y usuario sin home (`--no-create-home`)
+* **Medida:** El usuario de sistema `django-user` se crea en el Dockerfile con la opción `--no-create-home`.
+* **Propósito:** Mantener el sistema de archivos del contenedor lo más libre de directorios de escritura innecesarios y protegerlo bajo el principio de menor privilegio.
+
+### 2. Desactivación del Socket de Gunicorn (`--no-control-socket`)
+* **Medida:** Se pasa la opción `--no-control-socket` en la ejecución de Gunicorn en todos los entornos.
+* **Propósito:** Previene que Gunicorn intente crear sockets Unix en el home inexistente del usuario. Al correr dentro de Docker, la orquestación y el monitoreo de los contenedores se resuelven en la capa superior (Docker Compose/Kubernetes), por lo que el socket de control de Gunicorn es innecesario.

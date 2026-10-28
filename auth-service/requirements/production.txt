@@ -1,0 +1,2 @@
+-r base.txt
+# Agrega aquí paquetes específicos de producción si los requieres (ej. sentry-sdk)

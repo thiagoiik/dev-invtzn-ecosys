@@ -1,0 +1,94 @@
+# =========================================================================
+# CONFIGURACIÓN DE PROXY REVERSO NGINX Y CERTBOT DINÁMICO POR ENTORNO
+# =========================================================================
+# Las variables __DOMAIN_FRONT__, __DOMAIN_AUTH_API__ y __DOMAIN_INVTZN_API__
+# se reemplazan dinámicamente durante el despliegue a partir de las variables del .env.
+
+# -------------------------------------------------------------------------
+# 1. FRONTEND: __DOMAIN_FRONT__
+# -------------------------------------------------------------------------
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name __DOMAIN_FRONT__;
+
+    # Certificados Let's Encrypt (Inyectados y renovados dinámicamente)
+    ssl_certificate /etc/letsencrypt/live/__DOMAIN_FRONT__/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/__DOMAIN_FRONT__/privkey.pem;
+
+    # Protocolos y Cifrados Recomendados
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers 'ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384';
+
+    # Configuración de Logs
+    access_log /var/log/nginx/front_access.log;
+    error_log /var/log/nginx/front_error.log warn;
+
+    location / {
+        proxy_pass http://auth-front:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket support
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+
+# -------------------------------------------------------------------------
+# 2. BACKEND AUTH API: __DOMAIN_AUTH_API__
+# -------------------------------------------------------------------------
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name __DOMAIN_AUTH_API__;
+
+    ssl_certificate /etc/letsencrypt/live/__DOMAIN_AUTH_API__/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/__DOMAIN_AUTH_API__/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+
+    access_log /var/log/nginx/auth_api_access.log;
+    error_log /var/log/nginx/auth_api_error.log warn;
+
+    location / {
+        proxy_pass http://auth-service-api:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Correlation-ID $request_id;
+    }
+}
+
+# -------------------------------------------------------------------------
+# 3. BACKEND NEGOCIO API: __DOMAIN_INVTZN_API__
+# -------------------------------------------------------------------------
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name __DOMAIN_INVTZN_API__;
+
+    ssl_certificate /etc/letsencrypt/live/__DOMAIN_INVTZN_API__/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/__DOMAIN_INVTZN_API__/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+
+    access_log /var/log/nginx/invtzn_api_access.log;
+    error_log /var/log/nginx/invtzn_api_error.log warn;
+
+    location / {
+        proxy_pass http://invtzn-service-api:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Correlation-ID $request_id;
+    }
+}

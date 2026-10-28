@@ -1,128 +1,405 @@
 <template>
-  <div class="workspace-layout">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="logo">ECOSYS ADMIN</div>
-      <nav class="nav-menu">
-        <router-link to="/workspace/crm" class="nav-item">👥 CRM & Clientes</router-link>
-        <router-link to="/workspace/designs" class="nav-item">🎨 Gestión de Diseños</router-link>
-        <router-link to="/workspace/pos" class="nav-item">🛒 POS / Ventas</router-link>
-        <router-link to="/dashboard" class="nav-item back-btn">⬅️ Volver a B2C</router-link>
+  <div class="flex h-screen bg-slate-100 overflow-hidden font-sans">
+    
+    <!-- Backdrop Overlay for Mobile Drawer -->
+    <div 
+      v-if="isMobile && mobileMenuOpen" 
+      class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-30 transition-opacity duration-300"
+      @click="mobileMenuOpen = false"
+    ></div>
+
+    <!-- Aside Sidebar (Adaptive) -->
+    <aside 
+      :class="[
+        isMobile 
+          ? 'fixed top-0 bottom-0 left-0 z-40 w-64 transform transition-transform duration-300 ease-in-out ' + (mobileMenuOpen ? 'translate-x-0' : '-translate-x-full')
+          : isTablet 
+            ? 'w-20' 
+            : 'w-64',
+        'bg-slate-900 text-white flex flex-col shadow-2xl transition-all duration-300'
+      ]"
+    >
+      <!-- Brand Logo / Header -->
+      <div class="p-6 border-b border-slate-800 text-center flex items-center justify-center">
+        <h1 
+          class="font-black tracking-widest text-slate-100 transition-all duration-300"
+          :class="isTablet && !isMobile ? 'text-lg' : 'text-xl'"
+        >
+          {{ isTablet && !isMobile ? 'ECO' : 'ECOSYS B2B' }}
+        </h1>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="flex-1 py-6 flex flex-col gap-2 px-4 overflow-y-auto">
+        <template v-if="userRole">
+          
+          <!-- Link: CRM & Clientes -->
+          <template v-if="['ADMIN', 'FRANCHISEE', 'MANAGER', 'VENDOR'].includes(userRole)">
+            <router-link 
+              to="/workspace/crm" 
+              class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
+              :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
+              :title="isTablet && !isMobile ? 'CRM & Clientes' : ''"
+              @click="isMobile ? mobileMenuOpen = false : null"
+            >
+              <span>👥</span>
+              <span v-if="!isTablet || isMobile" class="text-sm">CRM & Clientes</span>
+            </router-link>
+          </template>
+          
+          <!-- Link: Gestión de Diseños -->
+          <template v-if="['ADMIN', 'FRANCHISEE', 'DESIGNER', 'VENDOR'].includes(userRole)">
+            <router-link 
+              to="/workspace/designs" 
+              class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
+              :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
+              :title="isTablet && !isMobile ? 'Gestión de Diseños' : ''"
+              @click="isMobile ? mobileMenuOpen = false : null"
+            >
+              <span>🎨</span>
+              <span v-if="!isTablet || isMobile" class="text-sm">Gestión de Diseños</span>
+            </router-link>
+          </template>
+
+          <!-- Link: POS / Ventas -->
+          <template v-if="['ADMIN', 'FRANCHISEE', 'MANAGER', 'VENDOR'].includes(userRole)">
+            <router-link 
+              to="/workspace/pos" 
+              class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
+              :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
+              :title="isTablet && !isMobile ? 'POS / Ventas' : ''"
+              @click="isMobile ? mobileMenuOpen = false : null"
+            >
+              <span>🛒</span>
+              <span v-if="!isTablet || isMobile" class="text-sm">POS / Ventas</span>
+            </router-link>
+          </template>
+
+          <!-- Link: Conciliación -->
+          <template v-if="['ADMIN', 'FRANCHISEE', 'MANAGER'].includes(userRole)">
+            <router-link 
+              to="/workspace/finance" 
+              class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
+              :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
+              :title="isTablet && !isMobile ? 'Conciliación' : ''"
+              @click="isMobile ? mobileMenuOpen = false : null"
+            >
+              <span>💰</span>
+              <span v-if="!isTablet || isMobile" class="text-sm">Conciliación</span>
+            </router-link>
+          </template>
+          
+          <!-- Link: Moderación de Reseñas -->
+          <template v-if="['ADMIN', 'FRANCHISEE'].includes(userRole)">
+            <router-link 
+              to="/workspace/reviews" 
+              class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
+              :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
+              :title="isTablet && !isMobile ? 'Moderación de Reseñas' : ''"
+              @click="isMobile ? mobileMenuOpen = false : null"
+            >
+              <span>💬</span>
+              <span v-if="!isTablet || isMobile" class="text-sm">Reseñas</span>
+            </router-link>
+          </template>
+          
+          <!-- Configuración Sección (ADMIN) -->
+          <div v-if="userRole === 'ADMIN'" class="mt-4 pt-4 border-t border-slate-800 space-y-2">
+            <p 
+              v-if="!isTablet || isMobile" 
+              class="px-4 text-[10px] font-black text-slate-500 uppercase tracking-widest text-left"
+            >
+              Configuración
+            </p>
+            <router-link 
+              to="/workspace/stores" 
+              class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
+              :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
+              :title="isTablet && !isMobile ? 'Sucursales' : ''"
+              @click="isMobile ? mobileMenuOpen = false : null"
+            >
+              <span>🏬</span>
+              <span v-if="!isTablet || isMobile" class="text-sm">Sucursales</span>
+            </router-link>
+            <router-link 
+              to="/workspace/products" 
+              class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
+              :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
+              :title="isTablet && !isMobile ? 'Productos' : ''"
+              @click="isMobile ? mobileMenuOpen = false : null"
+            >
+              <span>📦</span>
+              <span v-if="!isTablet || isMobile" class="text-sm">Productos</span>
+            </router-link>
+            <router-link 
+              to="/workspace/coupons" 
+              class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
+              :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
+              :title="isTablet && !isMobile ? 'Cupones' : ''"
+              @click="isMobile ? mobileMenuOpen = false : null"
+            >
+              <span>🎫</span>
+              <span v-if="!isTablet || isMobile" class="text-sm">Cupones</span>
+            </router-link>
+            <router-link 
+              to="/workspace/tools" 
+              class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
+              :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
+              :title="isTablet && !isMobile ? 'Herramientas Dev' : ''"
+              @click="isMobile ? mobileMenuOpen = false : null"
+            >
+              <span>🛠️</span>
+              <span v-if="!isTablet || isMobile" class="text-sm">Herramientas Dev</span>
+            </router-link>
+            <router-link 
+              to="/workspace/telemetry" 
+              class="flex items-center rounded-lg text-slate-400 font-medium transition-all hover:bg-slate-800 hover:text-white ui-active-link"
+              :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
+              :title="isTablet && !isMobile ? 'Telemetría / Bugs' : ''"
+              @click="isMobile ? mobileMenuOpen = false : null"
+            >
+              <span>🐛</span>
+              <span v-if="!isTablet || isMobile" class="text-sm">Telemetría / Bugs</span>
+            </router-link>
+          </div>
+        </template>
+        
+        <div v-else class="px-4 py-3 animate-pulse bg-slate-800/50 rounded-lg">
+          <p v-if="!isTablet || isMobile" class="text-[10px] text-slate-500 font-black uppercase">Cargando Menú...</p>
+        </div>
+
+        <div class="mt-auto">
+          <router-link 
+            to="/dashboard" 
+            class="flex items-center rounded-lg text-error hover:bg-error/10 font-medium transition-all"
+            :class="isTablet && !isMobile ? 'justify-center p-3 text-xl' : 'px-4 py-3 gap-3'"
+            :title="isTablet && !isMobile ? 'Volver a B2C' : ''"
+          >
+            <span>⬅️</span>
+            <span v-if="!isTablet || isMobile" class="text-sm">Volver a B2C</span>
+          </router-link>
+        </div>
       </nav>
     </aside>
 
-    <!-- Main Content -->
-    <main class="main-content">
-      <header class="topbar">
-        <h2>Panel de Administración</h2>
-        <div class="user-info">
-          Staff ID: {{ authStore.user?.id || '...' }}
+    <!-- Main Content Frame -->
+    <main class="flex-grow flex flex-col overflow-hidden">
+      <!-- Header -->
+      <header class="h-20 bg-white shadow-sm flex items-center justify-between px-6 z-10">
+        <div class="flex items-center gap-4">
+          <!-- Hamburger Button for Mobile -->
+          <button 
+            v-if="isMobile" 
+            @click="mobileMenuOpen = true" 
+            class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          
+          <h2 
+            class="font-bold text-slate-800 transition-all duration-300"
+            :class="isMobile ? 'text-lg' : 'text-2xl'"
+          >
+            Panel de Administración
+          </h2>
+        </div>
+        
+        <!-- User Profile Dropdown -->
+        <div class="flex items-center gap-6">
+          <!-- Campana de Notificaciones de Sistema -->
+          <div v-if="userRole === 'ADMIN'" class="dropdown dropdown-end">
+            <label tabindex="0" class="btn btn-ghost btn-circle relative bg-slate-50 hover:bg-slate-100 transition-colors">
+              <span class="text-xl">🔔</span>
+              <span v-if="notifications.length > 0" class="badge badge-sm badge-primary absolute top-1 right-1 w-2.5 h-2.5 p-0 rounded-full border-none ring-2 ring-white animate-pulse"></span>
+            </label>
+            <div tabindex="0" class="mt-3 z-[50] shadow-2xl dropdown-content bg-white rounded-xl w-80 sm:w-96 border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-top-2">
+              <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
+                <span class="font-black tracking-wide text-xs uppercase">Notificaciones del Sistema</span>
+                <span class="badge badge-sm font-bold bg-amber-500 text-slate-950 border-none">{{ notifications.length }} pendientes</span>
+              </div>
+              <ul class="max-h-80 overflow-y-auto divide-y divide-slate-50 py-1">
+                <li v-if="notifications.length === 0" class="p-6 text-center text-slate-400 font-medium italic text-xs">
+                  Sin notificaciones pendientes.
+                </li>
+                <li 
+                  v-for="notif in notifications" 
+                  :key="notif.id" 
+                  class="hover:bg-slate-50 transition-colors"
+                >
+                  <a 
+                    @click="handleNotificationClick(notif)" 
+                    class="block p-4 cursor-pointer text-left space-y-1"
+                  >
+                    <p class="text-xs text-slate-700 font-semibold leading-relaxed">{{ notif.subject }}</p>
+                    <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{{ formatTime(notif.sent_at) }}</p>
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 cursor-pointer group" @click="toggleMenu">
+            <div class="text-right hidden sm:block">
+              <p class="font-bold text-slate-800 group-hover:text-primary transition-colors">{{ authStore.user?.username || 'Staff' }}</p>
+              <p class="text-[10px] text-slate-400 font-black uppercase tracking-widest">{{ userRole }}</p>
+            </div>
+            
+            <div class="dropdown dropdown-end">
+              <label tabindex="0" class="btn btn-ghost btn-circle avatar border-2 border-slate-100 hover:border-primary transition-all">
+                <div class="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-black uppercase tracking-tighter">
+                  {{ authStore.user?.username?.charAt(0) || 'S' }}
+                </div>
+              </label>
+              <ul tabindex="0" class="mt-3 z-[50] p-2 shadow-2xl menu menu-sm dropdown-content bg-white rounded-xl w-52 border border-slate-100 animate-in fade-in slide-in-from-top-2">
+                <li class="menu-title px-4 py-2 text-[10px] font-black uppercase text-slate-400 tracking-widest border-b border-slate-50 mb-1">Mi Cuenta</li>
+                <li><router-link to="/profile" class="py-3 font-bold text-slate-700 hover:bg-slate-50">👤 Mi Perfil</router-link></li>
+                <li><router-link to="/dashboard" class="py-3 font-bold text-slate-700 hover:bg-slate-50">🏠 Inicio B2C</router-link></li>
+                <li class="mt-2 border-t border-slate-50 pt-2"><button @click="handleLogout" class="py-3 font-bold text-error hover:bg-error/5">🚪 Cerrar Sesión</button></li>
+              </ul>
+            </div>
+          </div>
         </div>
       </header>
       
-      <div class="content-area">
+      <!-- Content Area -->
+      <div 
+        :class="[
+          isMobile ? 'pb-24 p-4' : 'p-8',
+          'flex-grow overflow-y-auto bg-slate-50'
+        ]"
+      >
         <router-view></router-view>
       </div>
+
+      <!-- Bottom Nav Bar for Mobile -->
+      <nav 
+        v-if="isMobile" 
+        class="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-slate-200 z-30 flex justify-around items-center shadow-lg"
+      >
+        <!-- POS link -->
+        <router-link 
+          v-if="userRole && ['ADMIN', 'FRANCHISEE', 'MANAGER', 'VENDOR'].includes(userRole)"
+          to="/workspace/pos" 
+          class="flex flex-col items-center justify-center text-slate-400 transition-colors"
+          active-class="text-primary"
+        >
+          <span class="text-xl">🛒</span>
+          <span class="text-[10px] font-bold mt-0.5">POS</span>
+        </router-link>
+
+        <!-- CRM link -->
+        <router-link 
+          v-if="userRole && ['ADMIN', 'FRANCHISEE', 'MANAGER', 'VENDOR'].includes(userRole)"
+          to="/workspace/crm" 
+          class="flex flex-col items-center justify-center text-slate-400 transition-colors"
+          active-class="text-primary"
+        >
+          <span class="text-xl">👥</span>
+          <span class="text-[10px] font-bold mt-0.5">CRM</span>
+        </router-link>
+
+        <!-- Designs link -->
+        <router-link 
+          v-if="userRole && ['ADMIN', 'FRANCHISEE', 'DESIGNER', 'VENDOR'].includes(userRole)"
+          to="/workspace/designs" 
+          class="flex flex-col items-center justify-center text-slate-400 transition-colors"
+          active-class="text-primary"
+        >
+          <span class="text-xl">🎨</span>
+          <span class="text-[10px] font-bold mt-0.5">Diseños</span>
+        </router-link>
+
+        <!-- Menu shortcut to open drawer -->
+        <button 
+          @click="mobileMenuOpen = true" 
+          class="flex flex-col items-center justify-center text-slate-400 transition-colors"
+        >
+          <span class="text-xl">🍔</span>
+          <span class="text-[10px] font-bold mt-0.5">Menú</span>
+        </button>
+      </nav>
+
     </main>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toastification';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useAuthStore } from '@/modules/auth/store/auth';
+import { useDevice } from '@/composables/useDevice';
+import { useRouter } from 'vue-router';
 import { profileService } from '@/modules/dashboard/services/profileService';
 
 const authStore = useAuthStore();
 const router = useRouter();
-const toast = useToast();
+const userRole = computed(() => authStore.role);
+const menuOpen = ref(false);
+const mobileMenuOpen = ref(false);
+const notifications = ref([]);
+let intervalId = null;
 
-onMounted(async () => {
+const { isMobile, isTablet, isDesktop } = useDevice();
+
+const loadNotifications = async () => {
+  if (userRole.value !== 'ADMIN') return;
   try {
-    const res = await profileService.fetchMyProfile();
-    // Si el usuario es un CLIENTE normal, lo sacamos del Workspace
-    if (res.data.custom_role === 'CLIENT') {
-      toast.error('Acceso denegado. Área exclusiva para personal B2B.');
-      router.push('/dashboard');
-    }
+    const res = await profileService.fetchNotifications();
+    notifications.value = res.data || [];
   } catch (error) {
-    // Si hay error de red o no existe el perfil aún, por seguridad lo sacamos
-    toast.error('Error de autenticación B2B.');
-    router.push('/dashboard');
+    console.error('Error fetching notifications:', error);
+  }
+};
+
+const formatTime = (timeStr) => {
+  if (!timeStr) return '';
+  const date = new Date(timeStr);
+  return date.toLocaleString('es-ES', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
+const handleNotificationClick = (notif) => {
+  if (notif.subject.includes('Grabación') || notif.subject.includes('Sandbox')) {
+    router.push('/workspace/telemetry');
+    return;
+  }
+  const match = notif.subject.match(/ID:\s*(\d+)/);
+  if (match) {
+    const deploymentId = match[1];
+    router.push(`/builder/${deploymentId}`);
+  }
+};
+
+const toggleMenu = () => {
+  menuOpen.value = !menuOpen.value;
+};
+const handleLogout = () => {
+  authStore.logout();
+  router.push('/login');
+};
+
+onMounted(() => {
+  loadNotifications();
+  if (userRole.value === 'ADMIN') {
+    intervalId = setInterval(loadNotifications, 30000);
+  }
+});
+
+onBeforeUnmount(() => {
+  if (intervalId) {
+    clearInterval(intervalId);
   }
 });
 </script>
 
 <style scoped>
-.workspace-layout {
-  display: flex;
-  height: 100vh;
-  background-color: #f1f5f9;
-}
-.sidebar {
-  width: 250px;
-  background: #0f172a;
+.ui-active-link.router-link-active {
+  background-color: #1e293b; /* bg-slate-800 */
   color: white;
-  display: flex;
-  flex-direction: column;
-}
-.logo {
-  font-size: 1.5rem;
-  font-weight: 800;
-  padding: 1.5rem;
-  border-bottom: 1px solid #1e293b;
-  text-align: center;
-  letter-spacing: 2px;
-}
-.nav-menu {
-  display: flex;
-  flex-direction: column;
-  padding: 1rem 0;
-}
-.nav-item {
-  color: #94a3b8;
-  text-decoration: none;
-  padding: 1rem 1.5rem;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-.nav-item:hover, .nav-item.router-link-active {
-  background: #1e293b;
-  color: white;
-  border-left: 4px solid #3b82f6;
-}
-.back-btn {
-  margin-top: auto;
-  color: #ef4444;
-}
-.back-btn:hover {
-  background: transparent;
-  color: #f87171;
-  border-left: none;
-}
-.main-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-.topbar {
-  background: white;
-  height: 70px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 2rem;
-  border-bottom: 1px solid #e2e8f0;
-}
-.user-info {
-  font-weight: bold;
-  color: #475569;
-}
-.content-area {
-  flex: 1;
-  padding: 2rem;
-  overflow-y: auto;
+  border-left: 4px solid #3b82f6; /* blue-500 */
 }
 </style>

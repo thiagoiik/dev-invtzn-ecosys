@@ -33,6 +33,11 @@ schema_view = get_schema_view(
    permission_classes=(permissions.AllowAny,),
 )
 
+# Personalización del Admin de Django (Header y Títulos)
+admin.site.site_header = "Invitazyon.online Administration"
+admin.site.site_title = "Invitazyon.online Admin"
+admin.site.index_title = "Core Business Control Panel"
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     
@@ -42,9 +47,17 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
     # Aquí conectamos nuestra API versión 1
+    path('api/v1/', include('integrations.urls')),
     path('api/v1/', include('profiles.urls')),
     path('api/v1/', include('events.urls')),
     path('api/v1/', include('inventory.urls')),
     path('api/v1/', include('deployments.urls')),
     path('api/v1/', include('sales.urls')),
+    path('api/v1/telemetry/', include('telemetry.urls')),
 ]
+
+from django.conf import settings
+from django.conf.urls.static import static
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -1,0 +1,17 @@
+services:
+  landing-estatica:
+    image: nginx:alpine
+    restart: unless-stopped
+    volumes:
+      - ./src:/usr/share/nginx/html:ro
+    networks:
+      - red_publica
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 128M
+
+networks:
+  red_publica:
+    external: true

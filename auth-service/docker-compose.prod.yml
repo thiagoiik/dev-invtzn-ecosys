@@ -1,0 +1,30 @@
+services:
+  auth-service-api:
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/auth-service-api:${IMAGE_TAG}
+    restart: unless-stopped
+    command: gunicorn core.wsgi:application --bind 0.0.0.0:8000 --no-control-socket
+    env_file:
+      - ../.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE_AUTH:-core.settings.production}
+    networks:
+      - red_publica
+      - red_datos
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          memory: 128M
+
+networks:
+  red_publica:
+    external: true
+  red_datos:
+    external: true

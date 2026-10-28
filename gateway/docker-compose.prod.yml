@@ -1,0 +1,32 @@
+services:
+  proxy:
+    image: 'jonasal/nginx-certbot:4'
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      - CERTBOT_EMAIL=${CERTBOT_EMAIL}
+      - DOMAIN_FRONT=${DOMAIN_FRONT}
+      - DOMAIN_AUTH_API=${DOMAIN_AUTH_API}
+      - DOMAIN_INVTZN_API=${DOMAIN_INVTZN_API}
+    volumes:
+      - ./letsencrypt:/etc/letsencrypt
+      - ./user_conf.d:/etc/nginx/user_conf.d:ro
+      - ./dhparam:/etc/nginx/dhparam
+    networks:
+      - red_publica
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+
+networks:
+  red_publica:
+    external: true

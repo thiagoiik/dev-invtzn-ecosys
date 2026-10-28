@@ -17,12 +17,6 @@ class MicroserviceJWTAuthentication(authentication.BaseAuthentication):
             
             token = header_parts[1].strip()
 
-            # 2. FIX DE PADDING: Asegurar que el token tenga longitud múltiplo de 4
-            # Esto corrige el error 'Invalid crypto padding' si el token viene mocho
-            missing_padding = len(token) % 4
-            if missing_padding:
-                token += '=' * (4 - missing_padding)
-
             # Agrega esto justo antes del jwt.decode
             prefix_key = str(settings.SECRET_KEY)[:10]
             print(f"--- COMPARACIÓN DE SEGURIDAD ---")
@@ -39,6 +33,7 @@ class MicroserviceJWTAuthentication(authentication.BaseAuthentication):
 
             # 4. Extraer el User ID 8
             user_id = payload.get('user_id') or payload.get('id')
+            print(f"DEBUG AUTH: Authenticated User ID {user_id}")
             if not user_id:
                 raise exceptions.AuthenticationFailed('El token no tiene ID de usuario.')
 

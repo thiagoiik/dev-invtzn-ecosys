@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { useAuthStore } from '@/modules/auth/store/auth';
+// authStore is imported dynamically below
 import { jwtDecode } from 'jwt-decode';
 
 import authRoutes from '@/modules/auth/router/routes';
@@ -13,6 +13,11 @@ import builderRoutes from '@/modules/builder/router/routes';
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: '/',
+      name: 'home',
+      component: () => import('@/modules/ecommerce/views/HomeView.vue')
+    },
     ...authRoutes,
     ...dashboardRoutes,
     ...eventsRoutes,
@@ -38,7 +43,8 @@ const isTokenValid = (token) => {
   } catch { return false; }
 };
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
+  const { useAuthStore } = await import('@/modules/auth/store/auth');
   const authStore = useAuthStore();
   const token = authStore.token;
   
@@ -47,6 +53,29 @@ router.beforeEach((to, from, next) => {
   // 2. Navigation Guards
   if (to.meta.requiresAuth) {
     if (isAuthenticated) {
+      // Si la ruta requiere rol y no lo tenemos en el store, intentamos cargarlo
+      if (to.meta.requiresRole && !authStore.role) {
+        try {
+          await authStore.fetchUser();
+        } catch (error) {
+          authStore.logout();
+          next({ name: 'login' });
+          return;
+        }
+      }
+
+      // Validar rol si está especificado
+      if (to.meta.requiresRole) {
+        const allowedRoles = Array.isArray(to.meta.requiresRole)
+          ? to.meta.requiresRole
+          : [to.meta.requiresRole];
+
+        if (!authStore.role || !allowedRoles.includes(authStore.role)) {
+          next({ name: 'dashboard' });
+          return;
+        }
+      }
+      
       next(); 
     } else {
       authStore.logout(); 

@@ -1,19 +1,56 @@
 services:
   invtzn-service-api:
-    build: .  # Requiere que tengas tu Dockerfile aquí
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - ENV=dev
     restart: unless-stopped
     volumes:
       - .:/app
-    command: gunicorn invtzn_core.wsgi:application --bind 0.0.0.0:8000
-    
+      - invtzn_media:/app/media
+    command: gunicorn invtzn_core.wsgi:application --bind 0.0.0.0:8000 --no-control-socket
+    env_file:
+      - ../.env
     environment:
-      - DATABASE_URL=postgres://api_invtzn_user:invtzn-api-password-secure@db_central:5432/api_invtzn_db
+      - DJANGO_SETTINGS_MODULE=invtzn_core.settings.dev
     networks:
-      - red_publica # Para que el Proxy lo vea
-      - red_datos   # Para que pueda hablar con la Base de Datos
+      - red_publica
+      - red_datos
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    networks:
+      - red_datos
+
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - ENV=dev
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      - invtzn_media:/app/media
+    command: celery -A invtzn_core worker -l info
+    env_file:
+      - ../.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=invtzn_core.settings.dev
+    networks:
+      - red_datos
+    depends_on:
+      - redis
 
 networks:
   red_publica:
     external: true
   red_datos:
     external: true
+
+volumes:
+  invtzn_media:

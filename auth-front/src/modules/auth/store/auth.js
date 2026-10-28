@@ -6,6 +6,7 @@ export const useAuthStore = defineStore('auth', {
     user: null,
     token: null,
     refreshToken: null,
+    role: null,
   }),
 
   persist: true,
@@ -25,6 +26,15 @@ export const useAuthStore = defineStore('auth', {
     async fetchUser() {
       const response = await authService.getUserDetails();
       this.user = response.data;
+      
+      // Sincronizar el nombre con api-invtzn para que el CRM lo reconozca
+      try {
+        const { profileService } = await import('@/modules/dashboard/services/profileService');
+        const syncResponse = await profileService.syncProfile({ full_name: this.user.username });
+        this.role = syncResponse.data.custom_role;
+      } catch (error) {
+        console.warn("No se pudo sincronizar el perfil con api-invtzn", error);
+      }
     },
 
     // CAMBIO 5: Se elimina la lógica de llamar a authService.tokenRefresh()

@@ -4,24 +4,34 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from .models import Deployment
-from .serializers import DeploymentSerializer
+from telemetry.models import SystemLog
+from telemetry.services import record_activity
+from .serializers import DeploymentSerializer, SystemLogSerializer
 
 class DeploymentViewSet(viewsets.ModelViewSet):
     serializer_class = DeploymentSerializer
-    permission_classes = [IsAuthenticated]
+    
+    permission_classes = [AllowAny]
+    
+    def get_permissions(self):
+        if self.action in ['create', 'public_by_slug', 'public_rsvp_by_slug', 'public_metric_by_slug', 'open_graph']:
+            return [AllowAny()]
+        return [IsAuthenticated()]
 
     def get_queryset(self):
-        # Permitir que ADMIN, VENDOR y DESIGNER vean todas las invitaciones
         from profiles.models import UserProfile
+        from django.db import models
         try:
             profile = UserProfile.objects.get(remote_auth_id=self.request.user.id)
-            if profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR, UserProfile.Role.DESIGNER]:
-                return Deployment.objects.all()
+            if profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]:
+                return Deployment.objects.all().order_by('-created_at')
+            if profile.custom_role == UserProfile.Role.VENDOR:
+                return Deployment.objects.filter(models.Q(user=self.request.user.id) | models.Q(vendor_id=self.request.user.id)).order_by('-created_at')
         except Exception:
             pass
             
         # Usuarios normales solo ven las suyas
-        return Deployment.objects.filter(user=self.request.user.id)
+        return Deployment.objects.filter(user=self.request.user.id).order_by('-created_at')
 
     def check_object_permissions(self, request, obj):
         super().check_object_permissions(request, obj)
@@ -48,15 +58,712 @@ class DeploymentViewSet(viewsets.ModelViewSet):
         raise PermissionDenied("No tienes permisos de diseñador para modificar esta invitación.")
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user.id)
+        from profiles.models import UserProfile
+        user_id = self.request.user.id if self.request.user.is_authenticated else None
+        
+        # Si es anónimo, forzamos DRAFT y is_paid=False
+        if not user_id:
+            serializer.save(
+                user=None, 
+                status=Deployment.StatusChoices.DRAFT,
+                is_paid=False
+            )
+            return
+
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=user_id)
+            if profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.VENDOR] and 'user' in self.request.data:
+                serializer.save(vendor_id=user_id)
+                return
+        except Exception:
+            pass
+            
+        serializer.save(user=user_id)
 
     @action(detail=False, methods=['get'], permission_classes=[AllowAny], url_path='slug/(?P<slug>[^/.]+)')
     def public_by_slug(self, request, slug=None):
         deployment = get_object_or_404(Deployment, slug=slug)
         # Solo devolvemos datos necesarios para el engine (no datos sensibles del usuario)
         return Response({
+            'id': deployment.id,
             'status': deployment.status,
             'custom_data': deployment.custom_data,
             'slug': deployment.slug,
-            'product_type': deployment.product.product_type
+            'product_type': deployment.product.product_type,
+            'tier_level': deployment.product.tier_level,
+            'product_id': deployment.product.id,
+            'user_id': deployment.user
         })
+
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='slug/(?P<slug>[^/.]+)/rsvp')
+    def public_rsvp_by_slug(self, request, slug=None):
+        deployment = get_object_or_404(Deployment, slug=slug)
+        
+        full_name = request.data.get('full_name')
+        attending = request.data.get('attending')
+        
+        if not full_name:
+            return Response({'error': 'El nombre completo es requerido'}, status=400)
+            
+        # Convert attending to boolean if it's a string
+        is_attending = True
+        if str(attending).lower() in ['false', 'no', '0']:
+            is_attending = False
+
+        companions_count = int(request.data.get('companions_count', 0))
+        menu_selection = request.data.get('menu_selection', '')
+        dietary_notes = request.data.get('dietary_notes', '')
+
+        from .models import Guest
+        guest = Guest.objects.create(
+            deployment=deployment,
+            full_name=full_name,
+            attending=is_attending,
+            companions_count=companions_count,
+            menu_selection=menu_selection,
+            dietary_notes=dietary_notes
+        )
+        
+        return Response({'success': 'Confirmación recibida', 'guest_id': guest.id})
+
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], url_path='slug/(?P<slug>[^/.]+)/metric')
+    def public_metric_by_slug(self, request, slug=None):
+        deployment = get_object_or_404(Deployment, slug=slug)
+        metric_type = request.data.get('metric_type', 'VISIT')
+        
+        # Parse client IP
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+
+        user_agent = request.META.get('HTTP_USER_AGENT', '')
+        
+        # Encolar procesamiento asíncrono usando Celery
+        from .tasks import record_metric_task
+        record_metric_task.delay(
+            deployment_id=deployment.id,
+            metric_type=metric_type,
+            ip_address=ip,
+            user_agent=user_agent
+        )
+        
+        return Response({
+            'success': 'Métrica registrada'
+        }, status=202)
+
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny], url_path='og/(?P<slug>[^/.]+)')
+    def open_graph(self, request, slug=None):
+        from django.http import HttpResponse
+        
+        deployment = get_object_or_404(Deployment, slug=slug)
+        custom_data = deployment.custom_data or {}
+        
+        is_paid = deployment.is_paid
+        
+        title = "Te invitamos a nuestro evento especial"
+        description = "Acompáñanos en este día tan importante. ¡Haz clic para ver todos los detalles!"
+        
+        host = request.META.get('HTTP_X_FORWARDED_HOST') or request.get_host()
+        protocol = "https" if "localhost" not in host and "127.0.0.1" not in host else "http"
+        base_url = f"{protocol}://{host}"
+        
+        image_url = f"{base_url}/static/deployments/og-free-banner.png"
+        
+        if is_paid:
+            title = custom_data.get('og_title')
+            description = custom_data.get('og_description')
+            image_url = custom_data.get('og_image')
+            
+            if not title:
+                cover_config = {}
+                if isinstance(custom_data.get('blocks'), list):
+                    for block in custom_data['blocks']:
+                        if block.get('type') == 'CoverBlock':
+                            cover_config = block.get('config', {})
+                            break
+                else:
+                    cover_config = custom_data.get('cover', {})
+                
+                title = cover_config.get('title') or custom_data.get('event_title') or f"Invitación de {deployment.slug}"
+                
+            if not description:
+                cover_config = {}
+                if isinstance(custom_data.get('blocks'), list):
+                    for block in custom_data['blocks']:
+                        if block.get('type') == 'CoverBlock':
+                            cover_config = block.get('config', {})
+                            break
+                else:
+                    cover_config = custom_data.get('cover', {})
+                
+                description = cover_config.get('subtitle') or custom_data.get('event_description') or "¡Te invitamos a celebrar con nosotros!"
+            
+            if not image_url:
+                cover_config = {}
+                if isinstance(custom_data.get('blocks'), list):
+                    for block in custom_data['blocks']:
+                        if block.get('type') == 'CoverBlock':
+                            cover_config = block.get('config', {})
+                            break
+                else:
+                    cover_config = custom_data.get('cover', {})
+                
+                image_url = cover_config.get('coverPhoto') or f"{base_url}/static/deployments/og-premium-card.png"
+        else:
+            cover_config = {}
+            if isinstance(custom_data.get('blocks'), list):
+                for block in custom_data['blocks']:
+                    if block.get('type') == 'CoverBlock':
+                        cover_config = block.get('config', {})
+                        break
+            else:
+                cover_config = custom_data.get('cover', {})
+            
+            event_title = cover_config.get('title') or custom_data.get('event_title') or "Boda Especial"
+            title = f"Invitación: {event_title}"
+            description = "Crea tus propias invitaciones digitales interactivas premium en Invitazyon.online"
+        
+        if image_url and not image_url.startswith('http://') and not image_url.startswith('https://'):
+            if image_url.startswith('/'):
+                image_url = f"{base_url}{image_url}"
+            else:
+                image_url = f"{base_url}/{image_url}"
+
+        canonical_url = f"{base_url}/i/{slug}"
+        
+        html = f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{title}</title>
+    <meta property="og:title" content="{title}">
+    <meta property="og:description" content="{description}">
+    <meta property="og:image" content="{image_url}">
+    <meta property="og:url" content="{canonical_url}">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Invitazyon">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{title}">
+    <meta name="twitter:description" content="{description}">
+    <meta name="twitter:image" content="{image_url}">
+    
+    <meta name="robots" content="noindex, nofollow">
+</head>
+<body>
+    <h1>{title}</h1>
+    <p>{description}</p>
+    <img src="{image_url}" alt="Banner de Invitación">
+</body>
+</html>"""
+        return HttpResponse(html, content_type="text/html; charset=utf-8")
+
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='metrics')
+    def get_metrics(self, request, pk=None):
+        deployment = self.get_object()
+        
+        # Check permissions
+        # Only owners, admins, or designers can see metrics
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            has_role = profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]
+        except Exception:
+            has_role = False
+            
+        if not has_role and str(deployment.user) != str(request.user.id):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("No tienes permisos para ver las métricas de esta invitación.")
+            
+        metrics = deployment.metrics.all().order_by('-created_at')
+        
+        # Aggregate data
+        total_visits = metrics.filter(metric_type='VISIT').count()
+        total_rsvps = metrics.filter(metric_type='RSVP_SUBMIT').count()
+        unique_visits = metrics.filter(metric_type='VISIT').values('ip_address', 'user_agent').distinct().count()
+        
+        # Group by country/city
+        from django.db.models import Count
+        countries_query = metrics.values('country').annotate(count=Count('country')).order_by('-count')
+        cities_query = metrics.values('city').annotate(count=Count('city')).order_by('-count')
+        
+        by_country = list(countries_query)
+        by_city = list(cities_query)
+        
+        # Devices/Browsers parsing
+        device_counts = {'Escritorio': 0, 'Móvil': 0, 'Tablet': 0, 'Bot / Crawler': 0, 'Desconocido': 0}
+        browser_counts = {'Chrome': 0, 'Safari': 0, 'Firefox': 0, 'Edge': 0, 'Otros': 0, 'Desconocido': 0}
+        
+        def parse_ua(user_agent):
+            if not user_agent:
+                return 'Desconocido', 'Desconocido'
+            ua_lower = user_agent.lower()
+            
+            # Device type
+            if any(bot in ua_lower for bot in ['bot', 'crawler', 'spider', 'whatsapp', 'facebookexternalhit', 'telegrambot']):
+                dev = 'Bot / Crawler'
+            elif 'ipad' in ua_lower or ('android' in ua_lower and 'mobile' not in ua_lower):
+                dev = 'Tablet'
+            elif 'mobi' in ua_lower or 'iphone' in ua_lower or 'ipod' in ua_lower:
+                dev = 'Móvil'
+            else:
+                dev = 'Escritorio'
+                
+            # Browser type
+            if 'chrome' in ua_lower or 'crios' in ua_lower:
+                browser = 'Chrome'
+            elif 'safari' in ua_lower and 'chrome' not in ua_lower and 'chromium' not in ua_lower:
+                browser = 'Safari'
+            elif 'firefox' in ua_lower or 'fxios' in ua_lower:
+                browser = 'Firefox'
+            elif 'edge' in ua_lower or 'edg' in ua_lower:
+                browser = 'Edge'
+            else:
+                browser = 'Otros'
+                
+            return dev, browser
+            
+        # Parse device and browser distributions from metrics (limit to last 2000 to keep it highly performant)
+        for m in metrics[:2000]:
+            dev, browser = parse_ua(m.user_agent)
+            device_counts[dev] += 1
+            browser_counts[browser] += 1
+            
+        # Format distributions as list of dicts for frontend ease
+        devices_list = [{'device': k, 'count': v} for k, v in device_counts.items() if v > 0]
+        browsers_list = [{'browser': k, 'count': v} for k, v in browser_counts.items() if v > 0]
+        
+        # Group by date for charts
+        from django.db.models.functions import TruncDate
+        daily_stats = metrics.annotate(date=TruncDate('created_at')).values('date', 'metric_type').annotate(count=Count('id')).order_by('date')
+        
+        daily_data = {}
+        for item in daily_stats:
+            if not item['date']:
+                continue
+            date_str = item['date'].strftime('%Y-%m-%d')
+            m_type = item['metric_type']
+            if date_str not in daily_data:
+                daily_data[date_str] = {'date': date_str, 'visits': 0, 'rsvps': 0}
+            if m_type == 'VISIT':
+                daily_data[date_str]['visits'] = item['count']
+            elif m_type == 'RSVP_SUBMIT':
+                daily_data[date_str]['rsvps'] = item['count']
+                
+        # Recent details log (latest 50, mask IP)
+        recent_list = []
+        for m in metrics[:50]:
+            masked_ip = 'Desconocida'
+            if m.ip_address:
+                parts = m.ip_address.split('.')
+                if len(parts) >= 2:
+                    masked_ip = f"{parts[0]}.{parts[1]}.*.*"
+                else:
+                    masked_ip = m.ip_address[:6] + '...'
+                    
+            dev, browser = parse_ua(m.user_agent)
+            recent_list.append({
+                'id': m.id,
+                'metric_type': m.metric_type,
+                'ip_address': masked_ip,
+                'device': dev,
+                'browser': browser,
+                'city': m.city,
+                'country': m.country,
+                'created_at': m.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            })
+            
+        return Response({
+            'deployment_id': deployment.id,
+            'slug': deployment.slug,
+            'summary': {
+                'total_visits': total_visits,
+                'total_rsvps': total_rsvps,
+                'unique_visits': unique_visits,
+                'rsvp_rate': round((total_rsvps / total_visits) * 100, 1) if total_visits > 0 else 0.0
+            },
+            'by_country': by_country,
+            'by_city': by_city,
+            'by_device': sorted(devices_list, key=lambda x: x['count'], reverse=True),
+            'by_browser': sorted(browsers_list, key=lambda x: x['count'], reverse=True),
+            'daily': sorted(list(daily_data.values()), key=lambda x: x['date']),
+            'recent': recent_list
+        })
+
+    @action(detail=True, methods=['get'], permission_classes=[IsAuthenticated], url_path='guests')
+    def get_guests(self, request, pk=None):
+        deployment = self.get_object()
+        
+        # Check permissions
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            has_role = profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]
+        except Exception:
+            has_role = False
+            
+        if not has_role and str(deployment.user) != str(request.user.id):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("No tienes permisos para ver los invitados de esta invitación.")
+            
+        guests = deployment.guests.all().order_by('-created_at')
+        
+        data = [{
+            'id': guest.id,
+            'full_name': guest.full_name,
+            'attending': guest.attending,
+            'companions_count': guest.companions_count,
+            'menu_selection': guest.menu_selection or '',
+            'dietary_notes': guest.dietary_notes or '',
+            'created_at': guest.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        } for guest in guests]
+        
+        return Response(data)
+
+    @action(detail=True, methods=['post'], url_path='activate-basic')
+    def activate_basic(self, request, pk=None):
+        deployment = self.get_object()
+        
+        # 1. Validar que la invitación sea de tier básico
+        if deployment.product.tier_level != 'BASIC':
+            return Response({'error': 'Esta acción solo está permitida para invitaciones de plan Básico.'}, status=400)
+            
+        # 2. Validar que el usuario no tenga ya un serial básico activo asignado
+        from profiles.models import UserProfile
+        from inventory.models import ProductSerialKey, Product
+        from django.utils import timezone
+        
+        user_profile = get_object_or_404(UserProfile, remote_auth_id=request.user.id)
+        
+        existing_keys = ProductSerialKey.objects.filter(
+            order_item__order__user=request.user.id,
+            product__tier_level=Product.TierLevel.BASIC,
+            is_assigned=True
+        )
+        
+        if existing_keys.exists():
+            return Response({
+                'error': 'Has alcanzado el límite de claves de plan Básico. Si deseas publicar otra invitación, por favor compra un serial adicional.'
+            }, status=400)
+            
+        # 3. Guardar la reseña
+        reviewer_name = request.data.get('reviewer_name')
+        comment = request.data.get('comment')
+        rating = request.data.get('rating', 5)
+        
+        if not reviewer_name or not comment:
+            return Response({'error': 'El nombre del autor y el comentario son requeridos.'}, status=400)
+            
+        from profiles.models import SiteReview
+        SiteReview.objects.create(
+            user=user_profile,
+            reviewer_name=reviewer_name,
+            comment=comment,
+            rating=rating,
+            is_approved=False
+        )
+        
+        # 4. Crear una orden gratuita de $0 para simular la compra y vincular el serial
+        from sales.models import Order, OrderItem
+        order = Order.objects.create(
+            user=request.user.id,
+            subtotal_amount=0.00,
+            total_amount=0.00,
+            status=Order.StatusChoices.COMPLETED,
+            deployment=deployment
+        )
+        order_item = OrderItem.objects.create(
+            order=order,
+            product=deployment.product,
+            quantity=1,
+            price_at_sale=0.00
+        )
+        
+        # 5. Generar e importar la ProductSerialKey
+        serial_key = ProductSerialKey.objects.create(
+            product=deployment.product,
+            key_value=f"FREE-BASIC-{deployment.slug.upper()}",
+            is_assigned=True,
+            order_item=order_item,
+            assigned_at=timezone.now()
+        )
+        
+        # 6. Pasar el estado de la invitación a LIVE
+        deployment.status = Deployment.StatusChoices.LIVE
+        deployment.is_paid = True
+        deployment.save()
+        
+        return Response({
+            'success': 'Invitación de plan básico activada exitosamente con tu reseña.',
+            'status': deployment.status,
+            'serial_key': serial_key.key_value
+        })
+
+    @action(detail=True, methods=['post'], url_path='publish-product')
+    def publish_product(self, request, pk=None):
+        deployment = self.get_object()
+        
+        # Validar que el usuario sea administrador
+        from profiles.models import UserProfile
+        user_profile = get_object_or_404(UserProfile, remote_auth_id=request.user.id)
+        if user_profile.custom_role != UserProfile.Role.ADMIN:
+            return Response({'error': 'No tienes permisos de administrador para realizar esta acción.'}, status=403)
+        name = request.data.get('name')
+        slug = request.data.get('slug')
+        store_id = request.data.get('store_id')
+        
+        if not name or not slug:
+            return Response({'error': 'El nombre y slug son requeridos.'}, status=400)
+            
+        # 1. Validar que el nuevo slug sea único en Deployment
+        if Deployment.objects.filter(slug=slug).exclude(id=deployment.id).exists():
+            return Response({'error': 'El slug ingresado ya está en uso por otra invitación/plantilla.'}, status=400)
+            
+        # 2. Actualizar el slug y el nombre de esta maqueta
+        deployment.slug = slug
+        deployment.status = Deployment.StatusChoices.ACTIVE
+        deployment.save()
+        
+        # 3. Analizar automáticamente el tier_level en base a custom_data
+        custom_data = deployment.custom_data or {}
+        has_premium_features = False
+        
+        premium_features = ['countdown', 'itinerary', 'music', 'seo', 'timeline', 'gallery', 'gift_registry']
+        
+        blocks = custom_data.get('blocks', [])
+        if isinstance(blocks, list):
+            for block in blocks:
+                block_type = str(block.get('type', '')).lower()
+                for pf in premium_features:
+                    if pf in block_type:
+                        has_premium_features = True
+                        break
+        
+        for k in custom_data.keys():
+            if str(k).lower() in premium_features:
+                has_premium_features = True
+                break
+                
+        from inventory.models import Product, Store
+        tier_level = Product.TierLevel.PREMIUM if has_premium_features else Product.TierLevel.BASIC
+        
+        # 4. Crear el Producto
+        store = None
+        if store_id:
+            store = get_object_or_404(Store, id=store_id)
+            
+        product = Product.objects.create(
+            name=name,
+            product_type=Product.ProductType.DIGITAL,
+            tier_level=tier_level,
+            base_price=0.00,
+            is_active=True,
+            has_template=True,
+            template_slug=slug,
+            created_by=user_profile,
+            store=store
+        )
+        
+        return Response({
+            'success': 'Producto de catálogo creado y vinculado a la plantilla exitosamente.',
+            'product_id': product.id,
+            'tier_assigned': product.tier_level
+        })
+
+    @action(detail=True, methods=['post'], url_path='request-review')
+    def request_review(self, request, pk=None):
+        deployment = self.get_object()
+        
+        # Validar que el usuario tenga perfil y sea al menos DESIGNER o ADMIN
+        from profiles.models import UserProfile
+        user_profile = get_object_or_404(UserProfile, remote_auth_id=request.user.id)
+        
+        if user_profile.custom_role not in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]:
+            return Response({'error': 'No tienes permisos para solicitar revisión.'}, status=403)
+            
+        # Verificar que el deployment esté en DRAFT
+        if deployment.status != Deployment.StatusChoices.DRAFT:
+            return Response({'error': 'Solo se pueden enviar a revisión invitaciones en estado Borrador.'}, status=400)
+            
+        # Registrar entrada en SystemLog (DB) y emitir JSON a Loki
+        username_val = user_profile.full_name or user_profile.email or f"User {request.user.id}"
+        record_activity(
+            log_type=SystemLog.LogType.USER_ACTION,
+            message=f"El usuario {username_val} (ID: {request.user.id}) solicitó revisión para el diseño {deployment.slug} (ID: {deployment.id}).",
+            user_id=request.user.id,
+            username=username_val,
+            metadata={
+                'deployment_id': deployment.id,
+                'slug': deployment.slug,
+                'status': deployment.status
+            }
+        )
+        
+        # Crear notificación SYSTEM en CommunicationLog para todos los administradores
+        from profiles.models import CommunicationLog
+        admins = UserProfile.objects.filter(custom_role=UserProfile.Role.ADMIN)
+        
+        designer_name = user_profile.full_name or user_profile.email or f"User {request.user.id}"
+        subject_text = f"El Diseñador {designer_name} solicita revisión del diseño (ID: {deployment.id})"
+        
+        for admin in admins:
+            CommunicationLog.objects.create(
+                user=admin,
+                channel=CommunicationLog.Channel.SYSTEM,
+                subject=subject_text
+            )
+            
+        return Response({
+            'success': 'Solicitud de revisión enviada al administrador exitosamente.'
+        })
+
+    @action(detail=True, methods=['post'], url_path='upload-media')
+    def upload_media(self, request, pk=None):
+        from rest_framework.parsers import MultiPartParser, FormParser
+        from django.core.files.storage import default_storage
+        import os
+        import uuid
+        
+        # Override parsers specifically for this method inside the method doesn't work easily in DRF,
+        # but DRF usually handles multipart if configured globally or we can just access request.FILES
+        
+        deployment = self.get_object()
+        
+        # Check permissions
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            has_role = profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]
+        except Exception:
+            has_role = False
+            
+        if not has_role and str(deployment.user) != str(request.user.id):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("No tienes permisos para subir archivos a este diseño.")
+            
+        if 'file' not in request.FILES:
+            return Response({'error': 'No se encontró ningún archivo (campo "file").'}, status=400)
+            
+        file_obj = request.FILES['file']
+        
+        # Crear un nombre único
+        ext = file_obj.name.split('.')[-1] if '.' in file_obj.name else 'bin'
+        filename = f"{uuid.uuid4().hex}.{ext}"
+        
+        # Ruta donde se guardará (ej. /media/deployments/mi-slug/1234abcd.jpg)
+        save_path = os.path.join('deployments', deployment.slug, filename)
+        
+        # Guardar archivo
+        file_path = default_storage.save(save_path, file_obj)
+        
+        # Obtener URL
+        file_url = request.build_absolute_uri(default_storage.url(file_path))
+        
+        return Response({
+            'success': 'Archivo subido exitosamente.',
+            'url': file_url
+        })
+
+    @action(detail=True, methods=['delete'], url_path='delete-media')
+    def delete_media(self, request, pk=None):
+        from django.core.files.storage import default_storage
+        from django.conf import settings
+        import urllib.parse
+        
+        deployment = self.get_object()
+        
+        # Check permissions
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            has_role = profile.custom_role in [UserProfile.Role.ADMIN, UserProfile.Role.DESIGNER]
+        except Exception:
+            has_role = False
+            
+        if not has_role and str(deployment.user) != str(request.user.id):
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied("No tienes permisos para borrar archivos de este diseño.")
+            
+        file_url = request.data.get('url')
+        if not file_url:
+            return Response({'error': 'La URL del archivo es obligatoria.'}, status=400)
+            
+        # Parsear la URL para extraer el path relativo (ej. quitar el dominio y el /media/)
+        parsed_url = urllib.parse.urlparse(file_url)
+        path = parsed_url.path
+        media_url = getattr(settings, 'MEDIA_URL', '/media/')
+        
+        if path.startswith(media_url):
+            file_path = path[len(media_url):]
+        else:
+            file_path = path
+            
+        # Asegurarse de que el archivo pertenece a este deployment (seguridad path traversal)
+        if not file_path.startswith(f"deployments/{deployment.slug}/"):
+            return Response({'error': 'Operación no permitida en este archivo.'}, status=403)
+            
+        if default_storage.exists(file_path):
+            default_storage.delete(file_path)
+            return Response({'success': 'Archivo borrado exitosamente.'})
+        else:
+            return Response({'error': 'El archivo no existe.'}, status=404)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='unsplash-search')
+    def unsplash_search(self, request):
+        query = request.query_params.get('query', '')
+        if not query:
+            return Response({'error': 'La consulta de búsqueda (query) es obligatoria.'}, status=400)
+        
+        try:
+            page = int(request.query_params.get('page', 1))
+            per_page = int(request.query_params.get('per_page', 20))
+        except ValueError:
+            page = 1
+            per_page = 20
+
+        from .services import UnsplashService
+        result = UnsplashService.search_photos(query, page, per_page)
+        
+        if 'error' in result:
+            return Response({'error': result['error']}, status=500)
+            
+        return Response(result)
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated], url_path='jamendo-search')
+    def jamendo_search(self, request):
+        query = request.query_params.get('q', '')
+        if not query:
+            return Response({'error': 'El parámetro de búsqueda (q) es obligatorio.'}, status=400)
+
+        from .services import JamendoService
+        result = JamendoService.search_tracks(query)
+        
+        if 'error' in result:
+            return Response({'error': result['error']}, status=500)
+            
+        return Response(result)
+
+
+from rest_framework.permissions import BasePermission
+
+class IsAdminOrSuperuser(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if getattr(request.user, 'is_superuser', False):
+            return True
+        from profiles.models import UserProfile
+        try:
+            profile = UserProfile.objects.get(remote_auth_id=request.user.id)
+            return profile.custom_role == UserProfile.Role.ADMIN
+        except UserProfile.DoesNotExist:
+            return False
+
+
+class SystemLogViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = SystemLog.objects.all().order_by('-created_at')
+    serializer_class = SystemLogSerializer
+    permission_classes = [IsAuthenticated, IsAdminOrSuperuser]
+
